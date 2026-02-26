@@ -26,8 +26,9 @@ export default function Host() {
     setError('');
     try {
       const id = 'host-' + Math.random().toString(36).slice(2, 10);
-      // Use current origin so when deployed (e.g. Vercel) phone can open the link from anywhere
-      let baseUrl = window.location.origin;
+      // Base URL: when deployed (e.g. GitHub Pages at /repo-name/) use origin + base path
+      const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+      let baseUrl = basePath ? `${window.location.origin}${basePath}` : window.location.origin;
       try {
         const { ip, port } = await fetch('/api/local-ip').then((r) => r.json());
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')

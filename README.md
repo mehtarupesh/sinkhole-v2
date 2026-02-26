@@ -87,6 +87,15 @@ Deploy the **static build** so the QR points to a public URL. No server needed�
 3. Build output directory: `client/dist`
 4. Deploy and use the `*.pages.dev` URL.
 
+### Option D: GitHub Pages (free)
+
+The repo includes a workflow that builds and deploys on every push to `main`.
+
+1. **One-time setup:** In your GitHub repo → **Settings** → **Pages** → under **Build and deployment**, set **Source** to **GitHub Actions**.
+2. Push the latest code (including `.github/workflows/deploy-pages.yml`) to `main`. The workflow runs, builds the client, and deploys to Pages.
+3. Your app will be at `https://<username>.github.io/<repo-name>/` (or the custom domain you set).
+4. Open that URL → **Show QR code** → **Start Sync**. Scan the QR on the phone; the join link uses the same GitHub Pages URL.
+
 Once deployed, both laptop and phone open the **same public URL**; the QR points there, so the phone can connect from cellular or any Wi‑Fi.
 
 ## Phone shows "address unreachable"
