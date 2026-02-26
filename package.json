@@ -1,0 +1,15 @@
+{
+  "name": "instant-mirror",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"node server/index.js\" \"cd client && npm run dev\"",
+    "build": "cd client && npm run build",
+    "start": "node server/index.js",
+    "prestart": "npm run build"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "express": "^4.21.0"
+  }
+}
