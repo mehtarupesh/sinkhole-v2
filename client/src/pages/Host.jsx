@@ -13,7 +13,7 @@ export default function Host() {
   const [error, setError] = useState('');
   const [localState, setLocalState] = useState({ content: '' });
 
-  const [state, push] = useSync(conn);
+  const [state, push, close] = useSync(conn);
   const sentInitial = useRef(false);
 
   useEffect(() => {

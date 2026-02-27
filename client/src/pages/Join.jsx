@@ -11,7 +11,7 @@ export default function Join() {
   const [status, setStatus] = useState('Connecting…');
   const [error, setError] = useState('');
 
-  const [state, push] = useSync(conn);
+  const [state, push, close] = useSync(conn);
 
   useEffect(() => {
     if (!hostPeerId) return;
