@@ -31,6 +31,7 @@ jobs:
         run: |
           cd client
           npm ci
+          npm run generate-pwa-icons
           npm run build
 
       - name: SPA fallback for GitHub Pages

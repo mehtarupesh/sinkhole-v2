@@ -26,72 +26,25 @@ cd client && npm install && cd ..
 npm run build && npm start
 ```
 
-Then open **http://localhost:3000** (or **http://&lt;your-lan-ip&gt;:3000**). Use the same LAN IP so the phone can reach the server.
-
-For development (client dev server + API/Peer proxy):
-
 ```bash
 npm run dev
 ```
 
-Open http://localhost:5173; ensure the backend is on 3000 so the proxy works. You may see an occasional `ws proxy socket error: ECONNRESET` in the terminal when the PeerJS WebSocket is closed; the app should still work. For the most reliable run (no proxy), use **production**: `npm run build && npm start` and open http://localhost:3000 (or your LAN URL).
+## PWA
 
-## How to test
+The client is a **Progressive Web App**: it registers a service worker (offline caching, `autoUpdate`) and a web app manifest. After deploy, users can “Add to Home Screen” / install the app on laptop and Android.
 
-1. **Start the app** (from project root):
-   ```bash
-   npm run build && npm start
-   ```
-   Or for dev (Vite + server): `npm run dev` then open http://localhost:5173.
-
-2. **Host (e.g. laptop):**
-   - Open http://localhost:3000 (or http://\<your-lan-ip\>:3000).
-   - Click **Show QR code** → **Start Sync**. The QR appears; no camera is used on this device.
-
-3. **Joiner (e.g. phone):**
-   - Ensure the phone is on the **same Wi‑Fi** as the host.
-   - Use the laptop’s **LAN IP** in the URL (e.g. `http://192.168.1.5:3000`) so the phone can reach the server. Check the terminal for the printed URL after `npm start`.
-   - Scan the QR with the phone’s camera → the join URL opens in the browser and connects.
-
-4. **Verify sync:** Type in the text area on either device; the other should update immediately.
-
-**Quick test on one machine:** Run the app, open two browser tabs. In tab 1 go to `/host`, click Start Sync, copy the join URL from the QR (or open `/join?peerId=host-xxxxx` with the same peerId). In tab 2 open that join URL. Both tabs should sync.
+**Icons:** The repo includes generated `pwa-192.png` and `pwa-512.png` in `client/public`. To regenerate them (e.g. after changing branding), run from `client`: `npm run generate-pwa-icons`. You can also replace those files with custom icons from [PWA Asset Generator](https://vite-pwa-org.netlify.app/assets-generator/) or [favicon.inbrowser.app](https://favicon.inbrowser.app/).
 
 ## Deploy (cheap/free) so the phone can connect from anywhere
 
 Deploy the **static build** so the QR points to a public URL. No server needed—signaling is PeerJS cloud.
 
-### Option A: Vercel (free)
-
-1. Push the repo to GitHub (if not already).
-2. Go to [vercel.com](https://vercel.com) → Sign in → **Add New** → **Project** → Import your repo.
-3. **Root Directory:** leave default (repo root).
-4. **Build and Output:**
-   - Build Command: `cd client && npm install && npm run build`
-   - Output Directory: `client/dist`
-5. **Install Command:** `npm install` (root) or leave empty and use Build Command above.
-6. Deploy. Your app will be at `https://<your-project>.vercel.app`.
-7. Open that URL on the laptop → **Show QR code** → **Start Sync**. Scan the QR on the phone (any network). The join link will open the same Vercel URL and connect.
-
-### Option B: Netlify (free)
-
-1. Push to GitHub. Go to [netlify.com](https://netlify.com) → **Add new site** → **Import from Git**.
-2. Build command: `cd client && npm install && npm run build`
-3. Publish directory: `client/dist`
-4. Deploy. Use the generated URL (e.g. `https://your-site.netlify.app`) the same way as above.
-
-### Option C: Cloudflare Pages (free)
-
-1. Push to GitHub. In Cloudflare Dashboard → **Pages** → **Create** → **Connect to Git**.
-2. Build command: `cd client && npm install && npm run build`
-3. Build output directory: `client/dist`
-4. Deploy and use the `*.pages.dev` URL.
-
-### Option D: GitHub Pages (free)
+### GitHub Pages (free)
 
 The repo includes a workflow that builds and deploys on every push to `main`.
 
-1. **One-time setup:** In your GitHub repo → **Settings** → **Pages** → under **Build and deployment**, set **Source** to **GitHub Actions**.
+1. **One-time setup:** In your GitHub repo → **Settings** → **Pages** → under **Build and deployment**, set **Source** to **GitHub Actions** (not "Deploy from a branch"). If you leave it as a branch, GitHub will serve the repo root and you’ll see this README instead of the app.
 2. Push the latest code (including `.github/workflows/deploy-pages.yml`) to `main`. The workflow runs, builds the client, and deploys to Pages.
 3. Your app will be at `https://<username>.github.io/<repo-name>/` (or the custom domain you set).
 4. Open that URL → **Show QR code** → **Start Sync**. Scan the QR on the phone; the join link uses the same GitHub Pages URL.
