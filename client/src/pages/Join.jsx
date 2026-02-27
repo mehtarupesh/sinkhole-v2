@@ -60,7 +60,7 @@ export default function Join() {
     <div style={styles.container}>
       {status && <p style={styles.status}>{status}</p>}
       <div style={styles.mirror}>
-        <label style={styles.label}>Mirror (live)</label>
+        <label style={styles.label}>Mirror ({conn ? 'live' : 'connecting…'})</label>
         <textarea
           style={styles.textarea}
           value={state.content}
