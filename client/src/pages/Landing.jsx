@@ -9,6 +9,9 @@ export default function Landing() {
         <Link to="/host" style={styles.primaryButton}>
           Show QR code
         </Link>
+        <Link to="/scan" style={styles.secondaryButton}>
+          Scan QR code
+        </Link>
         <Link to="/join" style={styles.secondaryLink}>
           I’ll open the link from the other device
         </Link>
@@ -36,6 +39,16 @@ const styles = {
     background: '#2563eb',
     color: '#fff',
     border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer',
+    textDecoration: 'none',
+  },
+  secondaryButton: {
+    padding: '10px 20px',
+    fontSize: 15,
+    background: 'transparent',
+    color: '#e5e5e5',
+    border: '1px solid #555',
     borderRadius: 8,
     cursor: 'pointer',
     textDecoration: 'none',
