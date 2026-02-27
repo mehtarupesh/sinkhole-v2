@@ -37,3 +37,40 @@ export function useSync(conn) {
 
   return [state, push];
 }
+
+/**
+ * One-time sync: send your data, receive the other peer's data once.
+ * Call close() when done so both sides can tear down the connection.
+ */
+export function oneTimeSync(conn) {
+  const [received, setReceived] = useState(null);
+
+  useEffect(() => {
+    if (!conn?.open) return;
+    const handler = (data) => {
+      try {
+        const msg = typeof data === 'string' ? JSON.parse(data) : data;
+        if (msg?.type === SYNC_CHANNEL && msg.state != null) {
+          setReceived(msg.state);
+        }
+      } catch (_) {}
+    };
+    conn.on('data', handler);
+    return () => conn.off('data', handler);
+  }, [conn]);
+
+  const sendOnce = useCallback(
+    (state) => {
+      if (conn?.open) {
+        conn.send({ type: SYNC_CHANNEL, state });
+      }
+    },
+    [conn]
+  );
+
+  const close = useCallback(() => {
+    if (conn?.open) conn.close();
+  }, [conn]);
+
+  return [received, sendOnce, close];
+}

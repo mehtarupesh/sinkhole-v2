@@ -54,6 +54,11 @@ export default function Host() {
     }
   }, []);
 
+  // Auto-start on mount so "Show QR code" goes straight to QR (no extra tap).
+  useEffect(() => {
+    startSync();
+  }, [startSync]);
+
   const updateContent = useCallback(
     (content) => {
       const next = { ...state, content };
@@ -89,12 +94,7 @@ export default function Host() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Show QR code</h1>
-      <p style={styles.sub}>Tap below. A QR code will appear for the other device to scan.</p>
-      <button style={styles.button} onClick={startSync} type="button">
-        Start Sync
-      </button>
-      {error && <p style={styles.error}>{error}</p>}
+      <p style={styles.sub}>{error || 'Preparing QR code…'}</p>
     </div>
   );
 }
@@ -111,15 +111,6 @@ const styles = {
   },
   title: { fontSize: '1.5rem', fontWeight: 600, margin: 0 },
   sub: { margin: 0, color: '#888', fontSize: '0.95rem', textAlign: 'center' },
-  button: {
-    padding: '12px 24px',
-    fontSize: 16,
-    background: '#2563eb',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 8,
-    cursor: 'pointer',
-  },
   error: { color: '#f87171', fontSize: 14, margin: 0 },
   qrWrap: {
     padding: 16,

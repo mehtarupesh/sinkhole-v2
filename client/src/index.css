@@ -13,3 +13,20 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Landing: Sync and choice buttons */
+.landing-sync-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+}
+.landing-sync-btn:active {
+  transform: translateY(0);
+}
+.landing-choice-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.landing-choice-btn:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
