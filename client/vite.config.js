@@ -16,7 +16,7 @@ export default defineConfig({
         description: 'Instant Mirror',
         theme_color: '#000000',
         background_color: '#000000',
-        start_url: '/',
+        start_url: '/sinkhole-v2/',
         display: 'standalone',
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
