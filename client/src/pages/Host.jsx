@@ -3,6 +3,7 @@ import Peer from 'peerjs';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSync } from '../useSync';
 import { PEER_OPTIONS } from '../peerConfig';
+import { getStableHostId } from '../utils/stableHostId';
 
 // Host view: QR code only. No camera, no scanner — the other device scans this QR.
 export default function Host() {
@@ -25,7 +26,7 @@ export default function Host() {
   const startSync = useCallback(async () => {
     setError('');
     try {
-      const id = 'host-' + Math.random().toString(36).slice(2, 10);
+      const id = getStableHostId();
       // Base URL: when deployed (e.g. GitHub Pages at /repo-name/) use origin + base path
       const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
       let baseUrl = basePath ? `${window.location.origin}${basePath}` : window.location.origin;

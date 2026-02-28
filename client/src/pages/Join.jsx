@@ -3,10 +3,12 @@ import { useSearchParams } from 'react-router-dom';
 import Peer from 'peerjs';
 import { useSync } from '../useSync';
 import { PEER_OPTIONS } from '../peerConfig';
+import { getStableHostId, isValidPeerId } from '../utils/stableHostId';
 
 export default function Join() {
   const [searchParams] = useSearchParams();
-  const hostPeerId = searchParams.get('peerId');
+  const rawPeerId = searchParams.get('peerId');
+  const hostPeerId = rawPeerId && isValidPeerId(rawPeerId) ? rawPeerId.trim() : null;
   const [conn, setConn] = useState(null);
   const [status, setStatus] = useState('Connecting…');
   const [error, setError] = useState('');
@@ -15,7 +17,7 @@ export default function Join() {
 
   useEffect(() => {
     if (!hostPeerId) return;
-    const peer = new Peer(PEER_OPTIONS);
+    const peer = new Peer(getStableHostId(), PEER_OPTIONS);
 
     peer.on('open', () => {
       setStatus('Joining…');
@@ -37,13 +39,22 @@ export default function Join() {
     [state, push]
   );
 
-  if (!hostPeerId) {
+  if (!rawPeerId) {
     return (
       <div style={styles.container}>
         <h2 style={styles.title}>Join</h2>
         <p style={styles.help}>
           On the other device, open the app and tap <strong>Show QR code</strong>, then scan that QR with this device’s camera to open the link. This page will then connect automatically.
         </p>
+      </div>
+    );
+  }
+
+  if (!hostPeerId) {
+    return (
+      <div style={styles.container}>
+        <h2 style={styles.title}>Join</h2>
+        <p style={styles.help}>Invalid or unsupported link. Use the QR code from the host device to join.</p>
       </div>
     );
   }

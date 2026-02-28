@@ -6,7 +6,8 @@ function parsePeerIdFromScan(data) {
   const s = (data || '').trim();
   const match = s.match(/[?&]peerId=([^&\s]+)/);
   if (match) return decodeURIComponent(match[1]);
-  if (/^host-[a-z0-9]+$/i.test(s)) return s;
+  // Accept slug (e.g. elegant-green-coat) or legacy host-xxx
+  if (/^[a-z]+(-[a-z]+)+$/.test(s) || /^host-[a-z0-9]+$/i.test(s)) return s;
   return null;
 }
 

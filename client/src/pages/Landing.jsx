@@ -4,30 +4,8 @@ import Peer from 'peerjs';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSync } from '../useSync';
 import { PEER_OPTIONS } from '../peerConfig';
-
-// Simple minimal icons (inline SVG)
-const QRIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <rect x="3" y="3" width="7" height="7" rx="1" />
-    <rect x="14" y="3" width="7" height="7" rx="1" />
-    <rect x="3" y="14" width="4" height="4" rx="0.5" />
-    <rect x="9" y="14" width="4" height="4" rx="0.5" />
-    <path d="M14 17h2v2h-2zM18 17h2v2h-2zM14 21h2v2h-2z" />
-  </svg>
-);
-
-const CameraIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-    <circle cx="12" cy="13" r="4" />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <path d="M18 6L6 18M6 6l12 12" />
-  </svg>
-);
+import { getStableHostId } from '../utils/stableHostId';
+import { QRIcon, CameraIcon, CloseIcon, ConnectIcon } from '../components/Icons';
 
 function MirrorPopup({ conn, onClose }) {
   const [state, push] = useSync(conn);
@@ -64,12 +42,17 @@ export default function Landing() {
   const [connections, setConnections] = useState([]);
   const [error, setError] = useState('');
   const [mirrorConn, setMirrorConn] = useState(null);
+  const [showConnectModal, setShowConnectModal] = useState(false);
+  const [hostIdInput, setHostIdInput] = useState('');
+  const [connectError, setConnectError] = useState('');
+  const [connecting, setConnecting] = useState(false);
   const initRef = useRef(false);
+  const outgoingPeersRef = useRef(new Map());
 
   const startHost = useCallback(async () => {
     setError('');
     try {
-      const id = 'host-' + Math.random().toString(36).slice(2, 10);
+      const id = getStableHostId();
       const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
       let baseUrl = basePath ? `${window.location.origin}${basePath}` : window.location.origin;
       try {
@@ -104,7 +87,48 @@ export default function Landing() {
     return () => { initRef.current = false; };
   }, [showQrModal, startHost]);
 
+  const connectToHost = useCallback(() => {
+    const hostId = hostIdInput.trim();
+    if (!hostId) return;
+    setConnectError('');
+    setConnecting(true);
+    const peer = new Peer(getStableHostId(), PEER_OPTIONS);
+    peer.on('open', () => {
+      const dataConn = peer.connect(hostId, { reliable: true });
+      dataConn.on('open', () => {
+        outgoingPeersRef.current.set(dataConn, peer);
+        setConnections((prev) => [...prev, dataConn]);
+        setConnecting(false);
+        setHostIdInput('');
+        setShowConnectModal(false);
+      });
+      dataConn.on('close', () => {
+        setConnections((prev) => prev.filter((c) => c !== dataConn));
+        const p = outgoingPeersRef.current.get(dataConn);
+        if (p) {
+          outgoingPeersRef.current.delete(dataConn);
+          p.destroy();
+        }
+      });
+      dataConn.on('error', () => {
+        setConnectError('Connection failed');
+        setConnecting(false);
+        peer.destroy();
+      });
+    });
+    peer.on('error', (err) => {
+      setConnectError(err.message || 'Failed to connect');
+      setConnecting(false);
+      peer.destroy();
+    });
+  }, [hostIdInput]);
+
   const closeConnection = useCallback((conn) => {
+    const peer = outgoingPeersRef.current.get(conn);
+    if (peer) {
+      outgoingPeersRef.current.delete(conn);
+      peer.destroy();
+    }
     if (conn?.open) conn.close();
     setConnections((prev) => prev.filter((c) => c !== conn));
     if (mirrorConn === conn) setMirrorConn(null);
@@ -143,33 +167,80 @@ export default function Landing() {
         </button>
       </div>
 
-      {/* Active connections: away from center — bottom left */}
-      {connections.length > 0 && (
-        <div style={styles.connectionsWrap}>
-          <span style={styles.connectionsTitle}>Connections</span>
-          <ul style={styles.connectionsList}>
-            {connections.map((conn, i) => (
-              <li key={i} style={styles.connectionItem}>
-                <button
-                  type="button"
-                  style={styles.connectionButton}
-                  onClick={() => openMirror(conn)}
-                  title="Open live mirror"
-                >
-                  <span style={styles.connectionDot} />
-                  <span style={styles.connectionLabel}>Peer {i + 1}</span>
-                </button>
-                <button
-                  type="button"
-                  style={styles.closeConnBtn}
-                  onClick={(e) => { e.stopPropagation(); closeConnection(conn); }}
-                  aria-label="Close connection"
-                >
-                  <CloseIcon />
-                </button>
-              </li>
-            ))}
-          </ul>
+      {/* Connections: bottom left — icon opens modal, list beside it */}
+      <div style={styles.connectionsWrap}>
+        <div style={styles.connectIconRow}>
+          <button
+            type="button"
+            style={styles.iconBtn}
+            onClick={() => { setShowConnectModal(true); setConnectError(''); }}
+            title="Connect to peer"
+            aria-label="Connect to peer"
+          >
+            <ConnectIcon />
+          </button>
+          {connections.length > 0 && (
+            <ul style={styles.connectionsList}>
+              {connections.map((conn, i) => (
+                <li key={i} style={styles.connectionItem}>
+                  <button
+                    type="button"
+                    style={styles.connectionButton}
+                    onClick={() => openMirror(conn)}
+                    title="Open live mirror"
+                  >
+                    <span style={styles.connectionDot} />
+                    <span style={styles.connectionLabel} title={conn.peer}>
+                      {conn.peer ? (conn.peer.length > 14 ? `${conn.peer.slice(0, 14)}…` : conn.peer) : `Peer ${i + 1}`}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.closeConnBtn}
+                    onClick={(e) => { e.stopPropagation(); closeConnection(conn); }}
+                    aria-label="Remove connection"
+                  >
+                    <CloseIcon />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Connect-to-peer modal */}
+      {showConnectModal && (
+        <div style={styles.overlay} onClick={() => setShowConnectModal(false)}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <span style={styles.modalTitle}>Connect to peer</span>
+              <button type="button" style={styles.popupClose} onClick={() => setShowConnectModal(false)} aria-label="Close">
+                <CloseIcon />
+              </button>
+            </div>
+            {connectError && <p style={styles.connectError}>{connectError}</p>}
+            <div style={styles.connectRow}>
+              <input
+                type="text"
+                style={styles.hostInput}
+                value={hostIdInput}
+                onChange={(e) => { setHostIdInput(e.target.value); setConnectError(''); }}
+                onKeyDown={(e) => e.key === 'Enter' && connectToHost()}
+                placeholder="Host ID"
+                disabled={connecting}
+                aria-label="Host ID"
+              />
+              <button
+                type="button"
+                style={styles.connectBtn}
+                onClick={connectToHost}
+                disabled={connecting || !hostIdInput.trim()}
+              >
+                {connecting ? '…' : 'Connect'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -258,15 +329,43 @@ const styles = {
     position: 'absolute',
     bottom: 24,
     left: 24,
-    maxWidth: 260,
+    maxWidth: 320,
   },
-  connectionsTitle: {
-    display: 'block',
-    fontSize: 11,
-    color: '#737373',
-    textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    marginBottom: 8,
+  connectIconRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  connectRow: {
+    display: 'flex',
+    gap: 8,
+    marginBottom: 6,
+  },
+  hostInput: {
+    flex: 1,
+    minWidth: 0,
+    padding: '8px 10px',
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: 8,
+    color: '#e5e5e5',
+    fontSize: 13,
+  },
+  connectBtn: {
+    padding: '8px 14px',
+    background: 'rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 8,
+    color: '#e5e5e5',
+    fontSize: 13,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  },
+  connectError: {
+    margin: '0 0 8px',
+    fontSize: 12,
+    color: '#f87171',
   },
   connectionsList: {
     listStyle: 'none',
