@@ -145,41 +145,38 @@ export default function Landing() {
         <p style={styles.sub}>One scan. No buttons. Data stays on your Wi‑Fi.</p>
       </div>
 
-      {/* Actions: away from center — top right */}
-      <div style={styles.actions}>
-        <button
-          type="button"
-          style={styles.iconBtn}
-          onClick={() => setShowQrModal(true)}
-          title="Show QR code"
-          aria-label="Show QR code"
-        >
-          <QRIcon />
-        </button>
-        <button
-          type="button"
-          style={styles.iconBtn}
-          onClick={() => navigate('/scan')}
-          title="Scan to join"
-          aria-label="Scan to join"
-        >
-          <CameraIcon />
-        </button>
-      </div>
-
-      {/* Connections: bottom left — icon opens modal, list beside it */}
+      {/* Bottom left: all actions in one column */}
       <div style={styles.connectionsWrap}>
-        <div style={styles.connectIconRow}>
+        <div style={styles.actionsColumn}>
           <button
             type="button"
             style={styles.iconBtn}
-            onClick={() => { setShowConnectModal(true); setConnectError(''); }}
-            title="Connect to peer"
-            aria-label="Connect to peer"
+            onClick={() => setShowQrModal(true)}
+            title="Show QR code"
+            aria-label="Show QR code"
           >
-            <ConnectIcon />
+            <QRIcon />
           </button>
-          {connections.length > 0 && (
+          <button
+            type="button"
+            style={styles.iconBtn}
+            onClick={() => navigate('/scan')}
+            title="Scan to join"
+            aria-label="Scan to join"
+          >
+            <CameraIcon />
+          </button>
+          <div style={styles.connectIconRow}>
+            <button
+              type="button"
+              style={styles.iconBtn}
+              onClick={() => { setShowConnectModal(true); setConnectError(''); }}
+              title="Connect to peer"
+              aria-label="Connect to peer"
+            >
+              <ConnectIcon />
+            </button>
+            {connections.length > 0 && (
             <ul style={styles.connectionsList}>
               {connections.map((conn, i) => (
                 <li key={i} style={styles.connectionItem}>
@@ -206,6 +203,7 @@ export default function Landing() {
               ))}
             </ul>
           )}
+          </div>
         </div>
       </div>
 
@@ -302,11 +300,10 @@ const styles = {
     fontSize: '0.9rem',
     maxWidth: 280,
   },
-  actions: {
-    position: 'absolute',
-    top: 24,
-    right: 24,
+  actionsColumn: {
     display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     gap: 10,
   },
   iconBtn: {
@@ -336,6 +333,7 @@ const styles = {
     alignItems: 'center',
     gap: 10,
     flexWrap: 'wrap',
+    width: '100%',
   },
   connectRow: {
     display: 'flex',
