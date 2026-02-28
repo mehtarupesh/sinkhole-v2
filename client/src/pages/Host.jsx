@@ -35,7 +35,7 @@ export default function Host() {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
           baseUrl = `http://${ip}:${port}`;
       } catch (_) {}
-      const joinUrl = `${baseUrl}/join?peerId=${id}`;
+      const joinUrl = `${baseUrl}/?peerId=${id}`;
       setPeerId(id);
       setQrUrl(joinUrl);
 

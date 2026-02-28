@@ -37,3 +37,13 @@ export function ConnectIcon() {
     </svg>
   );
 }
+
+// Share / broadcast: first click = ready to share, second = turn off. Arc = “broadcasting”.
+export function SignalStatusIcon({ connected }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M5 12a7 7 0 0 1 14 0" strokeOpacity={connected ? 1 : 0.45} />
+      <circle cx="12" cy="16" r="3" fill={connected ? 'currentColor' : 'none'} stroke="currentColor" />
+    </svg>
+  );
+}

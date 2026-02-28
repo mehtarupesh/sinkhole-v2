@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Peer from 'peerjs';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSync } from '../useSync';
 import { PEER_OPTIONS } from '../peerConfig';
-import { getStableHostId } from '../utils/stableHostId';
-import { QRIcon, CameraIcon, CloseIcon, ConnectIcon } from '../components/Icons';
+import { getStableHostId, isValidPeerId } from '../utils/stableHostId';
+import { SignalStatusIcon, CameraIcon, CloseIcon, ConnectIcon } from '../components/Icons';
 
 function MirrorPopup({ conn, onClose }) {
   const [state, push] = useSync(conn);
@@ -33,8 +33,34 @@ function MirrorPopup({ conn, onClose }) {
   );
 }
 
+function connectToPeer(hostId, { onOpen, onError }, existingPeer, setPeer, setPeerId) {
+  if (existingPeer && !existingPeer.destroyed) {
+    const dataConn = existingPeer.connect(hostId, { reliable: true });
+    dataConn.on('open', () => onOpen(dataConn, existingPeer));
+    dataConn.on('error', () => onError?.('Connection failed'));
+    return existingPeer;
+  }
+  const peer = new Peer(getStableHostId(), PEER_OPTIONS);
+  peer.on('open', () => {
+    if (setPeer) setPeer(peer);
+    if (setPeerId) setPeerId(peer.id);
+    const dataConn = peer.connect(hostId, { reliable: true });
+    dataConn.on('open', () => onOpen(dataConn, peer));
+    dataConn.on('error', () => {
+      onError?.('Connection failed');
+      peer.destroy();
+    });
+  });
+  peer.on('error', (err) => {
+    onError?.(err.message || 'Failed to connect');
+    peer.destroy();
+  });
+  return peer;
+}
+
 export default function Landing() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showQrModal, setShowQrModal] = useState(false);
   const [peer, setPeer] = useState(null);
   const [peerId, setPeerId] = useState('');
@@ -60,7 +86,7 @@ export default function Landing() {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
           baseUrl = `http://${ip}:${port}`;
       } catch (_) {}
-      const joinUrl = `${baseUrl}/join?peerId=${id}`;
+      const joinUrl = `${baseUrl}/?peerId=${id}`;
       setPeerId(id);
       setQrUrl(joinUrl);
 
@@ -87,55 +113,94 @@ export default function Landing() {
     return () => { initRef.current = false; };
   }, [showQrModal, startHost]);
 
+  // Connect when arriving with ?peerId= (e.g. from Scan or QR link)
+  const urlPeerId = searchParams.get('peerId');
+  useEffect(() => {
+    const hostId = urlPeerId?.trim();
+    if (!hostId || !isValidPeerId(hostId)) return;
+    setSearchParams({}, { replace: true });
+    connectToPeer(
+      hostId,
+      {
+        onOpen: (dataConn, p) => {
+          outgoingPeersRef.current.set(dataConn, p);
+          setConnections((prev) => [...prev, dataConn]);
+          dataConn.on('close', () => {
+            setConnections((prev) => prev.filter((c) => c !== dataConn));
+            const pr = outgoingPeersRef.current.get(dataConn);
+            if (pr) {
+              outgoingPeersRef.current.delete(dataConn);
+              pr.destroy();
+            }
+          });
+        },
+        onError: () => {},
+      },
+      peer,
+      setPeer,
+      setPeerId
+    );
+  }, [urlPeerId, setSearchParams, peer]);
+
   const connectToHost = useCallback(() => {
     const hostId = hostIdInput.trim();
     if (!hostId) return;
     setConnectError('');
     setConnecting(true);
-    const peer = new Peer(getStableHostId(), PEER_OPTIONS);
-    peer.on('open', () => {
-      const dataConn = peer.connect(hostId, { reliable: true });
-      dataConn.on('open', () => {
-        outgoingPeersRef.current.set(dataConn, peer);
-        setConnections((prev) => [...prev, dataConn]);
-        setConnecting(false);
-        setHostIdInput('');
-        setShowConnectModal(false);
-      });
-      dataConn.on('close', () => {
-        setConnections((prev) => prev.filter((c) => c !== dataConn));
-        const p = outgoingPeersRef.current.get(dataConn);
-        if (p) {
-          outgoingPeersRef.current.delete(dataConn);
-          p.destroy();
-        }
-      });
-      dataConn.on('error', () => {
-        setConnectError('Connection failed');
-        setConnecting(false);
-        peer.destroy();
-      });
-    });
-    peer.on('error', (err) => {
-      setConnectError(err.message || 'Failed to connect');
-      setConnecting(false);
-      peer.destroy();
-    });
-  }, [hostIdInput]);
+    connectToPeer(
+      hostId,
+      {
+        onOpen: (dataConn, p) => {
+          outgoingPeersRef.current.set(dataConn, p);
+          setConnections((prev) => [...prev, dataConn]);
+          setConnecting(false);
+          setHostIdInput('');
+          setShowConnectModal(false);
+          dataConn.on('close', () => {
+            setConnections((prev) => prev.filter((c) => c !== dataConn));
+            const pr = outgoingPeersRef.current.get(dataConn);
+            if (pr) {
+              outgoingPeersRef.current.delete(dataConn);
+              pr.destroy();
+            }
+          });
+        },
+        onError: (msg) => {
+          setConnectError(msg);
+          setConnecting(false);
+        },
+      },
+      peer,
+      setPeer,
+      setPeerId
+    );
+  }, [hostIdInput, peer]);
 
   const closeConnection = useCallback((conn) => {
-    const peer = outgoingPeersRef.current.get(conn);
-    if (peer) {
+    const p = outgoingPeersRef.current.get(conn);
+    if (p) {
       outgoingPeersRef.current.delete(conn);
-      peer.destroy();
+      if (p !== peer) p.destroy();
     }
     if (conn?.open) conn.close();
     setConnections((prev) => prev.filter((c) => c !== conn));
     if (mirrorConn === conn) setMirrorConn(null);
-  }, [mirrorConn]);
+  }, [mirrorConn, peer]);
 
   const openMirror = useCallback((conn) => setMirrorConn(conn), []);
   const closeMirror = useCallback(() => setMirrorConn(null), []);
+
+  const stopHost = useCallback(() => {
+    if (peer) {
+      peer.destroy();
+      setPeer(null);
+      setPeerId('');
+      setQrUrl('');
+      setShowQrModal(false);
+    }
+  }, [peer]);
+
+  const isHostConnected = !!peer;
 
   return (
     <div style={styles.container}>
@@ -150,12 +215,15 @@ export default function Landing() {
         <div style={styles.actionsColumn}>
           <button
             type="button"
-            style={styles.iconBtn}
-            onClick={() => setShowQrModal(true)}
-            title="Show QR code"
-            aria-label="Show QR code"
+            style={{
+              ...styles.iconBtn,
+              ...(isHostConnected ? { background: 'rgba(34, 197, 94, 0.18)', borderColor: 'rgba(34, 197, 94, 0.45)' } : {}),
+            }}
+            onClick={() => (isHostConnected ? stopHost() : setShowQrModal(true))}
+            title={isHostConnected ? 'Stop hosting' : 'Show QR code'}
+            aria-label={isHostConnected ? 'Stop hosting' : 'Show QR code'}
           >
-            <QRIcon />
+            <SignalStatusIcon connected={isHostConnected} />
           </button>
           <button
             type="button"

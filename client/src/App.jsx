@@ -1,7 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Host from './pages/Host';
-import Join from './pages/Join';
 import Scan from './pages/Scan';
 import { getStableHostId } from './utils/stableHostId';
 
@@ -14,7 +13,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/host" element={<Host />} />
-        <Route path="/join" element={<Join />} />
         <Route path="/scan" element={<Scan />} />
       </Routes>
       <span style={footerStyle} title={version ? `Build ${version}` : 'Host ID'}>

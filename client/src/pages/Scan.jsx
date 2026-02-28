@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import jsQR from 'jsqr';
+import { isValidPeerId } from '../utils/stableHostId';
 
 function parsePeerIdFromScan(data) {
   const s = (data || '').trim();
@@ -37,9 +38,9 @@ export default function Scan() {
         const code = jsQR(imageData.data, imageData.width, imageData.height);
         if (code?.data) {
           const peerId = parsePeerIdFromScan(code.data);
-          if (peerId) {
+          if (peerId && isValidPeerId(peerId)) {
             scanningRef.current = false;
-            navigate(`/join?peerId=${encodeURIComponent(peerId)}`, { replace: true });
+            navigate(`/?peerId=${encodeURIComponent(peerId)}`, { replace: true });
             return;
           }
         }
