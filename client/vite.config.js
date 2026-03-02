@@ -21,19 +21,47 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       minify: false,
-      workbox: { mode: 'development' },
+      injectRegister: false,
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
+      injectManifest: {
+        // Keep SW output compatible with classic registration.
+        rollupFormat: 'iife',
+      },
+      devOptions: {
+        // Makes local testing of Share Target much easier.
+        enabled: true,
+      },
       manifest: {
         name: 'Instant Mirror',
         short_name: 'Instant Mirror',
         description: 'Instant Mirror',
         theme_color: '#000000',
         background_color: '#000000',
-        start_url: '/sinkhole-v2/',
+        start_url: process.env.VITE_BASE_URL || '/',
         display: 'standalone',
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: 'pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
         ],
+        share_target: {
+          action: `${(process.env.VITE_BASE_URL || '/').replace(/\/?$/, '/') }share-target`,
+          method: 'POST',
+          enctype: 'multipart/form-data',
+          params: {
+            title: 'title',
+            text: 'text',
+            url: 'url',
+            files: [
+              {
+                name: 'files',
+                // Keep it broad: images + common document/media types.
+                accept: ['image/*', 'text/*', 'application/pdf', 'audio/*', 'video/*', 'application/*'],
+              },
+            ],
+          },
+        },
       },
     }),
   ],
