@@ -68,9 +68,9 @@ export default function Scan() {
 
   if (error) {
     return (
-      <div style={styles.container}>
-        <p style={styles.error}>{error}</p>
-        <button style={styles.back} onClick={() => navigate(-1)}>
+      <div className="scan__error-view">
+        <p className="scan__error">{error}</p>
+        <button className="scan__back" onClick={() => navigate(-1)}>
           Back
         </button>
       </div>
@@ -78,20 +78,10 @@ export default function Scan() {
   }
 
   return (
-    <div style={styles.wrap}>
-      <video ref={videoRef} style={styles.video} muted playsInline />
-      <canvas ref={canvasRef} style={styles.hidden} />
-      <p style={styles.hint}>Point at the QR code to join</p>
+    <div className="scan">
+      <video ref={videoRef} className="scan__video" muted playsInline />
+      <canvas ref={canvasRef} className="scan__canvas" />
+      <p className="scan__hint">Point at the QR code to join</p>
     </div>
   );
 }
-
-const styles = {
-  wrap: { position: 'relative', width: '100%', minHeight: '100vh', background: '#000' },
-  video: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
-  hidden: { display: 'none' },
-  hint: { position: 'absolute', bottom: 32, left: 0, right: 0, textAlign: 'center', color: '#fff', margin: 0 },
-  container: { minHeight: '100vh', padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 },
-  error: { color: '#f87171', margin: 0 },
-  back: { padding: '10px 20px', background: '#333', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' },
-};

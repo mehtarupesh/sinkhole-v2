@@ -1,4 +1,5 @@
-* {
+/* ── Base ── */
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
@@ -14,26 +15,399 @@ body {
   min-height: 100vh;
 }
 
-/* Landing: Sync and choice buttons */
-.landing-sync-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
-}
-.landing-sync-btn:active {
-  transform: translateY(0);
-}
-.landing-choice-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.18);
-}
-.landing-choice-btn:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
+/* ── App footer ── */
+.app-footer {
+  position: fixed;
+  bottom: 8px;
+  right: 12px;
+  font-size: 11px;
+  color: #555;
+  font-family: monospace;
+  user-select: none;
 }
 
-/* Landing: action buttons */
-button[aria-label="Show QR code"]:hover,
-button[aria-label="Scan to join"]:hover {
+.app-footer__sep {
+  color: #444;
+}
+
+/* ── Overlay + Modals ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.modal {
+  width: 100%;
+  max-width: 320px;
+  padding: 24px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+.popup {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+.modal__header,
+.popup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.modal__title,
+.popup__title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fafafa;
+}
+
+.modal__hint {
+  margin: 0;
+  font-size: 12px;
+  color: #737373;
+}
+
+.modal__error {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #f87171;
+}
+
+/* ── Shared: icon button ── */
+.btn-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #e5e5e5;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-icon:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.15);
+}
+
+.btn-icon--active {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+.btn-close {
+  padding: 6px;
+  background: none;
+  border: none;
+  color: #a3a3a3;
+  cursor: pointer;
+  display: flex;
+  line-height: 0;
+}
+
+/* ── Shared: QR code wrapper ── */
+.qr-wrap {
+  padding: 16px;
+  background: #fff;
+  border-radius: 12px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.qr-preparing {
+  margin: 16px 0;
+  color: #737373;
+  font-size: 14px;
+}
+
+/* ── Shared: mirror textarea ── */
+.mirror__label {
+  display: block;
+  font-size: 11px;
+  color: #737373;
+  margin-bottom: 6px;
+}
+
+.mirror__textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  background: #0f0f0f;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #e5e5e5;
+  font-size: 14px;
+  resize: vertical;
+}
+
+/* ── Shared: connect form ── */
+.connect-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.connect-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #e5e5e5;
+  font-size: 13px;
+}
+
+.connect-btn {
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #e5e5e5;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.connect-error {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #f87171;
+}
+
+/* ── Connections list ── */
+.connections-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.connection-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+.connection-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: #e5e5e5;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+}
+
+.connection-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.connection-label {
+  font-weight: 500;
+}
+
+.btn-conn-close {
+  padding: 4px;
+  background: none;
+  border: none;
+  color: #737373;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Landing page ── */
+.landing {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.landing__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.landing__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: #fafafa;
+}
+
+.landing__sub {
+  margin: 0;
+  color: #737373;
+  font-size: 0.9rem;
+  max-width: 280px;
+}
+
+.landing__actions-wrap {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  max-width: 320px;
+}
+
+.landing__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.landing__conn-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* ── Host page ── */
+.host {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.host__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.host__sub {
+  margin: 0;
+  color: #888;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.host__error {
+  color: #f87171;
+  font-size: 14px;
+  margin: 0;
+}
+
+.host__mirror {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 8px;
+}
+
+.host__mirror-label {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 6px;
+}
+
+.host__mirror-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #e5e5e5;
+  font-size: 14px;
+  resize: vertical;
+}
+
+/* ── Scan page ── */
+.scan {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  background: #000;
+}
+
+.scan__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scan__canvas {
+  display: none;
+}
+
+.scan__hint {
+  position: absolute;
+  bottom: 32px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #fff;
+  margin: 0;
+}
+
+.scan__error-view {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.scan__error {
+  color: #f87171;
+  margin: 0;
+}
+
+.scan__back {
+  padding: 10px 20px;
+  background: #333;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }

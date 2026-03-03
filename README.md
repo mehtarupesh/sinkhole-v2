@@ -1,71 +1,115 @@
 # Instant Mirror
 
-One-scan sync between two devices. Cloud-assisted signaling; data stays P2P.
+One-scan sync between two devices. Cloud-assisted signaling; data stays P2P on your network.
 
-## Flow
+## How it works
 
-1. **Laptop:** Open the app, click **Start Sync**. A QR code appears (with a unique Peer ID).
-2. **Phone:** Scan the QR. The join URL opens; the app connects via the signaling server and establishes a direct WebRTC data channel.
-3. **Done.** Data flows directly between devices (P2P); signaling only helped them find each other.
+1. **Host device:** Open the app, click the signal icon → a QR code appears.
+2. **Joining device:** Scan the QR (or use the camera button on the app). The join URL opens and a direct WebRTC data channel is established.
+3. **Done.** Data flows device-to-device; the cloud only helps them find each other.
 
-## Tech (cloud-assisted P2P)
+The host gets a stable human-readable ID (e.g. `bored-ashamed-businessperson`) stored in the browser. Any device can join by scanning a QR or entering the host ID manually.
 
-- **Signaling:** Public PeerJS cloud (0.peerjs.com). Only exchanges handshake info; does not see your data.
-- **NAT traversal:** Public STUN servers (Google) so the P2P connection can be established across typical networks.
-- **Data:** WebRTC `RTCDataChannel` via PeerJS; once connected, data goes device-to-device.
-- **QR code:** When deployed, uses the app’s public URL so the phone can open the link from anywhere. When running locally, uses your LAN IP for same-network use.
+## Tech
+
+| Layer | What |
+|---|---|
+| P2P / signaling | PeerJS (WebRTC DataChannel); signaling via public PeerJS cloud |
+| NAT traversal | Public STUN (Google) |
+| Client | React 18, Vite 5, React Router 6 |
+| Server | Express — serves static build + `/api/local-ip` for LAN QR codes |
+| PWA | vite-plugin-pwa, custom service worker, web app manifest, Share Target |
 
 ## Run
 
 ```bash
-# Install
+# Install (run once)
 npm install
 cd client && npm install && cd ..
 
-# Production (build + serve on one port)
+# Development — server + Vite dev server with HMR
+npm run dev
+
+# Production — build then serve on port 3000
 npm run build && npm start
 ```
 
+Open `http://localhost:3000` (or the LAN IP printed in the terminal) in your browser.
+
+## Test
+
+Tests live in `client/src/__tests__/` and use [Vitest](https://vitest.dev/) + Testing Library.
+
 ```bash
-npm run dev
+cd client
+
+# Run all tests once
+npm test
+
+# Watch mode (re-runs on file changes)
+npm run test:watch
 ```
 
-## PWA
+### What is tested
 
-The client is a **Progressive Web App**: it registers a service worker (offline caching, `autoUpdate`) and a web app manifest. After deploy, users can “Add to Home Screen” / install the app on laptop and Android.
+| File | Covers |
+|---|---|
+| `useSync.test.js` | Core P2P sync hook — push sends correct messages, incoming data updates state, closed connections are handled safely |
+| `usePeer.test.js` | Peer lifecycle — start/stop, event wiring, idempotency, connection list management |
+| `stableHostId.test.js` | Peer ID validation and stable ID persistence in localStorage |
 
-**Icons:** The repo includes generated `pwa-192.png` and `pwa-512.png` in `client/public`. To regenerate them (e.g. after changing branding), run from `client`: `npm run generate-pwa-icons`. You can also replace those files with custom icons from [PWA Asset Generator](https://vite-pwa-org.netlify.app/assets-generator/) or [favicon.inbrowser.app](https://favicon.inbrowser.app/).
+## Project structure
 
-## Deploy (cheap/free) so the phone can connect from anywhere
+```
+client/src/
+├── hooks/
+│   ├── usePeer.js        # P2P lifecycle: create peer, accept/make connections
+│   └── useSync.js        # Sync state over a DataConnection (data-format agnostic)
+├── utils/
+│   ├── stableHostId.js   # Stable per-device peer ID (localStorage)
+│   └── getJoinUrl.js     # Build join URL; uses LAN IP on localhost
+├── components/
+│   ├── Icons.jsx         # Inline SVG icons
+│   └── MirrorPopup.jsx   # Live mirror floating popup
+├── pages/
+│   ├── Landing.jsx       # Main UI: QR, scan, manual connect, connections list
+│   ├── Host.jsx          # Dedicated host view: QR + mirror textarea
+│   └── Scan.jsx          # Camera QR scanner → redirect to /?peerId=...
+├── peerConfig.js         # PeerJS options (STUN; no custom server)
+├── App.jsx               # Routes + footer
+└── index.css             # All styles
+```
 
-Deploy the **static build** so the QR points to a public URL. No server needed—signaling is PeerJS cloud.
+## Deploy (free) — phone connects from anywhere
 
-### GitHub Pages (free)
+Deploy the static build so the QR points to a public URL. No server required — signaling uses PeerJS cloud.
 
-The repo includes a workflow that builds and deploys on every push to `main`.
+### GitHub Pages
 
-1. **One-time setup:** In your GitHub repo → **Settings** → **Pages** → under **Build and deployment**, set **Source** to **GitHub Actions** (not "Deploy from a branch"). If you leave it as a branch, GitHub will serve the repo root and you’ll see this README instead of the app.
-2. Push the latest code (including `.github/workflows/deploy-pages.yml`) to `main`. The workflow runs, builds the client, and deploys to Pages.
-3. Your app will be at `https://<username>.github.io/<repo-name>/` (or the custom domain you set).
-4. Open that URL → **Show QR code** → **Start Sync**. Scan the QR on the phone; the join link uses the same GitHub Pages URL.
+The repo includes `.github/workflows/deploy-pages.yml` which builds and deploys on every push to `main`.
 
-Once deployed, both laptop and phone open the **same public URL**; the QR points there, so the phone can connect from cellular or any Wi‑Fi.
+1. In your GitHub repo → **Settings → Pages → Build and deployment** → set source to **GitHub Actions**.
+2. Push to `main`. The workflow builds the client and deploys to Pages.
+3. App will be at `https://<username>.github.io/<repo-name>/`.
 
-## Phone shows "address unreachable"
+### PWA icons
 
-The QR code encodes `http://<your-lan-ip>:3000/join?peerId=...`. If the phone can’t reach that address:
+```bash
+cd client && npm run generate-pwa-icons
+```
 
-1. **Same Wi‑Fi**  
-   Phone and laptop must be on the **same Wi‑Fi network**. Turn off cellular data on the phone if you’re testing over Wi‑Fi only.
+## Troubleshooting
 
-2. **Firewall on the host**  
-   Allow incoming TCP on port 3000 (or turn it off temporarily to test). If the firewall is already off and the phone still can’t connect, see (4).
+### Phone shows "address unreachable"
 
-3. **AP / client isolation on the router**  
-   Many routers have **AP isolation** (or “client isolation” / “wireless isolation”) that blocks Wi‑Fi devices from talking to each other. If it’s enabled, the phone will never reach the laptop. Log into the router (e.g. 192.168.1.1) → Wireless/Wi‑Fi settings → **disable** AP/client isolation, then try again.
+The QR encodes `http://<lan-ip>:3000/?peerId=...`. If the phone can't reach it:
 
-4. **Check the URL on the laptop**  
-   After `npm start`, the terminal prints e.g. `Instant Mirror: http://10.80.5.92:3000`. Open that **exact** URL in the laptop’s browser. If it loads, the server is fine; the problem is the phone reaching that IP (network or firewall). If it doesn’t load on the laptop, the server or port is wrong.
+1. **Same Wi-Fi** — phone and laptop must be on the same network. Disable cellular data on the phone if testing locally.
+2. **Firewall** — allow incoming TCP on port 3000, or disable temporarily to test.
+3. **AP/client isolation** — many routers block Wi-Fi devices from talking to each other. Log into your router and disable AP/client isolation.
+4. **Check the URL** — after `npm start`, open the printed LAN URL (e.g. `http://10.0.0.5:3000`) in the laptop browser first. If it loads there, the server is fine and the issue is the phone reaching that IP.
+5. **Wrong IP** — if you use VPN or multiple interfaces, the chosen IP may not be reachable from the phone. Open the app at the correct IP on the laptop before starting hosting so the QR uses that address.
 
-5. **Wrong IP in the QR**  
-   The app prefers the Wi‑Fi/LAN interface (e.g. `en0` on macOS). If you use VPN or multiple networks, the chosen IP might not be the one the phone can reach. In that case, open the app on the laptop using the URL you want the phone to use (e.g. `http://192.168.1.5:3000`), then Start Sync so the QR uses that host.
+### PeerJS errors
+
+Signaling goes through the public PeerJS cloud. Check network/firewall isn't blocking WebSockets. No custom peer server is bundled in this repo — see `client/src/peerConfig.js` to add one.
