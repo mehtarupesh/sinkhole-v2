@@ -65,7 +65,7 @@ self.addEventListener('fetch', (event) => {
           const form = await request.formData();
           const share = await classifyShare(form);
           await writePendingShare(share);
-          return Response.redirect('/?pendingShare=1', 303);
+          return Response.redirect('/sinkhole-v2/?pendingShare=1', 303);
         } catch (err) {
           // On failure, redirect to the app anyway — user can add manually
           console.error('[sw] share-target error:', err);
