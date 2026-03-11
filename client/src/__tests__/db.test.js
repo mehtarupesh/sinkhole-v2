@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { addUnit, getAllUnits, deleteUnit, updateUnit } from '../utils/db';
+import { addUnit, getAllUnits, deleteUnit, updateUnit, mergeUnits } from '../utils/db';
 
 // ── Minimal in-memory IndexedDB mock ─────────────────────────────────────────
 
@@ -78,6 +78,19 @@ describe('db', () => {
       expect(typeof id).toBe('number');
     });
 
+    it('generates a uid for each new unit', async () => {
+      const id = await addUnit({ type: 'snippet', content: 'hello' });
+      const item = mockDB._store.data.get(id);
+      expect(typeof item.uid).toBe('string');
+      expect(item.uid.length).toBeGreaterThan(0);
+    });
+
+    it('generates unique uids across units', async () => {
+      const id1 = await addUnit({ type: 'snippet', content: 'a' });
+      const id2 = await addUnit({ type: 'snippet', content: 'b' });
+      expect(mockDB._store.data.get(id1).uid).not.toBe(mockDB._store.data.get(id2).uid);
+    });
+
     it('persists the unit data', async () => {
       await addUnit({ type: 'snippet', content: 'world' });
       const items = [...mockDB._store.data.values()];
@@ -153,6 +166,68 @@ describe('db', () => {
       expect(mockDB._store.data.has(id)).toBe(true);
       await deleteUnit(id);
       expect(mockDB._store.data.has(id)).toBe(false);
+    });
+  });
+
+  describe('mergeUnits', () => {
+    it('inserts units not already present by uid', async () => {
+      const added = await mergeUnits([
+        { uid: 'abc-123', type: 'snippet', content: 'from peer', createdAt: Date.now() },
+      ]);
+      expect(added).toBe(1);
+      const all = await getAllUnits();
+      expect(all).toHaveLength(1);
+      expect(all[0].content).toBe('from peer');
+    });
+
+    it('skips units whose uid already exists locally', async () => {
+      const id = await addUnit({ type: 'snippet', content: 'local' });
+      const { uid } = mockDB._store.data.get(id);
+
+      const added = await mergeUnits([
+        { uid, type: 'snippet', content: 'duplicate from peer', createdAt: Date.now() },
+      ]);
+      expect(added).toBe(0);
+      const all = await getAllUnits();
+      expect(all).toHaveLength(1);
+      expect(all[0].content).toBe('local');
+    });
+
+    it('skips units without a uid', async () => {
+      const added = await mergeUnits([
+        { type: 'snippet', content: 'no uid', createdAt: Date.now() },
+      ]);
+      expect(added).toBe(0);
+    });
+
+    it("strips the peer's local id, assigns a new one", async () => {
+      await mergeUnits([
+        { uid: 'xyz-999', id: 999, type: 'snippet', content: 'peer item', createdAt: Date.now() },
+      ]);
+      const all = await getAllUnits();
+      expect(all[0].id).not.toBe(999);
+    });
+
+    it('preserves original createdAt from the peer', async () => {
+      const peerTs = 1_000_000;
+      await mergeUnits([
+        { uid: 'ts-test', type: 'snippet', content: 'old', createdAt: peerTs },
+      ]);
+      const all = await getAllUnits();
+      expect(all[0].createdAt).toBe(peerTs);
+    });
+
+    it('deduplicates within the incoming batch itself', async () => {
+      const added = await mergeUnits([
+        { uid: 'dup-uid', type: 'snippet', content: 'first', createdAt: Date.now() },
+        { uid: 'dup-uid', type: 'snippet', content: 'second', createdAt: Date.now() },
+      ]);
+      expect(added).toBe(1);
+    });
+
+    it('returns 0 for an empty array', async () => {
+      const added = await mergeUnits([]);
+      expect(added).toBe(0);
     });
   });
 });

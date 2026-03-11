@@ -157,6 +157,36 @@ body {
   resize: vertical;
 }
 
+/* ── Mirror vault sync ── */
+.mirror-sync {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.mirror-sync__btn {
+  padding: 5px 10px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #737373;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.mirror-sync__btn:hover:not(:disabled) {
+  color: #e5e5e5;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.mirror-sync__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ── Shared: connect form ── */
 .connect-form {
   display: flex;
