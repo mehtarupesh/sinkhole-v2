@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { useSync } from '../hooks/useSync';
-import { useVaultSync } from '../hooks/useVaultSync';
 import { CloseIcon } from './Icons';
 
 function syncLabel(status, added) {
@@ -12,11 +11,12 @@ function syncLabel(status, added) {
 
 /**
  * Floating popup for live text mirroring over a DataConnection.
- * Also provides vault sync — exchanges sinkhole-db units with the peer.
+ * Vault sync is managed by the parent (Landing) so listeners are always active
+ * regardless of whether this popup is open — both peers can receive at any time.
  */
-export default function MirrorPopup({ conn, onClose }) {
+export default function MirrorPopup({ conn, onClose, onSyncVault, vaultSyncState }) {
   const [state, push] = useSync(conn, { content: '' });
-  const { sync, status, added } = useVaultSync(conn);
+  const { status, added } = vaultSyncState ?? { status: 'idle', added: 0 };
 
   const updateContent = useCallback(
     (content) => push({ ...state, content }),
@@ -44,7 +44,7 @@ export default function MirrorPopup({ conn, onClose }) {
           <button
             type="button"
             className="mirror-sync__btn"
-            onClick={sync}
+            onClick={onSyncVault}
             disabled={!conn?.open || status === 'syncing'}
           >
             {syncLabel(status, added)}

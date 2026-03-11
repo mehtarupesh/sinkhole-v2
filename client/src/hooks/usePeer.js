@@ -78,7 +78,7 @@ export function usePeer() {
       setError('');
 
       const makeDataConn = (p, isEphemeral) => {
-        const dataConn = p.connect(hostId, { reliable: true });
+        const dataConn = p.connect(hostId, { reliable: true, serialization: 'binary' });
         dataConn.on('open', () => {
           registerConn(dataConn, isEphemeral ? p : null);
           onOpen?.(dataConn);

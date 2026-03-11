@@ -1,63 +1,67 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAllUnits, mergeUnits } from '../utils/db';
 
 const VAULT_CHANNEL = 'sinkhole-vault-sync';
 
 /**
- * Exchanges sinkhole-db units with the connected peer over a DataConnection.
+ * Exchanges sinkhole-db units with connected peers over their DataConnections.
  *
- * Protocol (single message type, avoids loops):
- *   Initiator sends:  { type, units, requestBack: true }
+ * Accepts the full `connections` array so listeners are registered once per
+ * connection as soon as it exists — independently of any UI being open.
+ * This means either peer can initiate or receive a vault sync at any time.
+ *
+ * Protocol (avoids infinite loops):
+ *   Initiator sends:  { type, units, requestBack: true  }
  *   Responder sends:  { type, units, requestBack: false }
  *
- * Calling `sync()` on either peer triggers a full bidirectional exchange:
- * the initiator's units land on the responder, which then sends its own units back.
- *
- * @param {object|null} conn - A PeerJS DataConnection, or null.
- * @returns {{ sync: Function, status: string, added: number }}
- *   status: 'idle' | 'syncing' | 'done' | 'error'
- *   added:  number of units received from the peer in the last sync
+ * @param {object[]} connections - All open PeerJS DataConnections.
+ * @returns {{ sync(conn): void, getState(conn): { status, added } }}
+ *   sync    — send local units to a specific peer (triggers bidirectional exchange)
+ *   getState — current sync status for a specific connection
  */
-export function useVaultSync(conn) {
-  const [status, setStatus] = useState('idle');
-  const [added, setAdded] = useState(0);
+export function useVaultSync(connections) {
+  const [states, setStates] = useState({}); // { [conn.peer]: { status, added } }
+  const listenedRef = useRef(new Set());     // tracks which conn objects have a listener
 
   useEffect(() => {
-    if (!conn) return;
+    connections.forEach((conn) => {
+      if (listenedRef.current.has(conn)) return;
+      listenedRef.current.add(conn);
 
-    const handler = async (data) => {
-      try {
-        const msg = typeof data === 'string' ? JSON.parse(data) : data;
-        if (msg?.type !== VAULT_CHANNEL) return;
+      conn.on('data', async (data) => {
+        try {
+          const msg = typeof data === 'string' ? JSON.parse(data) : data;
+          if (msg?.type !== VAULT_CHANNEL) return;
 
-        const n = await mergeUnits(msg.units ?? []);
-        setAdded(n);
-        setStatus('done');
+          const n = await mergeUnits(msg.units ?? []);
+          setStates((prev) => ({ ...prev, [conn.peer]: { status: 'done', added: n } }));
 
-        if (msg.requestBack && conn.open) {
-          const localUnits = await getAllUnits();
-          conn.send({ type: VAULT_CHANNEL, units: localUnits, requestBack: false });
+          if (msg.requestBack && conn.open) {
+            const localUnits = await getAllUnits();
+            conn.send({ type: VAULT_CHANNEL, units: localUnits, requestBack: false });
+          }
+        } catch (_) {
+          setStates((prev) => ({ ...prev, [conn.peer]: { status: 'error', added: 0 } }));
         }
-      } catch (_) {
-        setStatus('error');
-      }
-    };
+      });
+    });
+  }, [connections]);
 
-    conn.on('data', handler);
-    return () => conn.off('data', handler);
-  }, [conn]);
-
-  const sync = useCallback(async () => {
+  const sync = useCallback(async (conn) => {
     if (!conn?.open) return;
-    setStatus('syncing');
-    setAdded(0);
+    setStates((prev) => ({ ...prev, [conn.peer]: { status: 'syncing', added: 0 } }));
     try {
       const units = await getAllUnits();
       conn.send({ type: VAULT_CHANNEL, units, requestBack: true });
     } catch (_) {
-      setStatus('error');
+      setStates((prev) => ({ ...prev, [conn.peer]: { status: 'error', added: 0 } }));
     }
-  }, [conn]);
+  }, []);
 
-  return { sync, status, added };
+  const getState = useCallback(
+    (conn) => states[conn?.peer] ?? { status: 'idle', added: 0 },
+    [states]
+  );
+
+  return { sync, getState };
 }

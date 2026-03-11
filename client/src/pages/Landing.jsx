@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { usePeer } from '../hooks/usePeer';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
+import { useVaultSync } from '../hooks/useVaultSync';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { getJoinUrl } from '../utils/getJoinUrl';
 import { getStableHostId, isValidPeerId } from '../utils/stableHostId';
@@ -16,6 +17,7 @@ export default function Landing() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { peer, connections, error, start, stop, connect, disconnect } = usePeer();
+  const { sync: syncVault, getState: getVaultState } = useVaultSync(connections);
 
   const [qrUrl, setQrUrl] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
@@ -269,7 +271,14 @@ export default function Landing() {
         </div>
       )}
 
-      {mirrorConn && <MirrorPopup conn={mirrorConn} onClose={() => setMirrorConn(null)} />}
+      {mirrorConn && (
+        <MirrorPopup
+          conn={mirrorConn}
+          onClose={() => setMirrorConn(null)}
+          onSyncVault={() => syncVault(mirrorConn)}
+          vaultSyncState={getVaultState(mirrorConn)}
+        />
+      )}
 
       {addUnitInitial !== null && (
         <AddUnitModal
