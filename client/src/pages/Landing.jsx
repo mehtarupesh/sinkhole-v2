@@ -2,10 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { usePeer } from '../hooks/usePeer';
+import { useClipboardPaste } from '../hooks/useClipboardPaste';
+import { useDrop } from '../hooks/useDrop';
+import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { getJoinUrl } from '../utils/getJoinUrl';
 import { getStableHostId, isValidPeerId } from '../utils/stableHostId';
-import { SignalStatusIcon, CameraIcon, CloseIcon, ConnectIcon } from '../components/Icons';
+import { SignalStatusIcon, CameraIcon, CloseIcon, ConnectIcon, PlusIcon, InboxIcon } from '../components/Icons';
 import MirrorPopup from '../components/MirrorPopup';
+import AddUnitModal from '../components/AddUnitModal';
+import UnitsOverlay from '../components/UnitsOverlay';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -15,10 +20,27 @@ export default function Landing() {
   const [qrUrl, setQrUrl] = useState('');
   const [showQrModal, setShowQrModal] = useState(false);
   const [mirrorConn, setMirrorConn] = useState(null);
+  // null = closed, object = open (may contain initial values for pre-population)
+  const [addUnitInitial, setAddUnitInitial] = useState(null);
+  const [showUnitsOverlay, setShowUnitsOverlay] = useState(false);
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [hostIdInput, setHostIdInput] = useState('');
   const [connectError, setConnectError] = useState('');
   const [connecting, setConnecting] = useState(false);
+
+  const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || showQrModal || showConnectModal;
+
+  const openAddUnit = useCallback((initial = {}) => {
+    setAddUnitInitial(initial);
+  }, []);
+
+  const closeAddUnit = useCallback(() => setAddUnitInitial(null), []);
+
+  // Cmd/Ctrl+V anywhere on the page opens the add modal with clipboard content
+  useClipboardPaste(openAddUnit, { disabled: isAnyModalOpen });
+
+  // Drop files or text onto the page to open the add modal
+  const isDragging = useDrop(openAddUnit, { disabled: isAnyModalOpen });
 
   // Start hosting when the QR modal opens; skip if peer already running.
   useEffect(() => {
@@ -27,6 +49,19 @@ export default function Landing() {
     getJoinUrl(id).then(setQrUrl);
     start(id);
   }, [showQrModal, peer, start]);
+
+  // Open AddUnit modal when arriving from Share Target API (?pendingShare=1).
+  const hasPendingShare = searchParams.has('pendingShare');
+  useEffect(() => {
+    if (!hasPendingShare) return;
+    setSearchParams({}, { replace: true });
+    readPendingShare().then((share) => {
+      if (share) {
+        clearPendingShare();
+        openAddUnit(share);
+      }
+    });
+  }, [hasPendingShare]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Connect when arriving with ?peerId= (e.g. from Scan or QR link).
   const urlPeerId = searchParams.get('peerId');
@@ -72,7 +107,9 @@ export default function Landing() {
   const isHostActive = !!peer;
 
   return (
-    <div className="landing">
+    <div className={`landing${isDragging ? ' landing--dragging' : ''}`}>
+      {isDragging && <div className="drop-hint">Drop to add</div>}
+
       <div className="landing__center">
         <h1 className="landing__title">Instant Mirror</h1>
         <p className="landing__sub">One scan. No buttons. Data stays on your Wi‑Fi.</p>
@@ -80,6 +117,26 @@ export default function Landing() {
 
       <div className="landing__actions-wrap">
         <div className="landing__actions">
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={() => openAddUnit()}
+            title="Add"
+            aria-label="Add"
+          >
+            <PlusIcon />
+          </button>
+
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={() => setShowUnitsOverlay(true)}
+            title="Saved"
+            aria-label="Saved"
+          >
+            <InboxIcon />
+          </button>
+
           <button
             type="button"
             className={`btn-icon${isHostActive ? ' btn-icon--active' : ''}`}
@@ -213,6 +270,18 @@ export default function Landing() {
       )}
 
       {mirrorConn && <MirrorPopup conn={mirrorConn} onClose={() => setMirrorConn(null)} />}
+
+      {addUnitInitial !== null && (
+        <AddUnitModal
+          onClose={closeAddUnit}
+          initialType={addUnitInitial.type}
+          initialContent={addUnitInitial.content}
+          initialFileName={addUnitInitial.fileName}
+          initialMimeType={addUnitInitial.mimeType}
+        />
+      )}
+
+      {showUnitsOverlay && <UnitsOverlay onClose={() => setShowUnitsOverlay(false)} />}
     </div>
   );
 }

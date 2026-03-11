@@ -1,0 +1,106 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// ── Mocks ─────────────────────────────────────────────────────────────────────
+
+vi.mock('../hooks/usePeer', () => ({
+  usePeer: () => ({ peer: null, connections: [], error: null, start: vi.fn(), stop: vi.fn(), connect: vi.fn(), disconnect: vi.fn() }),
+}));
+
+vi.mock('../hooks/useClipboardPaste', () => ({
+  useClipboardPaste: () => {},
+}));
+
+vi.mock('../hooks/useDrop', () => ({
+  useDrop: () => false,
+}));
+
+vi.mock('../utils/getJoinUrl', () => ({
+  getJoinUrl: vi.fn().mockResolvedValue('http://localhost/?peerId=test'),
+}));
+
+vi.mock('../utils/stableHostId', () => ({
+  getStableHostId: () => 'test-host-id',
+  isValidPeerId: () => false,
+}));
+
+vi.mock('../utils/pendingShare', () => ({
+  readPendingShare: vi.fn(),
+  clearPendingShare: vi.fn().mockResolvedValue(),
+}));
+
+// AddUnitModal is rendered by Landing — let it render for real so we can assert on it
+vi.mock('../utils/db', () => ({
+  addUnit: vi.fn().mockResolvedValue(1),
+  getAllUnits: vi.fn().mockResolvedValue([]),
+}));
+
+import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
+import Landing from '../pages/Landing';
+
+function renderLanding(initialPath = '/') {
+  return render(
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Landing />
+    </MemoryRouter>
+  );
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe('Landing – pending share', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    readPendingShare.mockResolvedValue(null);
+  });
+
+  it('does not open AddUnit modal when there is no pending share param', async () => {
+    renderLanding('/');
+    await waitFor(() => expect(readPendingShare).not.toHaveBeenCalled());
+    expect(screen.queryByText('Add')).not.toBeInTheDocument();
+  });
+
+  it('opens AddUnit modal when ?pendingShare=1 and IDB has data', async () => {
+    readPendingShare.mockResolvedValue({ type: 'snippet', content: 'shared text' });
+
+    renderLanding('/?pendingShare=1');
+
+    await waitFor(() => expect(screen.getByText('Add')).toBeInTheDocument());
+    // The pre-populated content should appear in the textarea
+    expect(screen.getByDisplayValue('shared text')).toBeInTheDocument();
+  });
+
+  it('calls clearPendingShare after reading', async () => {
+    readPendingShare.mockResolvedValue({ type: 'snippet', content: 'hi' });
+
+    renderLanding('/?pendingShare=1');
+
+    await waitFor(() => expect(clearPendingShare).toHaveBeenCalled());
+  });
+
+  it('does not open modal when ?pendingShare=1 but IDB returns null', async () => {
+    readPendingShare.mockResolvedValue(null);
+
+    renderLanding('/?pendingShare=1');
+
+    await waitFor(() => expect(readPendingShare).toHaveBeenCalled());
+    expect(screen.queryByText('Add')).not.toBeInTheDocument();
+  });
+
+  it('opens modal with image type when share is a file', async () => {
+    readPendingShare.mockResolvedValue({
+      type: 'image',
+      content: 'data:image/png;base64,abc',
+      fileName: 'photo.png',
+      mimeType: 'image/png',
+    });
+
+    renderLanding('/?pendingShare=1');
+
+    await waitFor(() => expect(screen.getByText('Add')).toBeInTheDocument());
+    // image type pill should be active
+    const imageBtn = screen.getByText('image');
+    expect(imageBtn.className).toContain('add-unit__type-btn--active');
+  });
+});

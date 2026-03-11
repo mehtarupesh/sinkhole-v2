@@ -1,6 +1,7 @@
 /* eslint-disable no-restricted-globals */
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
+import { writePendingShare } from './utils/pendingShare';
 
 self.skipWaiting();
 clientsClaim();
@@ -9,46 +10,48 @@ clientsClaim();
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
-function escapeHtml(input) {
-  return String(input)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
-
-function byteLength(str) {
-  try {
-    return new TextEncoder().encode(String(str ?? '')).byteLength;
-  } catch {
-    // Fallback (approx)
-    return String(str ?? '').length;
+/**
+ * Convert an ArrayBuffer to a base64 data URL.
+ * FileReader is not available in service workers, so we use btoa with chunking.
+ */
+function arrayBufferToDataUrl(buffer, mimeType) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const CHUNK = 8192;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
   }
+  return `data:${mimeType || 'application/octet-stream'};base64,${btoa(binary)}`;
 }
 
-function shareResultHtml(payload) {
-  const pretty = escapeHtml(JSON.stringify(payload, null, 2));
-  return `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Shared into Instant Mirror</title>
-    <style>
-      body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; padding: 16px; }
-      a { color: inherit; }
-      pre { background: #111; color: #eee; padding: 12px; border-radius: 8px; overflow: auto; }
-    </style>
-  </head>
-  <body>
-    <div style="margin-bottom:12px;">
-      <strong>Received share payload</strong>
-      <div style="margin-top:6px;"><a href="./">Open app</a></div>
-    </div>
-    <pre>${pretty}</pre>
-  </body>
-</html>`;
+/**
+ * Classify the share payload into the same shape AddUnitModal expects:
+ *   { type, content, fileName?, mimeType? }
+ *
+ * Priority: file > text/url combo
+ */
+async function classifyShare(form) {
+  const files = form.getAll('files').filter((f) => f?.size > 0);
+
+  if (files.length > 0) {
+    const file = files[0];
+    const buffer = await file.arrayBuffer();
+    return {
+      type: 'image', // AddUnitModal's 'image' type handles all file kinds
+      content: arrayBufferToDataUrl(buffer, file.type),
+      fileName: file.name,
+      mimeType: file.type || 'application/octet-stream',
+    };
+  }
+
+  const parts = [form.get('title'), form.get('text'), form.get('url')]
+    .map((v) => String(v ?? '').trim())
+    .filter(Boolean);
+
+  return {
+    type: 'snippet',
+    content: parts.join('\n'),
+  };
 }
 
 self.addEventListener('fetch', (event) => {
@@ -60,40 +63,15 @@ self.addEventListener('fetch', (event) => {
       (async () => {
         try {
           const form = await request.formData();
-
-          const title = form.get('title') ?? '';
-          const text = form.get('text') ?? '';
-          const sharedUrl = form.get('url') ?? '';
-
-          const rawFiles = form.getAll('files') ?? [];
-          const files = rawFiles
-            .filter((f) => typeof f === 'object' && f && 'name' in f && 'size' in f)
-            .map((f) => ({
-              name: f.name,
-              type: f.type || '',
-              size: f.size,
-            }));
-
-          const payload = {
-            title: { bytes: byteLength(title), valuePreview: String(title).slice(0, 200) },
-            text: { bytes: byteLength(text), valuePreview: String(text).slice(0, 200) },
-            url: { bytes: byteLength(sharedUrl), valuePreview: String(sharedUrl).slice(0, 200) },
-            files,
-            receivedAt: new Date().toISOString(),
-          };
-
-          return new Response(shareResultHtml(payload), {
-            status: 200,
-            headers: { 'Content-Type': 'text/html; charset=utf-8' },
-          });
+          const share = await classifyShare(form);
+          await writePendingShare(share);
+          return Response.redirect('/?pendingShare=1', 303);
         } catch (err) {
-          return new Response(`Share Target error: ${err?.message || String(err)}`, {
-            status: 500,
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-          });
+          // On failure, redirect to the app anyway — user can add manually
+          console.error('[sw] share-target error:', err);
+          return Response.redirect('/', 303);
         }
       })()
     );
   }
 });
-
