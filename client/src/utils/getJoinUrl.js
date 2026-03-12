@@ -12,5 +12,5 @@ export async function getJoinUrl(peerId) {
       baseUrl = `http://${ip}:${port}`;
     }
   } catch (_) {}
-  return `${baseUrl}/?peerId=${peerId}`;
+  return `${baseUrl}/connect?peerId=${peerId}`;
 }

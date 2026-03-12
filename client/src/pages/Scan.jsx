@@ -40,7 +40,7 @@ export default function Scan() {
           const peerId = parsePeerIdFromScan(code.data);
           if (peerId && isValidPeerId(peerId)) {
             scanningRef.current = false;
-            navigate(`/?peerId=${encodeURIComponent(peerId)}`, { replace: true });
+            navigate(`/connect?peerId=${encodeURIComponent(peerId)}`, { replace: true });
             return;
           }
         }

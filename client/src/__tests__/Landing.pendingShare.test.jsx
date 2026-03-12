@@ -4,25 +4,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
-vi.mock('../hooks/usePeer', () => ({
-  usePeer: () => ({ peer: null, connections: [], error: null, start: vi.fn(), stop: vi.fn(), connect: vi.fn(), disconnect: vi.fn() }),
-}));
-
 vi.mock('../hooks/useClipboardPaste', () => ({
   useClipboardPaste: () => {},
 }));
 
 vi.mock('../hooks/useDrop', () => ({
   useDrop: () => false,
-}));
-
-vi.mock('../utils/getJoinUrl', () => ({
-  getJoinUrl: vi.fn().mockResolvedValue('http://localhost/?peerId=test'),
-}));
-
-vi.mock('../utils/stableHostId', () => ({
-  getStableHostId: () => 'test-host-id',
-  isValidPeerId: () => false,
 }));
 
 vi.mock('../utils/pendingShare', () => ({

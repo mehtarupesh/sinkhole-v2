@@ -812,3 +812,103 @@ body {
   border-radius: 8px;
   cursor: pointer;
 }
+
+/* ── Connect page ── */
+.connect-page {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.connect-page__back {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+}
+
+.connect-panel {
+  width: 100%;
+  max-width: 320px;
+  padding: 24px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.connect-panel__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fafafa;
+}
+
+.connect-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.connect-panel__peer {
+  font-size: 13px;
+  color: #22c55e;
+  font-weight: 500;
+}
+
+.connect-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.connect-section__hint {
+  margin: 0;
+  font-size: 12px;
+  color: #737373;
+}
+
+.connect-panel__title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.connect-host-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: #525252;
+  font-size: 12px;
+  font-family: monospace;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.connect-host-id:hover {
+  color: #a3a3a3;
+}
+
+.connect-host-id__badge {
+  font-size: 10px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #404040;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 1px 5px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.connect-host-id:hover .connect-host-id__badge {
+  color: #737373;
+  border-color: rgba(255, 255, 255, 0.14);
+}
