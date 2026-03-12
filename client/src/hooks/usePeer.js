@@ -90,7 +90,17 @@ export function usePeer() {
       };
 
       if (peerRef.current && !peerRef.current.destroyed) {
-        makeDataConn(peerRef.current, false);
+        if (peerRef.current.open) {
+          makeDataConn(peerRef.current, false);
+        } else {
+          // Peer started but not yet connected to signaling server — wait for open.
+          // This happens when connect() is called immediately after start() on the same tick.
+          const p = peerRef.current;
+          const doConnect = () => makeDataConn(p, false);
+          const doError = (err) => onError?.(err.message || 'Failed to connect');
+          p.once('open', doConnect);
+          p.once('error', doError);
+        }
       } else {
         const p = new Peer(getStableHostId(), PEER_OPTIONS);
         peerRef.current = p;

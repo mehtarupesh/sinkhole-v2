@@ -11,12 +11,31 @@ vi.mock('peerjs', () => {
     constructor(id) {
       this.id = id;
       this.destroyed = false;
+      this.open = false;
       this._handlers = {};
+      this._onceHandlers = {};
       this.on = vi.fn((event, handler) => { this._handlers[event] = handler; });
-      this.connect = vi.fn();
+      this.once = vi.fn((event, handler) => {
+        this._onceHandlers[event] = this._onceHandlers[event] || [];
+        this._onceHandlers[event].push(handler);
+      });
+      this.connect = vi.fn(() => {
+        const dcHandlers = {};
+        return {
+          open: false,
+          on: vi.fn((event, handler) => { dcHandlers[event] = handler; }),
+          _trigger: (event, ...a) => dcHandlers[event]?.(...a),
+        };
+      });
       this.destroy = vi.fn(() => { this.destroyed = true; });
-      // Helper to fire registered event handlers in tests
-      this._trigger = (event, ...args) => this._handlers[event]?.(...args);
+      // Helper to fire registered event handlers in tests.
+      // Firing 'open' also sets this.open = true (mirrors real PeerJS behaviour).
+      this._trigger = (event, ...args) => {
+        if (event === 'open') this.open = true;
+        this._handlers[event]?.(...args);
+        (this._onceHandlers[event] || []).forEach(h => h(...args));
+        this._onceHandlers[event] = [];
+      };
       mockPeerInstances.push(this);
     }
   }
@@ -116,6 +135,44 @@ describe('usePeer', () => {
 
     expect(result.current.connections).toHaveLength(1);
     expect(result.current.connections[0]).toBe(mockDataConn);
+  });
+
+  // ── Regression: connect() called before peer opens (scan-QR workflow) ────────
+  //
+  // Connect page calls start() then connect() on the same mount tick. start() sets
+  // peerRef but the peer is not yet open. connect() must defer makeDataConn until
+  // the peer fires its 'open' event, otherwise the outgoing connection is silently
+  // dropped and neither device shows the connected view.
+
+  it('connect() defers the outgoing connection until the peer opens when start() was called first', () => {
+    const { result } = renderHook(() => usePeer());
+
+    // start() sets peerRef but peer is not open yet
+    act(() => { result.current.start('host-id'); });
+    const peer = mockPeerInstances[0];
+    expect(peer.open).toBe(false);
+
+    // connect() called immediately — peer not open
+    act(() => { result.current.connect('target-peer'); });
+
+    // peer.connect (PeerJS method) must NOT be called yet
+    expect(peer.connect).not.toHaveBeenCalled();
+
+    // peer opens — now the connection should be initiated
+    act(() => { peer._trigger('open'); });
+    expect(peer.connect).toHaveBeenCalledWith('target-peer', expect.any(Object));
+  });
+
+  it('connect() calls makeDataConn immediately when the peer is already open', () => {
+    const { result } = renderHook(() => usePeer());
+
+    act(() => { result.current.start('host-id'); });
+    act(() => { mockPeerInstances[0]._trigger('open'); }); // peer is now open
+
+    act(() => { result.current.connect('target-peer'); });
+
+    // peer was already open so connect is called on the same tick
+    expect(mockPeerInstances[0].connect).toHaveBeenCalledWith('target-peer', expect.any(Object));
   });
 
   it('connection is removed from list when it closes', () => {
