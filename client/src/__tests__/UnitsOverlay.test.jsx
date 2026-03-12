@@ -4,9 +4,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../utils/db', () => ({
   getAllUnits: vi.fn(),
   deleteUnit: vi.fn().mockResolvedValue(),
+  updateUnit: vi.fn(),
 }));
 
-import { getAllUnits, deleteUnit } from '../utils/db';
+import { getAllUnits, deleteUnit, updateUnit } from '../utils/db';
 import UnitsOverlay from '../components/UnitsOverlay';
 
 const SAMPLE_UNITS = [
@@ -38,6 +39,36 @@ describe('UnitsOverlay', () => {
     renderOverlay();
     await waitForLoad();
     expect(screen.getByText('Saved')).toBeInTheDocument();
+  });
+
+  it('displays the total count of units', async () => {
+    renderOverlay();
+    await waitForLoad();
+    const countBadge = screen.getByTestId('units-count');
+    expect(countBadge).toBeInTheDocument();
+    expect(countBadge).toHaveTextContent('3');
+  });
+
+  it('displays zero count when no units exist', async () => {
+    getAllUnits.mockResolvedValue([]);
+    renderOverlay();
+    await waitForLoad();
+    const countBadge = screen.getByTestId('units-count');
+    expect(countBadge).toHaveTextContent('0');
+  });
+
+  it('updates count when a unit is deleted', async () => {
+    renderOverlay();
+    await waitFor(() => screen.getAllByLabelText('Delete unit'));
+
+    const countBadge = screen.getByTestId('units-count');
+    expect(countBadge).toHaveTextContent('3');
+
+    const deleteButtons = screen.getAllByLabelText('Delete unit');
+    fireEvent.click(deleteButtons[0]);
+    fireEvent.click(deleteButtons[0]);
+
+    await waitFor(() => expect(countBadge).toHaveTextContent('2'));
   });
 
   it('renders a search input', async () => {
@@ -146,5 +177,54 @@ describe('UnitsOverlay', () => {
     const overlay = document.querySelector('.overlay');
     fireEvent.click(overlay);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  // ── Detail view ─────────────────────────────────────────────────────────────
+
+  it('opens detail view when a unit card is clicked', async () => {
+    renderOverlay();
+    await waitFor(() => screen.getByText('hello world'));
+
+    fireEvent.click(screen.getByLabelText('Open unit 1'));
+    expect(screen.getByText('Edit')).toBeInTheDocument();
+  });
+
+  it('returns to list view after saving in detail view', async () => {
+    const updatedUnit = { ...SAMPLE_UNITS[0], content: 'updated content', updatedAt: Date.now() };
+    updateUnit.mockResolvedValue(updatedUnit);
+    renderOverlay();
+    await waitFor(() => screen.getByText('hello world'));
+
+    fireEvent.click(screen.getByLabelText('Open unit 1'));
+    expect(screen.getByText('Edit')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByDisplayValue('hello world'), { target: { value: 'updated content' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
+    expect(screen.getByText('updated content')).toBeInTheDocument();
+  });
+
+  it('returns to list view when Close is clicked in detail view', async () => {
+    renderOverlay();
+    await waitFor(() => screen.getByText('hello world'));
+
+    fireEvent.click(screen.getByLabelText('Open unit 1'));
+    expect(screen.getByText('Edit')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Close'));
+    expect(screen.getByText('Saved')).toBeInTheDocument();
+  });
+
+  it('returns to list view when Escape is pressed in detail view', async () => {
+    const { onClose } = renderOverlay();
+    await waitFor(() => screen.getByText('hello world'));
+
+    fireEvent.click(screen.getByLabelText('Open unit 1'));
+    expect(screen.getByText('Edit')).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.getByText('Saved')).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

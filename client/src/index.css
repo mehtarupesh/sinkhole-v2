@@ -75,6 +75,16 @@ body {
   color: #fafafa;
 }
 
+.modal__count {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #a3a3a3;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
 .modal__hint {
   margin: 0;
   font-size: 12px;
@@ -489,106 +499,46 @@ body {
 }
 
 /* ── Unit Detail ── */
-.unit-detail {
+.unit-detail-modal {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
   overflow-y: auto;
 }
 
-.unit-detail__nav {
+.unit-detail__actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-
-.unit-detail__back {
-  padding: 0;
-  background: none;
-  border: none;
-  color: #a3a3a3;
-  font-size: 13px;
-  cursor: pointer;
-  flex: 1;
-  text-align: left;
-}
-
-.unit-detail__back:hover {
-  color: #e5e5e5;
-}
-
-.unit-detail__fields {
-  display: flex;
-  flex-direction: column;
   gap: 12px;
 }
 
-.unit-detail__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.unit-detail__label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: #737373;
-}
-
-.unit-detail__toggle {
-  padding: 0;
-  background: none;
-  border: none;
-  color: #525252;
-  font-size: 11px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.unit-detail__toggle:hover {
-  color: #a3a3a3;
-}
-
-.unit-detail__filename {
-  margin: 0;
-  font-size: 12px;
-  color: #737373;
-}
-
-.unit-detail__quote-input {
-  min-height: unset;
-  rows: 2;
-}
-
-.unit-detail__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 4px;
+.unit-detail__actions .add-unit__save-btn {
+  flex: 1;
 }
 
 .unit-detail__delete {
-  padding: 0;
+  padding: 6px 10px;
   background: none;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
   font-size: 12px;
   color: #525252;
   cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
 }
 
 .unit-detail__delete:hover {
   color: #a3a3a3;
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .unit-detail__delete--confirm {
   color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
 }
 
 .unit-detail__meta {
-  margin: 0;
+  margin: 12px 0 0;
   font-size: 11px;
   color: #404040;
   font-family: monospace;
@@ -661,6 +611,16 @@ body {
   margin: 0;
   font-size: 12px;
   color: #737373;
+}
+
+.add-unit__password-field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.add-unit__password-field .connect-input {
+  flex: 1;
 }
 
 .add-unit__voice {

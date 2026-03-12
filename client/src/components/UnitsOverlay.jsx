@@ -84,7 +84,7 @@ export default function UnitsOverlay({ onClose }) {
 
   const handleSaved = useCallback((updated) => {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-    setSelectedUnit(updated);
+    setSelectedUnit(null);
   }, []);
 
   const q = query.toLowerCase();
@@ -108,7 +108,10 @@ export default function UnitsOverlay({ onClose }) {
         ) : (
           <>
             <div className="modal__header">
-              <span className="modal__title">Saved</span>
+              <span className="modal__title">
+                Saved
+                <span className="modal__count" data-testid="units-count">{units.length}</span>
+              </span>
               <button type="button" className="btn-close" onClick={onClose} aria-label="Close">
                 <CloseIcon />
               </button>

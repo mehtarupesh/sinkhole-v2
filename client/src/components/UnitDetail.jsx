@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
+import { CloseIcon, MicIcon } from './Icons';
 import { updateUnit } from '../utils/db';
 
-const TYPE_LABELS = { snippet: 'text', password: 'pw', image: 'img' };
+const TYPE_LABELS = { snippet: 'snippet', password: 'password', image: 'image' };
 
 export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
   const [content, setContent] = useState(unit.content);
@@ -12,6 +13,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
+  const [recording, setRecording] = useState(false);
   const fileRef = useRef(null);
 
   const isDirty =
@@ -27,6 +29,15 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
     const reader = new FileReader();
     reader.onload = ({ target: { result } }) => setContent(result);
     reader.readAsDataURL(file);
+  };
+
+  const handleVoiceToggle = () => {
+    if (recording) {
+      setRecording(false);
+      setQuote((prev) => prev || '[Voice transcript placeholder]');
+    } else {
+      setRecording(true);
+    }
   };
 
   const handleSave = async () => {
@@ -52,40 +63,33 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
   };
 
   return (
-    <div className="unit-detail">
-      <div className="unit-detail__nav">
-        <button type="button" className="unit-detail__back" onClick={onBack} aria-label="Back">
-          ← Back
+    <div className="unit-detail-modal">
+      <div className="modal__header">
+        <span className="modal__title">Edit</span>
+        <button type="button" className="btn-close" onClick={onBack} aria-label="Close">
+          <CloseIcon />
         </button>
-        <span className="unit-card__type">{TYPE_LABELS[unit.type] ?? unit.type}</span>
       </div>
 
-      <div className="unit-detail__fields">
+      <div className="add-unit__type-row">
+        <span className="add-unit__type-btn add-unit__type-btn--active">
+          {TYPE_LABELS[unit.type] ?? unit.type}
+        </span>
+      </div>
+
+      <div className="add-unit__body">
         {unit.type === 'snippet' && (
-          <div className="unit-detail__field">
-            <label className="unit-detail__label">Content</label>
-            <textarea
-              className="add-unit__textarea"
-              value={content}
-              onChange={(e) => { setContent(e.target.value); setError(''); }}
-              rows={6}
-              autoFocus
-            />
-          </div>
+          <textarea
+            className="add-unit__textarea"
+            value={content}
+            onChange={(e) => { setContent(e.target.value); setError(''); }}
+            rows={4}
+            autoFocus
+          />
         )}
 
         {unit.type === 'password' && (
-          <div className="unit-detail__field">
-            <label className="unit-detail__label">
-              Password
-              <button
-                type="button"
-                className="unit-detail__toggle"
-                onClick={() => setShowPassword((v) => !v)}
-              >
-                {showPassword ? 'hide' : 'show'}
-              </button>
-            </label>
+          <div className="add-unit__password-field">
             <input
               type={showPassword ? 'text' : 'password'}
               className="connect-input"
@@ -93,42 +97,64 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
               onChange={(e) => { setContent(e.target.value); setError(''); }}
               autoFocus
             />
+            <button
+              type="button"
+              className="add-unit__type-btn"
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? 'hide' : 'show'}
+            </button>
           </div>
         )}
 
         {unit.type === 'image' && (
-          <div className="unit-detail__field">
-            <label className="unit-detail__label">
-              File
-              <button type="button" className="unit-detail__toggle" onClick={() => fileRef.current?.click()}>
-                replace
-              </button>
-            </label>
-            <input ref={fileRef} type="file" accept="image/*,*" style={{ display: 'none' }} onChange={handleFileChange} />
+          <div className="add-unit__file-area">
             {content && mimeType?.startsWith('image/') && (
               <img src={content} alt={fileName} className="add-unit__preview" />
             )}
             {content && !mimeType?.startsWith('image/') && (
-              <p className="unit-detail__filename">{fileName}</p>
+              <p className="add-unit__file-name">{fileName}</p>
             )}
+            <button
+              type="button"
+              className="add-unit__type-btn"
+              onClick={() => fileRef.current?.click()}
+            >
+              Choose different file
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*,*"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
           </div>
         )}
-
-        <div className="unit-detail__field">
-          <label className="unit-detail__label">Voice note</label>
-          <textarea
-            className="add-unit__textarea unit-detail__quote-input"
-            placeholder="No voice note"
-            value={quote}
-            onChange={(e) => { setQuote(e.target.value); setError(''); }}
-            rows={2}
-          />
-        </div>
       </div>
 
       {error && <p className="modal__error">{error}</p>}
 
-      <div className="unit-detail__footer">
+      <div className="add-unit__voice">
+        <button
+          type="button"
+          className={`add-unit__mic-btn${recording ? ' add-unit__mic-btn--active' : ''}`}
+          onClick={handleVoiceToggle}
+          aria-label={recording ? 'Stop recording' : 'Record voice note'}
+          title={recording ? 'Stop recording' : 'Add voice note'}
+        >
+          <MicIcon active={recording} />
+          {recording ? 'Recording…' : 'Voice note'}
+        </button>
+        {quote && (
+          <p className="add-unit__quote">
+            <span className="add-unit__quote-mark">"</span>
+            {quote}
+          </p>
+        )}
+      </div>
+
+      <div className="unit-detail__actions">
         <button
           type="button"
           className={`unit-detail__delete${confirmDelete ? ' unit-detail__delete--confirm' : ''}`}
@@ -139,16 +165,14 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
           {confirmDelete ? 'Confirm delete' : 'Delete'}
         </button>
 
-        {isDirty && (
-          <button
-            type="button"
-            className="connect-btn"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? '…' : 'Save'}
-          </button>
-        )}
+        <button
+          type="button"
+          className="connect-btn add-unit__save-btn"
+          onClick={handleSave}
+          disabled={saving || !isDirty}
+        >
+          {saving ? '…' : 'Save'}
+        </button>
       </div>
 
       <p className="unit-detail__meta">

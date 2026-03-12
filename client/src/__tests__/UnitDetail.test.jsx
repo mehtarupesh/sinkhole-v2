@@ -29,14 +29,19 @@ describe('UnitDetail', () => {
 
   // ── Rendering ─────────────────────────────────────────────────────────────
 
-  it('renders a Back button', () => {
+  it('renders a Close button', () => {
     renderDetail();
-    expect(screen.getByLabelText('Back')).toBeInTheDocument();
+    expect(screen.getByLabelText('Close')).toBeInTheDocument();
+  });
+
+  it('renders the Edit title', () => {
+    renderDetail();
+    expect(screen.getByText('Edit')).toBeInTheDocument();
   });
 
   it('renders the type badge', () => {
     renderDetail();
-    expect(screen.getByText('text')).toBeInTheDocument();
+    expect(screen.getByText('snippet')).toBeInTheDocument();
   });
 
   it('renders snippet content in a textarea', () => {
@@ -56,9 +61,9 @@ describe('UnitDetail', () => {
     expect(img).toBeInTheDocument();
   });
 
-  it('renders existing quote in the voice note field', () => {
+  it('renders existing quote in the voice note section', () => {
     renderDetail(WITH_QUOTE);
-    expect(screen.getByDisplayValue('voice text')).toBeInTheDocument();
+    expect(screen.getByText('voice text')).toBeInTheDocument();
   });
 
   it('shows createdAt timestamp', () => {
@@ -66,34 +71,41 @@ describe('UnitDetail', () => {
     expect(screen.getByText(/Created/)).toBeInTheDocument();
   });
 
-  it('does not show Save button when content is unchanged', () => {
+  it('renders the Save button (disabled when unchanged)', () => {
     renderDetail();
-    expect(screen.queryByText('Save')).not.toBeInTheDocument();
+    const saveBtn = screen.getByText('Save');
+    expect(saveBtn).toBeInTheDocument();
+    expect(saveBtn).toBeDisabled();
+  });
+
+  it('renders the voice note button', () => {
+    renderDetail();
+    expect(screen.getByText('Voice note')).toBeInTheDocument();
   });
 
   // ── Editing ───────────────────────────────────────────────────────────────
 
-  it('shows Save button when content changes', () => {
+  it('enables Save button when content changes', () => {
     renderDetail(SNIPPET);
     const textarea = screen.getByDisplayValue('hello world');
     fireEvent.change(textarea, { target: { value: 'changed' } });
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(screen.getByText('Save')).not.toBeDisabled();
   });
 
-  it('shows Save button when quote changes', () => {
+  it('enables Save button when voice recording adds a quote', () => {
     renderDetail(SNIPPET);
-    const quoteInput = screen.getAllByRole('textbox').find((el) => el.placeholder === 'No voice note');
-    fireEvent.change(quoteInput, { target: { value: 'new quote' } });
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Voice note'));
+    fireEvent.click(screen.getByText('Recording…'));
+    expect(screen.getByText('Save')).not.toBeDisabled();
   });
 
-  it('hides Save button after reverting to original content', () => {
+  it('disables Save button after reverting to original content', () => {
     renderDetail(SNIPPET);
     const textarea = screen.getByDisplayValue('hello world');
     fireEvent.change(textarea, { target: { value: 'changed' } });
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(screen.getByText('Save')).not.toBeDisabled();
     fireEvent.change(textarea, { target: { value: 'hello world' } });
-    expect(screen.queryByText('Save')).not.toBeInTheDocument();
+    expect(screen.getByText('Save')).toBeDisabled();
   });
 
   // ── Password show/hide ─────────────────────────────────────────────────────
@@ -104,6 +116,24 @@ describe('UnitDetail', () => {
     fireEvent.click(screen.getByText('show'));
     expect(screen.getByDisplayValue('secret').type).toBe('text');
     expect(screen.getByText('hide')).toBeInTheDocument();
+  });
+
+  // ── Voice recording stub ──────────────────────────────────────────────────
+
+  it('toggles recording state on mic button click', () => {
+    renderDetail();
+    const micBtn = screen.getByText('Voice note');
+    fireEvent.click(micBtn);
+    expect(screen.getByText('Recording…')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Recording…'));
+    expect(screen.getByText('Voice note')).toBeInTheDocument();
+  });
+
+  it('displays the stub transcript after stopping recording', () => {
+    renderDetail();
+    fireEvent.click(screen.getByText('Voice note'));
+    fireEvent.click(screen.getByText('Recording…'));
+    expect(screen.getByText(/Voice transcript placeholder/)).toBeInTheDocument();
   });
 
   // ── Saving ────────────────────────────────────────────────────────────────
@@ -124,6 +154,21 @@ describe('UnitDetail', () => {
     expect(await screen.findByText('Failed to save.')).toBeInTheDocument();
   });
 
+  it('includes the voice quote in the saved unit', async () => {
+    renderDetail(SNIPPET);
+    fireEvent.change(screen.getByDisplayValue('hello world'), { target: { value: 'note with voice' } });
+    fireEvent.click(screen.getByText('Voice note'));
+    fireEvent.click(screen.getByText('Recording…'));
+    expect(screen.getByText(/Voice transcript placeholder/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(updateUnit).toHaveBeenCalledWith(
+        SNIPPET.id,
+        expect.objectContaining({ quote: '[Voice transcript placeholder]' })
+      )
+    );
+  });
+
   // ── Delete ────────────────────────────────────────────────────────────────
 
   it('requires two clicks to delete', () => {
@@ -136,9 +181,9 @@ describe('UnitDetail', () => {
 
   // ── Navigation ────────────────────────────────────────────────────────────
 
-  it('calls onBack when Back is clicked', () => {
+  it('calls onBack when Close is clicked', () => {
     const { onBack } = renderDetail();
-    fireEvent.click(screen.getByLabelText('Back'));
+    fireEvent.click(screen.getByLabelText('Close'));
     expect(onBack).toHaveBeenCalled();
   });
 });
