@@ -179,8 +179,8 @@ export default function EnrichModal({ onClose, apiKey: apiKeyProp }) {
       if (type === 'image' && imgBase64) parts.push({ inlineData: { mimeType, data: imgBase64 } });
 
       const systemInstruction = instruction
-        ? 'You are a personal intelligence assistant. Respond with a rich, actionable response based on the user\'s instruction. Be specific and concise (2–4 paragraphs). Avoid filler. Use **bold** for key terms only.'
-        : 'You are a personal intelligence assistant. The user saved this content without a specific instruction — surface what is most useful, interesting, or actionable about it. 2–4 paragraphs. Avoid filler.';
+        ? 'You are a personal intelligence assistant. Respond with a rich, actionable response based on the user\'s instruction. Be specific and concise at maximum 3 lines. Avoid filler. Use **bold** for key terms only.'
+        : 'You are a personal intelligence assistant. The user saved this content without a specific instruction — surface what is most useful, interesting, or actionable about it. Maximum 3 lines. Avoid filler.';
 
       const er = await ai.models.generateContent({
         model: MODEL,
