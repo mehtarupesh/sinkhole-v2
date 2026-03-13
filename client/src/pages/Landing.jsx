@@ -6,6 +6,7 @@ import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { PlusIcon, InboxIcon, ConnectIcon } from '../components/Icons';
 import AddUnitModal from '../components/AddUnitModal';
 import UnitsOverlay from '../components/UnitsOverlay';
+import EnrichModal from '../components/EnrichModal';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export default function Landing() {
 
   const [addUnitInitial, setAddUnitInitial] = useState(null);
   const [showUnitsOverlay, setShowUnitsOverlay] = useState(false);
+  const [showEnrichModal, setShowEnrichModal] = useState(false);
 
   const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay;
 
@@ -45,6 +47,18 @@ export default function Landing() {
       <div className="landing__center">
         <h1 className="landing__title">Instant Mirror</h1>
         <p className="landing__sub">One scan. No buttons. Data stays on your Wi‑Fi.</p>
+        {/* temporary test button — remove once EnrichModal is wired into the real flow */}
+        <button
+          type="button"
+          onClick={() => setShowEnrichModal(true)}
+          style={{
+            marginTop: '1.5rem', padding: '0.6rem 1.4rem',
+            background: '#111', color: '#fff', border: 'none',
+            borderRadius: '999px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 500,
+          }}
+        >
+          ✦ Try Enrich
+        </button>
       </div>
 
       <div className="landing__actions-wrap">
@@ -92,6 +106,7 @@ export default function Landing() {
       )}
 
       {showUnitsOverlay && <UnitsOverlay onClose={() => setShowUnitsOverlay(false)} />}
+      {showEnrichModal && <EnrichModal onClose={() => setShowEnrichModal(false)} />}
     </div>
   );
 }
