@@ -206,6 +206,12 @@ export default function EnrichModal({ onClose, apiKey: apiKeyProp }) {
     setKeyDraft('');
   }
 
+  function deleteKey() {
+    localStorage.removeItem('gemini_key');
+    setGeminiKey('');
+    setKeyDraft('');
+  }
+
   // ── render ─────────────────────────────────────────────────────────────────
 
   return (
@@ -234,7 +240,10 @@ export default function EnrichModal({ onClose, apiKey: apiKeyProp }) {
             />
             <button style={S.primaryBtn} onClick={saveKey}>Save key</button>
             {geminiKey && (
-              <button style={S.ghostBtn} onClick={() => setShowKeySetup(false)}>Cancel</button>
+              <>
+                <button style={S.ghostBtn} onClick={() => setShowKeySetup(false)}>Cancel</button>
+                <button style={S.deleteKeyBtn} onClick={deleteKey}>Delete saved key</button>
+              </>
             )}
           </div>
         )}
@@ -524,6 +533,12 @@ const S = {
     padding: '0.75rem', borderRadius: '0.6rem',
     border: '1px solid #e5e5e5', fontSize: '0.88rem',
     fontFamily: 'monospace', outline: 'none',
+  },
+  deleteKeyBtn: {
+    width: '100%', marginTop: '0.5rem', padding: '0.65rem',
+    background: 'transparent', color: '#ff3b30',
+    border: '1px solid #ffccc9', borderRadius: '0.75rem',
+    fontSize: '0.8rem', cursor: 'pointer',
   },
 };
 
