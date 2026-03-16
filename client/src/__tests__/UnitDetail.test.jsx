@@ -3,6 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../utils/db', () => ({
   updateUnit: vi.fn(),
+  getSetting: vi.fn().mockResolvedValue('fake-key'),
+}));
+
+vi.mock('../utils/transcribe', () => ({
+  transcribeAudio: vi.fn().mockResolvedValue('transcribed'),
 }));
 
 import { updateUnit } from '../utils/db';
@@ -61,7 +66,7 @@ describe('UnitDetail', () => {
     expect(img).toBeInTheDocument();
   });
 
-  it('renders existing quote in the voice note section', () => {
+  it('renders existing quote in NoteField voice mode', () => {
     renderDetail(WITH_QUOTE);
     expect(screen.getByText('voice text')).toBeInTheDocument();
   });
@@ -71,16 +76,17 @@ describe('UnitDetail', () => {
     expect(screen.getByText(/Created/)).toBeInTheDocument();
   });
 
-  it('renders the Save button (disabled when unchanged)', () => {
+  it('renders the Save button disabled when unchanged', () => {
     renderDetail();
     const saveBtn = screen.getByText('Save');
     expect(saveBtn).toBeInTheDocument();
     expect(saveBtn).toBeDisabled();
   });
 
-  it('renders the voice note button', () => {
+  it('renders the NoteField with voice mode by default', () => {
     renderDetail();
     expect(screen.getByText('Voice note')).toBeInTheDocument();
+    expect(screen.getByText('type instead')).toBeInTheDocument();
   });
 
   // ── Editing ───────────────────────────────────────────────────────────────
@@ -92,10 +98,10 @@ describe('UnitDetail', () => {
     expect(screen.getByText('Save')).not.toBeDisabled();
   });
 
-  it('enables Save button when voice recording adds a quote', () => {
+  it('enables Save button when a typed note is added', () => {
     renderDetail(SNIPPET);
-    fireEvent.click(screen.getByText('Voice note'));
-    fireEvent.click(screen.getByText('Recording…'));
+    fireEvent.click(screen.getByText('type instead'));
+    fireEvent.change(screen.getByPlaceholderText('Type a note…'), { target: { value: 'a note' } });
     expect(screen.getByText('Save')).not.toBeDisabled();
   });
 
@@ -118,22 +124,21 @@ describe('UnitDetail', () => {
     expect(screen.getByText('hide')).toBeInTheDocument();
   });
 
-  // ── Voice recording stub ──────────────────────────────────────────────────
+  // ── NoteField integration ─────────────────────────────────────────────────
 
-  it('toggles recording state on mic button click', () => {
+  it('can switch NoteField between voice and text mode', () => {
     renderDetail();
-    const micBtn = screen.getByText('Voice note');
-    fireEvent.click(micBtn);
-    expect(screen.getByText('Recording…')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Recording…'));
+    fireEvent.click(screen.getByText('type instead'));
+    expect(screen.getByPlaceholderText('Type a note…')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('voice instead'));
     expect(screen.getByText('Voice note')).toBeInTheDocument();
   });
 
-  it('displays the stub transcript after stopping recording', () => {
-    renderDetail();
-    fireEvent.click(screen.getByText('Voice note'));
-    fireEvent.click(screen.getByText('Recording…'));
-    expect(screen.getByText(/Voice transcript placeholder/)).toBeInTheDocument();
+  it('existing quote is editable in text mode', () => {
+    renderDetail(WITH_QUOTE);
+    fireEvent.click(screen.getByText('type instead'));
+    // existing quote value should be in the text input
+    expect(screen.getByDisplayValue('voice text')).toBeInTheDocument();
   });
 
   // ── Saving ────────────────────────────────────────────────────────────────
@@ -146,27 +151,26 @@ describe('UnitDetail', () => {
     expect(onSaved).toHaveBeenCalled();
   });
 
+  it('includes a typed note in the saved unit', async () => {
+    renderDetail(SNIPPET);
+    fireEvent.change(screen.getByDisplayValue('hello world'), { target: { value: 'note with voice' } });
+    fireEvent.click(screen.getByText('type instead'));
+    fireEvent.change(screen.getByPlaceholderText('Type a note…'), { target: { value: 'typed note' } });
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() =>
+      expect(updateUnit).toHaveBeenCalledWith(
+        SNIPPET.id,
+        expect.objectContaining({ quote: 'typed note' })
+      )
+    );
+  });
+
   it('shows error message when save fails', async () => {
     updateUnit.mockRejectedValueOnce(new Error('disk full'));
     renderDetail(SNIPPET);
     fireEvent.change(screen.getByDisplayValue('hello world'), { target: { value: 'changed' } });
     fireEvent.click(screen.getByText('Save'));
     expect(await screen.findByText('Failed to save.')).toBeInTheDocument();
-  });
-
-  it('includes the voice quote in the saved unit', async () => {
-    renderDetail(SNIPPET);
-    fireEvent.change(screen.getByDisplayValue('hello world'), { target: { value: 'note with voice' } });
-    fireEvent.click(screen.getByText('Voice note'));
-    fireEvent.click(screen.getByText('Recording…'));
-    expect(screen.getByText(/Voice transcript placeholder/)).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Save'));
-    await waitFor(() =>
-      expect(updateUnit).toHaveBeenCalledWith(
-        SNIPPET.id,
-        expect.objectContaining({ quote: '[Voice transcript placeholder]' })
-      )
-    );
   });
 
   // ── Delete ────────────────────────────────────────────────────────────────

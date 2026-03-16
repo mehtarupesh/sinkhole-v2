@@ -3,6 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../utils/db', () => ({
   addUnit: vi.fn().mockResolvedValue(1),
+  getSetting: vi.fn().mockResolvedValue('fake-key'),
+}));
+
+vi.mock('../utils/transcribe', () => ({
+  transcribeAudio: vi.fn().mockResolvedValue('transcribed'),
 }));
 
 import { addUnit } from '../utils/db';
@@ -30,9 +35,10 @@ describe('AddUnitModal', () => {
     expect(screen.getByText('image')).toBeInTheDocument();
   });
 
-  it('renders the voice note button', () => {
+  it('renders the NoteField with voice mode by default', () => {
     renderModal();
     expect(screen.getByText('Voice note')).toBeInTheDocument();
+    expect(screen.getByText('type instead')).toBeInTheDocument();
   });
 
   it('renders the Save button', () => {
@@ -108,19 +114,20 @@ describe('AddUnitModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('includes the voice quote in the saved unit', async () => {
+  it('includes a typed note in the saved unit', async () => {
     renderModal();
     fireEvent.change(screen.getByPlaceholderText('Enter text…'), {
-      target: { value: 'note with voice' },
+      target: { value: 'note with quote' },
     });
-    // Start then stop recording to produce a stub transcript
-    fireEvent.click(screen.getByText('Voice note'));
-    fireEvent.click(screen.getByText('Recording…'));
-    expect(screen.getByText(/Voice transcript placeholder/)).toBeInTheDocument();
+    // Switch to text mode and type a note
+    fireEvent.click(screen.getByText('type instead'));
+    fireEvent.change(screen.getByPlaceholderText('Type a note…'), {
+      target: { value: 'my typed note' },
+    });
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() =>
       expect(addUnit).toHaveBeenCalledWith(
-        expect.objectContaining({ quote: '[Voice transcript placeholder]' })
+        expect.objectContaining({ quote: 'my typed note' })
       )
     );
   });
@@ -135,6 +142,16 @@ describe('AddUnitModal', () => {
     expect(await screen.findByText('Failed to save. Please try again.')).toBeInTheDocument();
   });
 
+  // ── NoteField integration ─────────────────────────────────────────────────
+
+  it('can switch NoteField to text mode and back', () => {
+    renderModal();
+    fireEvent.click(screen.getByText('type instead'));
+    expect(screen.getByPlaceholderText('Type a note…')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('voice instead'));
+    expect(screen.getByText('Voice note')).toBeInTheDocument();
+  });
+
   // ── Closing ───────────────────────────────────────────────────────────────
 
   it('calls onClose when the close button is clicked', () => {
@@ -145,27 +162,8 @@ describe('AddUnitModal', () => {
 
   it('calls onClose when the overlay is clicked', () => {
     const { onClose } = renderModal();
-    // The overlay is the direct parent of the modal div
     const overlay = document.querySelector('.overlay');
     fireEvent.click(overlay);
     expect(onClose).toHaveBeenCalled();
-  });
-
-  // ── Voice recording stub ──────────────────────────────────────────────────
-
-  it('toggles recording state on mic button click', () => {
-    renderModal();
-    const micBtn = screen.getByText('Voice note');
-    fireEvent.click(micBtn);
-    expect(screen.getByText('Recording…')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Recording…'));
-    expect(screen.getByText('Voice note')).toBeInTheDocument();
-  });
-
-  it('displays the stub transcript after stopping recording', () => {
-    renderModal();
-    fireEvent.click(screen.getByText('Voice note'));
-    fireEvent.click(screen.getByText('Recording…'));
-    expect(screen.getByText(/Voice transcript placeholder/)).toBeInTheDocument();
   });
 });

@@ -1,3 +1,10 @@
+/**
+ * PrototypeModal — add a unit with optional voice/text note
+ *
+ * Props:
+ *   onClose()   close the modal
+ *   onSaved()   optional callback after save
+ */
 import { useState, useRef } from 'react';
 import { CloseIcon } from './Icons';
 import { addUnit } from '../utils/db';
@@ -5,32 +12,25 @@ import NoteField from './NoteField';
 
 const UNIT_TYPES = ['snippet', 'password', 'image'];
 
-export default function AddUnitModal({
-  onClose,
-  onSaved,
-  initialType = 'snippet',
-  initialContent = '',
-  initialFileName = '',
-  initialMimeType = '',
-}) {
-  const [type, setType] = useState(initialType);
-  const [content, setContent] = useState(initialContent);
-  const [fileName, setFileName] = useState(initialFileName);
-  const [mimeType, setMimeType] = useState(initialMimeType);
+export default function PrototypeModal({ onClose, onSaved }) {
+  const [type, setType] = useState('snippet');
+  const [content, setContent] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [mimeType, setMimeType] = useState('');
   const [quote, setQuote] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef(null);
 
-  const handleTypeChange = (t) => {
+  function handleTypeChange(t) {
     setType(t);
     setContent('');
     setFileName('');
     setMimeType('');
     setError('');
-  };
+  }
 
-  const handleFileChange = (e) => {
+  function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
@@ -38,30 +38,24 @@ export default function AddUnitModal({
     const reader = new FileReader();
     reader.onload = ({ target: { result } }) => setContent(result);
     reader.readAsDataURL(file);
-  };
+  }
 
-  const handleSave = async () => {
+  async function handleSave() {
     const hasContent = type === 'image' ? !!content : !!content.trim();
     if (!hasContent) {
-      setError(type === 'image' ? 'Please select a file' : 'Content is required');
+      setError(type === 'image' ? 'Please select a file.' : 'Content is required.');
       return;
     }
     setSaving(true);
     try {
-      const unit = { type, content };
-      if (fileName) unit.fileName = fileName;
-      if (mimeType) unit.mimeType = mimeType;
-      if (quote.trim()) unit.quote = quote.trim();
-      await addUnit(unit);
+      await addUnit({ type, content, fileName, mimeType, ...(quote.trim() ? { quote: quote.trim() } : {}) });
       onSaved?.();
       onClose();
     } catch {
       setError('Failed to save. Please try again.');
       setSaving(false);
     }
-  };
-
-  const isPrepopulated = !!initialContent;
+  }
 
   return (
     <div className="overlay" onClick={onClose}>
@@ -109,48 +103,26 @@ export default function AddUnitModal({
           )}
           {type === 'image' && (
             <div className="add-unit__file-area">
-              {/* Show file picker unless content is already populated from paste/drop */}
-              {!isPrepopulated && (
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*,*"
-                  className="add-unit__file-input"
-                  onChange={handleFileChange}
-                />
-              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*,*"
+                className="add-unit__file-input"
+                onChange={handleFileChange}
+              />
               {content && mimeType?.startsWith('image/') && (
                 <img src={content} alt={fileName} className="add-unit__preview" />
               )}
               {content && !mimeType?.startsWith('image/') && (
                 <p className="add-unit__file-name">{fileName}</p>
               )}
-              {isPrepopulated && (
-                <button
-                  type="button"
-                  className="add-unit__type-btn"
-                  onClick={() => { fileRef.current?.click(); }}
-                >
-                  Choose different file
-                </button>
-              )}
-              {/* Hidden file input for replacing pre-populated file */}
-              {isPrepopulated && (
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*,*"
-                  style={{ display: 'none' }}
-                  onChange={handleFileChange}
-                />
-              )}
             </div>
           )}
         </div>
 
-        {error && <p className="modal__error">{error}</p>}
-
         <NoteField value={quote} onChange={setQuote} disabled={saving} />
+
+        {error && <p className="modal__error">{error}</p>}
 
         <button
           type="button"

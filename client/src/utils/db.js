@@ -1,6 +1,7 @@
 const DB_NAME = 'sinkhole-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_UNITS = 'units';
+const STORE_SETTINGS = 'settings';
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -8,6 +9,9 @@ function openDB() {
     req.onupgradeneeded = ({ target: { result: db } }) => {
       if (!db.objectStoreNames.contains(STORE_UNITS)) {
         db.createObjectStore(STORE_UNITS, { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
+        db.createObjectStore(STORE_SETTINGS, { keyPath: 'key' });
       }
     };
     req.onsuccess = ({ target: { result } }) => resolve(result);
@@ -60,6 +64,38 @@ export async function deleteUnit(id) {
   return new Promise((resolve, reject) => {
     const store = db.transaction(STORE_UNITS, 'readwrite').objectStore(STORE_UNITS);
     const req = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = ({ target: { error } }) => reject(error);
+  });
+}
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+
+export async function getSetting(key) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const store = db.transaction(STORE_SETTINGS, 'readonly').objectStore(STORE_SETTINGS);
+    const req = store.get(key);
+    req.onsuccess = ({ target: { result } }) => resolve(result?.value ?? null);
+    req.onerror = ({ target: { error } }) => reject(error);
+  });
+}
+
+export async function setSetting(key, value) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const store = db.transaction(STORE_SETTINGS, 'readwrite').objectStore(STORE_SETTINGS);
+    const req = store.put({ key, value });
+    req.onsuccess = () => resolve();
+    req.onerror = ({ target: { error } }) => reject(error);
+  });
+}
+
+export async function deleteSetting(key) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const store = db.transaction(STORE_SETTINGS, 'readwrite').objectStore(STORE_SETTINGS);
+    const req = store.delete(key);
     req.onsuccess = () => resolve();
     req.onerror = ({ target: { error } }) => reject(error);
   });

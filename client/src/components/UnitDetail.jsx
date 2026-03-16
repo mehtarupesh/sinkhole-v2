@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
-import { CloseIcon, MicIcon } from './Icons';
+import { CloseIcon } from './Icons';
 import { updateUnit } from '../utils/db';
+import NoteField from './NoteField';
 
 const TYPE_LABELS = { snippet: 'snippet', password: 'password', image: 'image' };
 
@@ -13,7 +14,6 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
-  const [recording, setRecording] = useState(false);
   const fileRef = useRef(null);
 
   const isDirty =
@@ -29,15 +29,6 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
     const reader = new FileReader();
     reader.onload = ({ target: { result } }) => setContent(result);
     reader.readAsDataURL(file);
-  };
-
-  const handleVoiceToggle = () => {
-    if (recording) {
-      setRecording(false);
-      setQuote((prev) => prev || '[Voice transcript placeholder]');
-    } else {
-      setRecording(true);
-    }
   };
 
   const handleSave = async () => {
@@ -135,24 +126,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
 
       {error && <p className="modal__error">{error}</p>}
 
-      <div className="add-unit__voice">
-        <button
-          type="button"
-          className={`add-unit__mic-btn${recording ? ' add-unit__mic-btn--active' : ''}`}
-          onClick={handleVoiceToggle}
-          aria-label={recording ? 'Stop recording' : 'Record voice note'}
-          title={recording ? 'Stop recording' : 'Add voice note'}
-        >
-          <MicIcon active={recording} />
-          {recording ? 'Recording…' : 'Voice note'}
-        </button>
-        {quote && (
-          <p className="add-unit__quote">
-            <span className="add-unit__quote-mark">"</span>
-            {quote}
-          </p>
-        )}
-      </div>
+      <NoteField value={quote} onChange={setQuote} disabled={saving} />
 
       <div className="unit-detail__actions">
         <button
