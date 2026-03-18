@@ -25,10 +25,10 @@ async function setHostId(page, id) {
 async function seedUnit(page, unit) {
   await page.evaluate(({ dbName, storeName, unit }) => {
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open(dbName, 1);
+      const req = indexedDB.open(dbName, 2);
       req.onupgradeneeded = ({ target: { result: db } }) => {
         if (!db.objectStoreNames.contains(storeName)) {
-          db.createObjectStore(storeName, { autoIncrement: true });
+          db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
         }
       };
       req.onsuccess = ({ target: { result: db } }) => {

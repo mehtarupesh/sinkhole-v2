@@ -47,10 +47,10 @@ export default function Landing() {
       {isDragging && <div className="drop-hint">Drop to add</div>}
 
       <div className="landing__center">
-        <h1 className="landing__title">Instant Mirror</h1>
-        <p className="landing__sub">One scan. No buttons. Data stays on your Wi‑Fi.</p>
+        <h1 className="landing__title">1Burrow</h1>
+        <p className="landing__sub">All your acorns in one place</p>
         {/* temporary test button — remove once PrototypeModal is wired into the real flow */}
-        <button
+        {/* <button
           type="button"
           onClick={() => setShowPrototypeModal(true)}
           style={{
@@ -60,7 +60,7 @@ export default function Landing() {
           }}
         >
           ✦ Try Prototype
-        </button>
+        </button> */}
       </div>
 
       <div className="landing__actions-wrap">

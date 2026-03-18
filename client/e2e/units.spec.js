@@ -21,7 +21,7 @@ test('edit snippet', async ({ page }) => {
     content: 'Original text',
     createdAt: new Date().toISOString(),
   });
-
+  await page.reload()
   await openUnitsList(page);
   await page.locator('.unit-card').first().click();
   await page.locator('.add-unit__textarea').clear();
@@ -40,7 +40,7 @@ test('delete unit', async ({ page }) => {
     content: 'To be deleted',
     createdAt: new Date().toISOString(),
   });
-
+  await page.reload()
   await openUnitsList(page);
   await page.locator('.unit-card').first().click();
   // Two clicks: first shows confirm, second deletes

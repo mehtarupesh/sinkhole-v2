@@ -9,7 +9,7 @@ module.exports = defineConfig({
   timeout: 30_000,
   use: {
     baseURL: 'http://localhost:5175',
-    headless: false,
+    headless: true,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },

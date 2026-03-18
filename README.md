@@ -38,7 +38,7 @@ Open `http://localhost:3000` (or the LAN IP printed in the terminal) in your bro
 
 ## Test
 
-Tests live in `client/src/__tests__/` and use [Vitest](https://vitest.dev/) + Testing Library.
+Unit tests live in `client/src/__tests__/` and use [Vitest](https://vitest.dev/) + Testing Library.
 
 ```bash
 cd client
@@ -57,6 +57,13 @@ npm run test:watch
 | `useSync.test.js` | Core P2P sync hook — push sends correct messages, incoming data updates state, closed connections are handled safely |
 | `usePeer.test.js` | Peer lifecycle — start/stop, event wiring, idempotency, connection list management |
 | `stableHostId.test.js` | Peer ID validation and stable ID persistence in localStorage |
+
+End to end tests live in client e2e. These can be run as follows
+
+```
+cd client
+npx playwright test --config e2e/playwright.config.js e2e/ --headed
+```
 
 ## Project structure
 
