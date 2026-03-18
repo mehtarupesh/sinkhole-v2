@@ -48,7 +48,7 @@ export default function Landing() {
 
       <div className="landing__center">
         <h1 className="landing__title">1Burrow</h1>
-        <p className="landing__sub">All your acorns in one place</p>
+        <p className="landing__sub">Stash now | Forage later</p>
         {/* temporary test button — remove once PrototypeModal is wired into the real flow */}
         {/* <button
           type="button"
