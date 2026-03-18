@@ -293,10 +293,10 @@ body {
 .landing {
   min-height: 100vh;
   padding: 24px;
+  padding-bottom: 100px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   position: relative;
 }
 
@@ -304,8 +304,22 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   text-align: center;
+  min-height: 45vh;
+}
+
+.landing--has-units .landing__center {
+  min-height: auto;
+  padding: 28px 0 24px;
+}
+
+.landing__carousels {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
 .landing__title {
@@ -871,4 +885,68 @@ body {
 .connect-host-id:hover .connect-host-id__badge {
   color: #737373;
   border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* ── Carousel ── */
+.carousel__title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #525252;
+  margin: 0 0 10px;
+}
+
+.carousel__row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: none;
+}
+
+.carousel__row::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-card {
+  flex-shrink: 0;
+  width: 180px;
+}
+
+.carousel-card .unit-card__text {
+  -webkit-line-clamp: 3;
+}
+
+.carousel-card .unit-card__img {
+  max-height: 80px;
+}
+
+/* ── Unit detail overlay nav (carousel navigation) ── */
+.unit-detail-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 440px;
+}
+
+.unit-detail-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.unit-detail-nav__count {
+  font-size: 12px;
+  color: #525252;
+  min-width: 36px;
+  text-align: center;
+}
+
+.unit-detail-nav .btn-icon:disabled {
+  opacity: 0.2;
+  cursor: default;
+  pointer-events: none;
 }
