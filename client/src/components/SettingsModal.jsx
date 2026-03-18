@@ -1,12 +1,48 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CloseIcon } from './Icons';
-import { getSetting, setSetting, deleteSetting } from '../utils/db';
+import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, mergeUnits } from '../utils/db';
+
+const TYPE_LABELS = { snippet: 'text', password: 'pw', image: 'img' };
+
+function PreviewCard({ unit }) {
+  return (
+    <div className="unit-card" style={{ cursor: 'default', pointerEvents: 'none' }}>
+      <div className="unit-card__header">
+        <span className="unit-card__type">{TYPE_LABELS[unit.type] ?? unit.type}</span>
+        <span className="unit-card__date">
+          {unit.createdAt ? new Date(unit.createdAt).toLocaleDateString() : ''}
+        </span>
+      </div>
+      <div className="unit-card__body">
+        {unit.type === 'snippet' && (
+          <p className="unit-card__text">{unit.content?.slice(0, 120)}</p>
+        )}
+        {unit.type === 'password' && (
+          <p className="unit-card__text unit-card__text--muted">
+            {'•'.repeat(Math.min(unit.content?.length ?? 0, 16))}
+          </p>
+        )}
+        {unit.type === 'image' && unit.mimeType?.startsWith('image/') && (
+          <img src={unit.content} alt={unit.fileName} className="unit-card__img" />
+        )}
+        {unit.type === 'image' && !unit.mimeType?.startsWith('image/') && (
+          <p className="unit-card__text unit-card__text--muted">{unit.fileName}</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsModal({ onClose }) {
   const [keyDraft, setKeyDraft] = useState('');
   const [hasKey, setHasKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const [preview, setPreview] = useState(null); // { newUnits, skipped }
+  const [importStatus, setImportStatus] = useState('');
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef();
 
   useEffect(() => {
     getSetting('gemini_key').then((val) => setHasKey(!!val)).catch(() => {});
@@ -34,8 +70,57 @@ export default function SettingsModal({ onClose }) {
     }
   }
 
+  async function handleExport() {
+    try {
+      const dump = await dumpDB();
+      const ts = new Date().toISOString().replace(/[:.]/g, '-');
+      const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sinkhole-${ts}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('Export failed.');
+    }
+  }
+
+  async function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportStatus('');
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const incoming = Array.isArray(data.units) ? data.units : [];
+      const existing = await getAllUnits();
+      const knownUids = new Set(existing.map((u) => u.uid).filter(Boolean));
+      const newUnits = incoming.filter((u) => u.uid && !knownUids.has(u.uid));
+      setPreview({ newUnits, skipped: incoming.length - newUnits.length });
+    } catch {
+      setImportStatus('Invalid file.');
+    }
+    e.target.value = '';
+  }
+
+  async function handleImportSave() {
+    if (!preview) return;
+    setImporting(true);
+    try {
+      const added = await mergeUnits(preview.newUnits);
+      setImportStatus(`Imported ${added} item${added !== 1 ? 's' : ''}.`);
+      setPreview(null);
+    } catch {
+      setImportStatus('Import failed.');
+    }
+    setImporting(false);
+  }
+
   return (
-    <div className="overlay" onClick={onClose}>
+    <div className="overlay" onClick={preview ? undefined : onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
           <span className="modal__title">Settings</span>
@@ -91,6 +176,79 @@ export default function SettingsModal({ onClose }) {
         )}
 
         {error && <p className="modal__error" style={{ marginTop: 8 }}>{error}</p>}
+
+        <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} />
+
+        {/* ── Export / Import ── */}
+        {preview ? (
+          <div data-testid="import-preview">
+            <p className="modal__hint" style={{ marginBottom: 8 }}>
+              {preview.newUnits.length === 0
+                ? 'Nothing new to import.'
+                : `${preview.newUnits.length} new item${preview.newUnits.length !== 1 ? 's' : ''}${preview.skipped > 0 ? ` · ${preview.skipped} already exist` : ''}`}
+            </p>
+            <div
+              style={{ maxHeight: 240, overflowY: 'auto', marginBottom: 12 }}
+              data-testid="import-preview-list"
+            >
+              {preview.newUnits.map((u, i) => (
+                <PreviewCard key={u.uid ?? i} unit={u} />
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {preview.newUnits.length > 0 && (
+                <button
+                  type="button"
+                  className="connect-btn add-unit__save-btn"
+                  onClick={handleImportSave}
+                  disabled={importing}
+                  data-testid="import-save-btn"
+                >
+                  {importing ? '…' : `Import ${preview.newUnits.length}`}
+                </button>
+              )}
+              <button
+                type="button"
+                className="unit-detail__delete"
+                onClick={() => { setPreview(null); setImportStatus(''); }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="connect-btn add-unit__save-btn"
+              onClick={handleExport}
+              data-testid="export-btn"
+            >
+              Export
+            </button>
+            <button
+              type="button"
+              className="connect-btn add-unit__save-btn"
+              onClick={() => fileInputRef.current?.click()}
+              data-testid="import-btn"
+            >
+              Import
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+              data-testid="import-file-input"
+            />
+            {importStatus && (
+              <p className="modal__hint" style={{ margin: 0 }} data-testid="import-status">
+                {importStatus}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

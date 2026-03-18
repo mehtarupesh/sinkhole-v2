@@ -101,6 +101,21 @@ export async function deleteSetting(key) {
   });
 }
 
+export async function getAllSettings() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const store = db.transaction(STORE_SETTINGS, 'readonly').objectStore(STORE_SETTINGS);
+    const req = store.getAll();
+    req.onsuccess = ({ target: { result } }) => resolve(result);
+    req.onerror = ({ target: { error } }) => reject(error);
+  });
+}
+
+export async function dumpDB() {
+  const [units, settings] = await Promise.all([getAllUnits(), getAllSettings()]);
+  return { version: DB_VERSION, exportedAt: Date.now(), units, settings };
+}
+
 /**
  * Merge units received from a peer into the local store.
  * Deduplicates by `uid` — units without a uid or whose uid already exists are skipped.

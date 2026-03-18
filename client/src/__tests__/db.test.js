@@ -1,50 +1,83 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { addUnit, getAllUnits, deleteUnit, updateUnit, mergeUnits } from '../utils/db';
+import { addUnit, getAllUnits, deleteUnit, updateUnit, mergeUnits, getAllSettings, dumpDB, setSetting } from '../utils/db';
 
 // ── Minimal in-memory IndexedDB mock ─────────────────────────────────────────
 
 function createMockDB() {
-  const store = { data: new Map(), nextId: 1 };
+  const units = { data: new Map(), nextId: 1 };
+  const settings = { data: new Map() };
 
-  const mockObjectStore = () => ({
-    add(record) {
-      const id = store.nextId++;
-      store.data.set(id, { ...record, id });
-      const req = {};
-      Promise.resolve().then(() => req.onsuccess?.({ target: { result: id } }));
-      return req;
-    },
-    get(id) {
-      const req = {};
-      Promise.resolve().then(() => req.onsuccess?.({ target: { result: store.data.get(id) } }));
-      return req;
-    },
-    put(record) {
-      store.data.set(record.id, record);
-      const req = {};
-      Promise.resolve().then(() => req.onsuccess?.());
-      return req;
-    },
-    getAll() {
-      const req = {};
-      Promise.resolve().then(() =>
-        req.onsuccess?.({ target: { result: [...store.data.values()] } })
-      );
-      return req;
-    },
-    delete(id) {
-      store.data.delete(id);
-      const req = {};
-      Promise.resolve().then(() => req.onsuccess?.());
-      return req;
-    },
-  });
+  function mockObjectStore(name) {
+    if (name === 'settings') {
+      return {
+        put(record) {
+          settings.data.set(record.key, record);
+          const req = {};
+          Promise.resolve().then(() => req.onsuccess?.());
+          return req;
+        },
+        get(key) {
+          const req = {};
+          Promise.resolve().then(() => req.onsuccess?.({ target: { result: settings.data.get(key) } }));
+          return req;
+        },
+        getAll() {
+          const req = {};
+          Promise.resolve().then(() =>
+            req.onsuccess?.({ target: { result: [...settings.data.values()] } })
+          );
+          return req;
+        },
+        delete(key) {
+          settings.data.delete(key);
+          const req = {};
+          Promise.resolve().then(() => req.onsuccess?.());
+          return req;
+        },
+      };
+    }
+    // units store
+    return {
+      add(record) {
+        const id = units.nextId++;
+        units.data.set(id, { ...record, id });
+        const req = {};
+        Promise.resolve().then(() => req.onsuccess?.({ target: { result: id } }));
+        return req;
+      },
+      get(id) {
+        const req = {};
+        Promise.resolve().then(() => req.onsuccess?.({ target: { result: units.data.get(id) } }));
+        return req;
+      },
+      put(record) {
+        units.data.set(record.id, record);
+        const req = {};
+        Promise.resolve().then(() => req.onsuccess?.());
+        return req;
+      },
+      getAll() {
+        const req = {};
+        Promise.resolve().then(() =>
+          req.onsuccess?.({ target: { result: [...units.data.values()] } })
+        );
+        return req;
+      },
+      delete(id) {
+        units.data.delete(id);
+        const req = {};
+        Promise.resolve().then(() => req.onsuccess?.());
+        return req;
+      },
+    };
+  }
 
   return {
-    _store: store,
+    _store: units, // backward compat
+    _settings: settings,
     objectStoreNames: { contains: () => false },
     createObjectStore: vi.fn(),
-    transaction: () => ({ objectStore: mockObjectStore }),
+    transaction: (_name, _mode) => ({ objectStore: (storeName) => mockObjectStore(storeName) }),
   };
 }
 
@@ -228,6 +261,61 @@ describe('db', () => {
     it('returns 0 for an empty array', async () => {
       const added = await mergeUnits([]);
       expect(added).toBe(0);
+    });
+  });
+
+  describe('getAllSettings', () => {
+    it('returns an empty array when no settings exist', async () => {
+      const result = await getAllSettings();
+      expect(result).toEqual([]);
+    });
+
+    it('returns all stored settings', async () => {
+      await setSetting('gemini_key', 'abc123');
+      await setSetting('other_key', 'xyz');
+      const result = await getAllSettings();
+      expect(result).toHaveLength(2);
+      expect(result.map((s) => s.key)).toContain('gemini_key');
+    });
+  });
+
+  describe('dumpDB', () => {
+    it('returns version, exportedAt, units, and settings', async () => {
+      const dump = await dumpDB();
+      expect(dump).toHaveProperty('version');
+      expect(dump).toHaveProperty('exportedAt');
+      expect(Array.isArray(dump.units)).toBe(true);
+      expect(Array.isArray(dump.settings)).toBe(true);
+    });
+
+    it('includes all units in the dump', async () => {
+      await addUnit({ type: 'snippet', content: 'hello' });
+      await addUnit({ type: 'password', content: 'secret' });
+      const dump = await dumpDB();
+      expect(dump.units).toHaveLength(2);
+    });
+
+    it('includes all settings in the dump', async () => {
+      await setSetting('gemini_key', 'mykey');
+      const dump = await dumpDB();
+      expect(dump.settings).toHaveLength(1);
+      expect(dump.settings[0].key).toBe('gemini_key');
+    });
+
+    it('exportedAt is a recent timestamp', async () => {
+      const before = Date.now();
+      const dump = await dumpDB();
+      const after = Date.now();
+      expect(dump.exportedAt).toBeGreaterThanOrEqual(before);
+      expect(dump.exportedAt).toBeLessThanOrEqual(after);
+    });
+
+    it('preserves image data URLs intact', async () => {
+      const dataUrl = 'data:image/png;base64,iVBORw0KGgo=';
+      await addUnit({ type: 'image', content: dataUrl, fileName: 'pic.png', mimeType: 'image/png' });
+      const dump = await dumpDB();
+      expect(dump.units[0].content).toBe(dataUrl);
+      expect(dump.units[0].fileName).toBe('pic.png');
     });
   });
 });
