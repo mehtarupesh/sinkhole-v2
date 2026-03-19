@@ -902,12 +902,12 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #525252;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
 }
 
 .carousel__row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   overflow-x: auto;
   padding-bottom: 6px;
   scrollbar-width: none;
@@ -917,17 +917,217 @@ body {
   display: none;
 }
 
-.carousel-card {
+/* ── Bleed Card ── */
+.bleed-card {
+  position: relative;
   flex-shrink: 0;
-  width: 180px;
+  width: 168px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  color: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.carousel-card .unit-card__text {
+.bleed-card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+/* Badge — frosted pill, top-left */
+.bleed-card__badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 3px 7px;
+  border-radius: 6px;
+  z-index: 2;
+}
+
+/* Date — bottom-right footnote */
+.bleed-card__date {
+  margin-top: auto;
+  padding-top: 8px;
+  font-size: 10px;
+  color: #555;
+  text-align: right;
+  display: block;
+}
+
+/* ── Image variant ── */
+.bleed-card--image {
+  padding: 0;
+  min-height: 160px;
+}
+
+.bleed-card__media {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 13px;
+}
+
+.bleed-card--quoted .bleed-card__media {
+  flex: none;
+  height: 110px;
+  border-radius: 13px 13px 0 0;
+}
+
+.bleed-card__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bleed-card--image:not(.bleed-card--quoted) .bleed-card__date {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  padding: 0;
+  margin: 0;
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.bleed-card--image.bleed-card--quoted .bleed-card__date {
+  padding: 2px 12px 10px;
+}
+
+/* ── Text variant ── */
+.bleed-card__text {
+  margin: 28px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #999;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bleed-card--quoted .bleed-card__text {
   -webkit-line-clamp: 3;
 }
 
-.carousel-card .unit-card__img {
-  max-height: 80px;
+/* ── Password variant ── */
+.bleed-card--pw {
+  text-align: center;
+}
+
+.bleed-card--pw .bleed-card__badge {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.bleed-card__pw {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #444;
+}
+
+.bleed-card__pw-mask {
+  font-size: 16px;
+  letter-spacing: 0.18em;
+  color: #3a3a3a;
+}
+
+/* ── File variant ── */
+.bleed-card--file .bleed-card__badge {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.bleed-card__file-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #444;
+  text-align: center;
+}
+
+.bleed-card__file-name {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #666;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Quote footer — the user's voice ── */
+.bleed-card__footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: left;
+}
+
+.bleed-card--image .bleed-card__footer {
+  margin-top: 0;
+  padding: 10px 12px 0;
+  border-top: none;
+}
+
+.bleed-card__quote {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #787878;
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bleed-card__quote::before {
+  content: '\201C\2009';
+  color: #555;
+}
+
+@media (min-width: 768px) {
+  .bleed-card {
+    width: 192px;
+    min-height: 156px;
+  }
+  .bleed-card--image {
+    min-height: 180px;
+  }
+  .bleed-card--quoted .bleed-card__media {
+    height: 120px;
+  }
+  .carousel__row {
+    gap: 14px;
+  }
 }
 
 /* ── Unit detail overlay nav (carousel navigation) ── */

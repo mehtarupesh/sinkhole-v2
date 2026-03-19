@@ -1,31 +1,68 @@
-const TYPE_LABELS = { snippet: 'text', password: 'pw', image: 'img' };
+const TYPE_LABELS = { snippet: 'TEXT', password: 'PW' };
+
+function relativeDate(date) {
+  const now = new Date();
+  const d = new Date(date);
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return 'today';
+  if (diff === 1) return '1d';
+  if (diff < 30) return `${diff}d`;
+  if (diff < 365) return `${Math.floor(diff / 30)}mo`;
+  return `${Math.floor(diff / 365)}y`;
+}
 
 function CarouselCard({ unit, onClick }) {
+  const isImage = unit.type === 'image' && unit.mimeType?.startsWith('image/');
+  const isFile = unit.type === 'image' && !unit.mimeType?.startsWith('image/');
+  const badge = isFile ? 'FILE' : TYPE_LABELS[unit.type];
+  const hasQuote = !!unit.quote;
+
   return (
-    <button type="button" className="unit-card carousel-card" onClick={onClick} aria-label={`Open unit ${unit.id}`}>
-      <div className="unit-card__header">
-        <span className="unit-card__type">{TYPE_LABELS[unit.type] ?? unit.type}</span>
-        <span className="unit-card__date">{new Date(unit.createdAt).toLocaleDateString()}</span>
-      </div>
+    <button
+      type="button"
+      className={`bleed-card${isImage ? ' bleed-card--image' : ''}${unit.type === 'password' ? ' bleed-card--pw' : ''}${isFile ? ' bleed-card--file' : ''}${hasQuote ? ' bleed-card--quoted' : ''}`}
+      onClick={onClick}
+      aria-label={`Open unit ${unit.id}`}
+    >
+      {badge && <span className="bleed-card__badge">{badge}</span>}
 
-      <div className="unit-card__body">
-        {unit.type === 'snippet' && (
-          <p className="unit-card__text carousel-card__text">{unit.content}</p>
-        )}
-        {unit.type === 'password' && (
-          <p className="unit-card__text unit-card__text--muted">{'•'.repeat(Math.min(unit.content.length, 12))}</p>
-        )}
-        {unit.type === 'image' && unit.mimeType?.startsWith('image/') && (
-          <img src={unit.content} alt={unit.fileName} className="unit-card__img carousel-card__img" />
-        )}
-        {unit.type === 'image' && !unit.mimeType?.startsWith('image/') && (
-          <p className="unit-card__text unit-card__text--muted">{unit.fileName}</p>
-        )}
-      </div>
-
-      {unit.quote && (
-        <p className="unit-card__quote">{unit.quote}</p>
+      {isImage && (
+        <div className="bleed-card__media">
+          <img src={unit.content} alt={unit.fileName} className="bleed-card__img" />
+        </div>
       )}
+
+      {unit.type === 'snippet' && (
+        <p className="bleed-card__text">{unit.content}</p>
+      )}
+
+      {unit.type === 'password' && (
+        <div className="bleed-card__pw">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          <span className="bleed-card__pw-mask">{'•'.repeat(Math.min(unit.content.length, 10))}</span>
+        </div>
+      )}
+
+      {isFile && (
+        <div className="bleed-card__file-body">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+          <span className="bleed-card__file-name">{unit.fileName}</span>
+        </div>
+      )}
+
+      {hasQuote && (
+        <div className="bleed-card__footer">
+          <p className="bleed-card__quote">{unit.quote}</p>
+        </div>
+      )}
+
+      <span className="bleed-card__date">{relativeDate(unit.createdAt)}</span>
     </button>
   );
 }
