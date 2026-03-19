@@ -64,16 +64,14 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
   return (
     <div className="unit-detail-modal">
       <div className="modal__header">
-        <span className="modal__title">Edit</span>
+        <div className="add-unit__type-row">
+          <span className="add-unit__type-icon add-unit__type-icon--active">
+            {TypeIcon && <TypeIcon />}
+          </span>
+        </div>
         <button type="button" className="btn-close" onClick={onBack} aria-label="Close">
           <CloseIcon />
         </button>
-      </div>
-
-      <div className="add-unit__type-row">
-        <span className="add-unit__type-icon add-unit__type-icon--active">
-          {TypeIcon && <TypeIcon />}
-        </span>
       </div>
 
       <div className="add-unit__body">

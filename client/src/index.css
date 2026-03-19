@@ -670,7 +670,6 @@ body {
 .add-unit__type-row {
   display: flex;
   gap: 6px;
-  margin-bottom: 16px;
 }
 
 .add-unit__type-icon {

@@ -57,10 +57,7 @@ Unit tests live in `client/src/__tests__/` and use [Vitest](https://vitest.dev/)
 cd client
 
 # Run all tests once
-npm test
-
-# Watch mode (re-runs on file changes)
-npm run test:watch
+npm test src/__tests__
 ```
 
 End to end tests live in client e2e. These can be run as follows

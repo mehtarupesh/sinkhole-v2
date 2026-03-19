@@ -107,7 +107,7 @@ describe('UnitsOverlay', () => {
     await waitFor(() => screen.getByText('hello world'));
 
     fireEvent.click(screen.getByLabelText('Open unit 1'));
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(document.querySelector('.unit-detail-modal')).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText('Delete unit'));
     expect(deleteUnit).not.toHaveBeenCalled();
@@ -151,7 +151,7 @@ describe('UnitsOverlay', () => {
     await waitFor(() => screen.getByText('hello world'));
 
     fireEvent.click(screen.getByLabelText('Open unit 1'));
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(document.querySelector('.unit-detail-modal')).toBeInTheDocument();
   });
 
   it('returns to list view after saving in detail view', async () => {
@@ -161,7 +161,7 @@ describe('UnitsOverlay', () => {
     await waitFor(() => screen.getByText('hello world'));
 
     fireEvent.click(screen.getByLabelText('Open unit 1'));
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(document.querySelector('.unit-detail-modal')).toBeInTheDocument();
 
     fireEvent.change(screen.getByDisplayValue('hello world'), { target: { value: 'updated content' } });
     fireEvent.click(screen.getByText('Save'));
@@ -175,7 +175,7 @@ describe('UnitsOverlay', () => {
     await waitFor(() => screen.getByText('hello world'));
 
     fireEvent.click(screen.getByLabelText('Open unit 1'));
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(document.querySelector('.unit-detail-modal')).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText('Close'));
     expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
@@ -186,7 +186,7 @@ describe('UnitsOverlay', () => {
     await waitFor(() => screen.getByText('hello world'));
 
     fireEvent.click(screen.getByLabelText('Open unit 1'));
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(document.querySelector('.unit-detail-modal')).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();

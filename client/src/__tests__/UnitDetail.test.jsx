@@ -39,15 +39,10 @@ describe('UnitDetail', () => {
     expect(screen.getByLabelText('Close')).toBeInTheDocument();
   });
 
-  it('renders the Edit title', () => {
+  it('renders the type icon in the header', () => {
     renderDetail();
-    expect(screen.getByText('Edit')).toBeInTheDocument();
-  });
-
-  it('renders the type icon', () => {
-    renderDetail();
-    const typeIcon = document.querySelector('.add-unit__type-icon--active');
-    expect(typeIcon).toBeInTheDocument();
+    const header = document.querySelector('.modal__header');
+    expect(header.querySelector('.add-unit__type-icon--active')).toBeInTheDocument();
   });
 
   it('renders snippet content in a textarea', () => {

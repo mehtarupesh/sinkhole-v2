@@ -72,25 +72,23 @@ export default function AddUnitModal({
     <div className="overlay" onClick={onClose}>
       <div className="modal add-unit-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
-          <span className="modal__title">Add</span>
+          <div className="add-unit__type-row">
+            {TYPE_CONFIG.map(({ type: t, Icon }) => (
+              <button
+                key={t}
+                type="button"
+                className={`add-unit__type-icon${type === t ? ' add-unit__type-icon--active' : ''}`}
+                onClick={() => handleTypeChange(t)}
+                aria-label={t}
+                title={t}
+              >
+                <Icon />
+              </button>
+            ))}
+          </div>
           <button type="button" className="btn-close" onClick={onClose} aria-label="Close">
             <CloseIcon />
           </button>
-        </div>
-
-        <div className="add-unit__type-row">
-          {TYPE_CONFIG.map(({ type: t, Icon }) => (
-            <button
-              key={t}
-              type="button"
-              className={`add-unit__type-icon${type === t ? ' add-unit__type-icon--active' : ''}`}
-              onClick={() => handleTypeChange(t)}
-              aria-label={t}
-              title={t}
-            >
-              <Icon />
-            </button>
-          ))}
         </div>
 
         <div className="add-unit__body">

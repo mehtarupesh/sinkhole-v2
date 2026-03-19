@@ -27,9 +27,8 @@ describe('AddUnitModal', () => {
 
   // ── Rendering ─────────────────────────────────────────────────────────────
 
-  it('renders the modal with title and type icon buttons', () => {
+  it('renders the modal with type icon buttons', () => {
     renderModal();
-    expect(screen.getByText('Add')).toBeInTheDocument();
     expect(screen.getByLabelText('snippet')).toBeInTheDocument();
     expect(screen.getByLabelText('password')).toBeInTheDocument();
     expect(screen.getByLabelText('image')).toBeInTheDocument();

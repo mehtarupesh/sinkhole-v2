@@ -45,7 +45,7 @@ describe('Landing – pending share', () => {
   it('does not open AddUnit modal when there is no pending share param', async () => {
     renderLanding('/');
     await waitFor(() => expect(readPendingShare).not.toHaveBeenCalled());
-    expect(screen.queryByText('Add')).not.toBeInTheDocument();
+    expect(document.querySelector('.add-unit-modal')).not.toBeInTheDocument();
   });
 
   it('opens AddUnit modal when ?pendingShare=1 and IDB has data', async () => {
@@ -53,7 +53,7 @@ describe('Landing – pending share', () => {
 
     renderLanding('/?pendingShare=1');
 
-    await waitFor(() => expect(screen.getByText('Add')).toBeInTheDocument());
+    await waitFor(() => expect(document.querySelector('.add-unit-modal')).toBeInTheDocument());
     // The pre-populated content should appear in the textarea
     expect(screen.getByDisplayValue('shared text')).toBeInTheDocument();
   });
@@ -72,7 +72,7 @@ describe('Landing – pending share', () => {
     renderLanding('/?pendingShare=1');
 
     await waitFor(() => expect(readPendingShare).toHaveBeenCalled());
-    expect(screen.queryByText('Add')).not.toBeInTheDocument();
+    expect(document.querySelector('.add-unit-modal')).not.toBeInTheDocument();
   });
 
   it('opens modal with image type when share is a file', async () => {
@@ -85,7 +85,7 @@ describe('Landing – pending share', () => {
 
     renderLanding('/?pendingShare=1');
 
-    await waitFor(() => expect(screen.getByText('Add')).toBeInTheDocument());
+    await waitFor(() => expect(document.querySelector('.add-unit-modal')).toBeInTheDocument());
     // image type icon should be active
     const imageBtn = screen.getByLabelText('image');
     expect(imageBtn.className).toContain('add-unit__type-icon--active');
