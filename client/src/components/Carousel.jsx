@@ -1,4 +1,13 @@
-const TYPE_LABELS = { snippet: 'TEXT', password: 'PW' };
+function BadgeIcon() {
+  const s = { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
+  return (
+    <svg {...s}>
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="15" y2="12" />
+      <line x1="3" y1="18" x2="18" y2="18" />
+    </svg>
+  );
+}
 
 function relativeDate(date) {
   const now = new Date();
@@ -11,10 +20,10 @@ function relativeDate(date) {
   return `${Math.floor(diff / 365)}y`;
 }
 
-function CarouselCard({ unit, onClick }) {
+export function CarouselCard({ unit, onClick }) {
   const isImage = unit.type === 'image' && unit.mimeType?.startsWith('image/');
   const isFile = unit.type === 'image' && !unit.mimeType?.startsWith('image/');
-  const badge = isFile ? 'FILE' : TYPE_LABELS[unit.type];
+  const hasBadge = unit.type === 'snippet';
   const hasQuote = !!unit.quote;
 
   return (
@@ -24,7 +33,7 @@ function CarouselCard({ unit, onClick }) {
       onClick={onClick}
       aria-label={`Open unit ${unit.id}`}
     >
-      {badge && <span className="bleed-card__badge">{badge}</span>}
+      {hasBadge && <span className="bleed-card__badge"><BadgeIcon /></span>}
 
       {isImage && (
         <div className="bleed-card__media">

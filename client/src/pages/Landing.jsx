@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { PlusIcon, InboxIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons';
+import { PlusIcon, SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons';
 import { getAllUnits, deleteUnit } from '../utils/db';
 import { buildCarousels } from '../utils/carouselGroups';
 import AddUnitModal from '../components/AddUnitModal';
@@ -145,7 +145,7 @@ export default function Landing() {
             <PlusIcon />
           </button>
           <button type="button" className="btn-icon" onClick={() => setShowUnitsOverlay(true)} title="Saved" aria-label="Saved">
-            <InboxIcon />
+            <SearchIcon />
           </button>
           <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
             <ConnectIcon />
