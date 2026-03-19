@@ -150,8 +150,6 @@ export default function Landing() {
           <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
             <ConnectIcon />
           </button>
-        </div>
-        <div className="landing__actions" style={{ marginTop: 8 }}>
           <button type="button" className="btn-icon" onClick={() => setShowSettingsModal(true)} title="Settings" aria-label="Settings">
             <GearIcon />
           </button>

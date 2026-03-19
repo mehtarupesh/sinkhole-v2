@@ -337,17 +337,25 @@ body {
 }
 
 .landing__actions-wrap {
-  position: absolute;
+  position: fixed;
   bottom: 24px;
-  left: 24px;
-  max-width: 320px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
 }
 
 .landing__actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(18, 18, 18, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  white-space: nowrap;
 }
 
 .landing__conn-row {
