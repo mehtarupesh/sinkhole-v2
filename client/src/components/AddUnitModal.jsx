@@ -1,9 +1,14 @@
 import { useState, useRef } from 'react';
-import { CloseIcon } from './Icons';
+import { CloseIcon, SnippetTypeIcon, LockTypeIcon, ImageTypeIcon } from './Icons';
 import { addUnit } from '../utils/db';
 import NoteField from './NoteField';
+import ImageLightbox from './ImageLightbox';
 
-const UNIT_TYPES = ['snippet', 'password', 'image'];
+const TYPE_CONFIG = [
+  { type: 'snippet', Icon: SnippetTypeIcon },
+  { type: 'password', Icon: LockTypeIcon },
+  { type: 'image', Icon: ImageTypeIcon },
+];
 
 export default function AddUnitModal({
   onClose,
@@ -18,6 +23,8 @@ export default function AddUnitModal({
   const [fileName, setFileName] = useState(initialFileName);
   const [mimeType, setMimeType] = useState(initialMimeType);
   const [quote, setQuote] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef(null);
@@ -61,8 +68,6 @@ export default function AddUnitModal({
     }
   };
 
-  const isPrepopulated = !!initialContent;
-
   return (
     <div className="overlay" onClick={onClose}>
       <div className="modal add-unit-modal" onClick={(e) => e.stopPropagation()}>
@@ -74,14 +79,16 @@ export default function AddUnitModal({
         </div>
 
         <div className="add-unit__type-row">
-          {UNIT_TYPES.map((t) => (
+          {TYPE_CONFIG.map(({ type: t, Icon }) => (
             <button
               key={t}
               type="button"
-              className={`add-unit__type-btn${type === t ? ' add-unit__type-btn--active' : ''}`}
+              className={`add-unit__type-icon${type === t ? ' add-unit__type-icon--active' : ''}`}
               onClick={() => handleTypeChange(t)}
+              aria-label={t}
+              title={t}
             >
-              {t}
+              <Icon />
             </button>
           ))}
         </div>
@@ -93,62 +100,80 @@ export default function AddUnitModal({
               placeholder="Enter text…"
               value={content}
               onChange={(e) => { setContent(e.target.value); setError(''); }}
-              rows={4}
               autoFocus
             />
           )}
+
           {type === 'password' && (
-            <input
-              type="password"
-              className="connect-input"
-              placeholder="Enter password…"
-              value={content}
-              onChange={(e) => { setContent(e.target.value); setError(''); }}
-              autoFocus
-            />
+            <div className="add-unit__password-wrap">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="add-unit__password-input"
+                placeholder="Enter password…"
+                value={content}
+                onChange={(e) => { setContent(e.target.value); setError(''); }}
+                autoFocus
+              />
+              <button
+                type="button"
+                className="add-unit__password-toggle"
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           )}
+
           {type === 'image' && (
             <div className="add-unit__file-area">
-              {/* Show file picker unless content is already populated from paste/drop */}
-              {!isPrepopulated && (
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*,*"
-                  className="add-unit__file-input"
-                  onChange={handleFileChange}
-                />
+              {!content && (
+                <button
+                  type="button"
+                  className="add-unit__drop-zone"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <ImageTypeIcon />
+                  <span>Choose a file</span>
+                </button>
               )}
               {content && mimeType?.startsWith('image/') && (
-                <img src={content} alt={fileName} className="add-unit__preview" />
+                <button
+                  type="button"
+                  className="add-unit__preview-btn"
+                  onClick={() => setShowLightbox(true)}
+                  aria-label="View full image"
+                >
+                  <img src={content} alt={fileName} className="add-unit__preview" />
+                </button>
               )}
               {content && !mimeType?.startsWith('image/') && (
                 <p className="add-unit__file-name">{fileName}</p>
               )}
-              {isPrepopulated && (
+              {content && (
                 <button
                   type="button"
-                  className="add-unit__type-btn"
-                  onClick={() => { fileRef.current?.click(); }}
+                  className="add-unit__change-file"
+                  onClick={() => fileRef.current?.click()}
                 >
-                  Choose different file
+                  Choose Different File
                 </button>
               )}
-              {/* Hidden file input for replacing pre-populated file */}
-              {isPrepopulated && (
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*,*"
-                  style={{ display: 'none' }}
-                  onChange={handleFileChange}
-                />
-              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*,*"
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
             </div>
           )}
         </div>
 
         {error && <p className="modal__error">{error}</p>}
+
+        {showLightbox && content && mimeType?.startsWith('image/') && (
+          <ImageLightbox src={content} alt={fileName} onClose={() => setShowLightbox(false)} />
+        )}
 
         <NoteField value={quote} onChange={setQuote} disabled={saving} />
 

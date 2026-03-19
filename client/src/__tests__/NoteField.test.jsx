@@ -45,7 +45,7 @@ describe('NoteField', () => {
 
   it('renders voice mode by default with mic button and mode toggle', () => {
     render(<NoteField value="" onChange={vi.fn()} />);
-    expect(screen.getByText('Voice note')).toBeInTheDocument();
+    expect(screen.getByText('Record note')).toBeInTheDocument();
     expect(screen.getByText('type instead')).toBeInTheDocument();
   });
 
@@ -60,22 +60,22 @@ describe('NoteField', () => {
   it('switches to text mode on "type instead"', () => {
     render(<NoteField value="" onChange={vi.fn()} />);
     fireEvent.click(screen.getByText('type instead'));
-    expect(screen.getByPlaceholderText('Type a note…')).toBeInTheDocument();
-    expect(screen.getByText('voice instead')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Add a note…')).toBeInTheDocument();
+    expect(screen.getByText('voice')).toBeInTheDocument();
   });
 
-  it('switches back to voice mode on "voice instead"', () => {
+  it('switches back to voice mode on "voice" toggle', () => {
     render(<NoteField value="" onChange={vi.fn()} />);
     fireEvent.click(screen.getByText('type instead'));
-    fireEvent.click(screen.getByText('voice instead'));
-    expect(screen.getByText('Voice note')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('voice'));
+    expect(screen.getByText('Record note')).toBeInTheDocument();
   });
 
   it('calls onChange("") when switching to voice (clears old value)', () => {
     const onChange = vi.fn();
     render(<NoteField value="old" onChange={onChange} />);
     fireEvent.click(screen.getByText('type instead')); // voice → text
-    fireEvent.click(screen.getByText('voice instead')); // text → voice: clears
+    fireEvent.click(screen.getByText('voice')); // text → voice: clears
     expect(onChange).toHaveBeenLastCalledWith('');
   });
 
@@ -96,7 +96,7 @@ describe('NoteField', () => {
     const onChange = vi.fn();
     render(<NoteField value="" onChange={onChange} />);
     fireEvent.click(screen.getByText('type instead'));
-    fireEvent.change(screen.getByPlaceholderText('Type a note…'), { target: { value: 'typed note' } });
+    fireEvent.change(screen.getByPlaceholderText('Add a note…'), { target: { value: 'typed note' } });
     expect(onChange).toHaveBeenCalledWith('typed note');
   });
 
@@ -113,22 +113,22 @@ describe('NoteField', () => {
 
   it('starts recording and shows stop button', async () => {
     render(<NoteField value="" onChange={vi.fn()} />);
-    await act(async () => { fireEvent.click(screen.getByText('Voice note')); });
+    await act(async () => { fireEvent.click(screen.getByText('Record note')); });
     expect(mockGetUserMedia).toHaveBeenCalledWith({ audio: true });
     expect(mockRecorder.start).toHaveBeenCalled();
-    expect(screen.getByText(/Stop/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Stop recording')).toBeInTheDocument();
   });
 
   it('hides mode toggle while recording', async () => {
     render(<NoteField value="" onChange={vi.fn()} />);
-    await act(async () => { fireEvent.click(screen.getByText('Voice note')); });
+    await act(async () => { fireEvent.click(screen.getByText('Record note')); });
     expect(screen.queryByText('type instead')).not.toBeInTheDocument();
   });
 
   it('shows error when microphone is denied', async () => {
     mockGetUserMedia.mockRejectedValueOnce(new Error('denied'));
     render(<NoteField value="" onChange={vi.fn()} />);
-    await act(async () => { fireEvent.click(screen.getByText('Voice note')); });
+    await act(async () => { fireEvent.click(screen.getByText('Record note')); });
     expect(await screen.findByText('Microphone access denied.')).toBeInTheDocument();
   });
 
@@ -137,8 +137,8 @@ describe('NoteField', () => {
   it('transcribes on stop and calls onChange with transcript', async () => {
     const onChange = vi.fn();
     render(<NoteField value="" onChange={onChange} />);
-    await act(async () => { fireEvent.click(screen.getByText('Voice note')); });
-    await act(async () => { fireEvent.click(screen.getByText(/Stop/)); });
+    await act(async () => { fireEvent.click(screen.getByText('Record note')); });
+    await act(async () => { fireEvent.click(screen.getByLabelText('Stop recording')); });
     await waitFor(() => expect(transcribeAudio).toHaveBeenCalled());
     await waitFor(() => expect(onChange).toHaveBeenCalledWith('hello transcript'));
   });
@@ -148,22 +148,22 @@ describe('NoteField', () => {
     // Simulate done state by triggering full flow
     await act(async () => { fireEvent.click(screen.getByLabelText('Discard note')); });
     // After discard, state resets to idle — mic button shows "Voice note" again
-    expect(screen.getByText('Voice note')).toBeInTheDocument();
+    expect(screen.getByText('Record note')).toBeInTheDocument();
   });
 
   it('shows error when no API key during transcription', async () => {
     getSetting.mockResolvedValueOnce(null);
     render(<NoteField value="" onChange={vi.fn()} />);
-    await act(async () => { fireEvent.click(screen.getByText('Voice note')); });
-    await act(async () => { fireEvent.click(screen.getByText(/Stop/)); });
+    await act(async () => { fireEvent.click(screen.getByText('Record note')); });
+    await act(async () => { fireEvent.click(screen.getByLabelText('Stop recording')); });
     await waitFor(() => expect(screen.getByText(/No API key/)).toBeInTheDocument());
   });
 
   it('shows error when transcription fails', async () => {
     transcribeAudio.mockRejectedValueOnce(new Error('API error'));
     render(<NoteField value="" onChange={vi.fn()} />);
-    await act(async () => { fireEvent.click(screen.getByText('Voice note')); });
-    await act(async () => { fireEvent.click(screen.getByText(/Stop/)); });
+    await act(async () => { fireEvent.click(screen.getByText('Record note')); });
+    await act(async () => { fireEvent.click(screen.getByLabelText('Stop recording')); });
     await waitFor(() => expect(screen.getByText('API error')).toBeInTheDocument());
   });
 

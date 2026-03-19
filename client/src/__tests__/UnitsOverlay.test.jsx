@@ -35,40 +35,10 @@ describe('UnitsOverlay', () => {
 
   // ── Rendering ─────────────────────────────────────────────────────────────
 
-  it('renders the Saved title', async () => {
+  it('renders the search input', async () => {
     renderOverlay();
     await waitForLoad();
-    expect(screen.getByText('Saved')).toBeInTheDocument();
-  });
-
-  it('displays the total count of units', async () => {
-    renderOverlay();
-    await waitForLoad();
-    const countBadge = screen.getByTestId('units-count');
-    expect(countBadge).toBeInTheDocument();
-    expect(countBadge).toHaveTextContent('3');
-  });
-
-  it('displays zero count when no units exist', async () => {
-    getAllUnits.mockResolvedValue([]);
-    renderOverlay();
-    await waitForLoad();
-    const countBadge = screen.getByTestId('units-count');
-    expect(countBadge).toHaveTextContent('0');
-  });
-
-  it('updates count when a unit is deleted', async () => {
-    renderOverlay();
-    await waitFor(() => screen.getAllByLabelText('Delete unit'));
-
-    const countBadge = screen.getByTestId('units-count');
-    expect(countBadge).toHaveTextContent('3');
-
-    const deleteButtons = screen.getAllByLabelText('Delete unit');
-    fireEvent.click(deleteButtons[0]);
-    fireEvent.click(deleteButtons[0]);
-
-    await waitFor(() => expect(countBadge).toHaveTextContent('2'));
+    expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
   });
 
   it('renders a search input', async () => {
@@ -130,29 +100,32 @@ describe('UnitsOverlay', () => {
     expect(screen.queryByText('hello world')).not.toBeInTheDocument();
   });
 
-  // ── Delete ────────────────────────────────────────────────────────────────
+  // ── Delete (via detail view) ─────────────────────────────────────────────
 
   it('requires two clicks to delete (confirm pattern)', async () => {
     renderOverlay();
-    await waitFor(() => screen.getAllByLabelText('Delete unit'));
+    await waitFor(() => screen.getByText('hello world'));
 
-    const deleteButtons = screen.getAllByLabelText('Delete unit');
-    fireEvent.click(deleteButtons[0]);
+    fireEvent.click(screen.getByLabelText('Open unit 1'));
+    expect(screen.getByText('Edit')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Delete unit'));
     expect(deleteUnit).not.toHaveBeenCalled();
 
-    fireEvent.click(deleteButtons[0]);
-    await waitFor(() => expect(deleteUnit).toHaveBeenCalledWith(SAMPLE_UNITS[2].id));
+    fireEvent.click(screen.getByText('Confirm delete'));
+    await waitFor(() => expect(deleteUnit).toHaveBeenCalledWith(SAMPLE_UNITS[0].id));
   });
 
   it('removes deleted unit from the list', async () => {
     renderOverlay();
-    await waitFor(() => screen.getAllByLabelText('Delete unit'));
+    await waitFor(() => screen.getByText('hello world'));
 
-    const deleteButtons = screen.getAllByLabelText('Delete unit');
-    fireEvent.click(deleteButtons[0]);
-    fireEvent.click(deleteButtons[0]);
+    fireEvent.click(screen.getByLabelText('Open unit 1'));
+    fireEvent.click(screen.getByLabelText('Delete unit'));
+    fireEvent.click(screen.getByText('Confirm delete'));
 
-    await waitFor(() => expect(screen.queryByText('another note')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument());
+    expect(screen.queryByText('hello world')).not.toBeInTheDocument();
   });
 
   // ── Closing ───────────────────────────────────────────────────────────────
@@ -168,14 +141,6 @@ describe('UnitsOverlay', () => {
     const { onClose } = renderOverlay();
     await waitForLoad();
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(onClose).toHaveBeenCalled();
-  });
-
-  it('calls onClose when the overlay backdrop is clicked', async () => {
-    const { onClose } = renderOverlay();
-    await waitForLoad();
-    const overlay = document.querySelector('.overlay');
-    fireEvent.click(overlay);
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -201,7 +166,7 @@ describe('UnitsOverlay', () => {
     fireEvent.change(screen.getByDisplayValue('hello world'), { target: { value: 'updated content' } });
     fireEvent.click(screen.getByText('Save'));
 
-    await waitFor(() => expect(screen.getByText('Saved')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument());
     expect(screen.getByText('updated content')).toBeInTheDocument();
   });
 
@@ -213,7 +178,7 @@ describe('UnitsOverlay', () => {
     expect(screen.getByText('Edit')).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText('Close'));
-    expect(screen.getByText('Saved')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
   });
 
   it('returns to list view when Escape is pressed in detail view', async () => {
@@ -224,7 +189,7 @@ describe('UnitsOverlay', () => {
     expect(screen.getByText('Edit')).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.getByText('Saved')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
 });

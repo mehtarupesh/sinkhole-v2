@@ -44,9 +44,10 @@ describe('UnitDetail', () => {
     expect(screen.getByText('Edit')).toBeInTheDocument();
   });
 
-  it('renders the type badge', () => {
+  it('renders the type icon', () => {
     renderDetail();
-    expect(screen.getByText('snippet')).toBeInTheDocument();
+    const typeIcon = document.querySelector('.add-unit__type-icon--active');
+    expect(typeIcon).toBeInTheDocument();
   });
 
   it('renders snippet content in a textarea', () => {
@@ -85,7 +86,7 @@ describe('UnitDetail', () => {
 
   it('renders the NoteField with voice mode by default', () => {
     renderDetail();
-    expect(screen.getByText('Voice note')).toBeInTheDocument();
+    expect(screen.getByText('Record note')).toBeInTheDocument();
     expect(screen.getByText('type instead')).toBeInTheDocument();
   });
 
@@ -101,7 +102,7 @@ describe('UnitDetail', () => {
   it('enables Save button when a typed note is added', () => {
     renderDetail(SNIPPET);
     fireEvent.click(screen.getByText('type instead'));
-    fireEvent.change(screen.getByPlaceholderText('Type a note…'), { target: { value: 'a note' } });
+    fireEvent.change(screen.getByPlaceholderText('Add a note…'), { target: { value: 'a note' } });
     expect(screen.getByText('Save')).not.toBeDisabled();
   });
 
@@ -119,9 +120,9 @@ describe('UnitDetail', () => {
   it('reveals password on show toggle', () => {
     renderDetail(PASSWORD);
     expect(screen.getByDisplayValue('secret').type).toBe('password');
-    fireEvent.click(screen.getByText('show'));
+    fireEvent.click(screen.getByText('Show'));
     expect(screen.getByDisplayValue('secret').type).toBe('text');
-    expect(screen.getByText('hide')).toBeInTheDocument();
+    expect(screen.getByText('Hide')).toBeInTheDocument();
   });
 
   // ── NoteField integration ─────────────────────────────────────────────────
@@ -129,9 +130,9 @@ describe('UnitDetail', () => {
   it('can switch NoteField between voice and text mode', () => {
     renderDetail();
     fireEvent.click(screen.getByText('type instead'));
-    expect(screen.getByPlaceholderText('Type a note…')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('voice instead'));
-    expect(screen.getByText('Voice note')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Add a note…')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('voice'));
+    expect(screen.getByText('Record note')).toBeInTheDocument();
   });
 
   it('existing quote is editable in text mode', () => {
@@ -155,7 +156,7 @@ describe('UnitDetail', () => {
     renderDetail(SNIPPET);
     fireEvent.change(screen.getByDisplayValue('hello world'), { target: { value: 'note with voice' } });
     fireEvent.click(screen.getByText('type instead'));
-    fireEvent.change(screen.getByPlaceholderText('Type a note…'), { target: { value: 'typed note' } });
+    fireEvent.change(screen.getByPlaceholderText('Add a note…'), { target: { value: 'typed note' } });
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() =>
       expect(updateUnit).toHaveBeenCalledWith(

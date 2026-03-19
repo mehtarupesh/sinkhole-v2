@@ -126,7 +126,7 @@ test('import saves new units', async ({ page }) => {
   // Verify the unit is now in the DB
   await page.locator('.btn-close').click(); // close settings
   await openUnitsList(page);
-  await expect(page.locator('.unit-card__text').first()).toContainText('Saved via import');
+  await expect(page.locator('.bleed-card__text').first()).toContainText('Saved via import');
 });
 
 // ── 5. Import deduplicates — skips already-known units ───────────────────────

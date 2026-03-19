@@ -15,7 +15,7 @@ async function seedUnits(page, count = 6) {
 
 // Returns the first visible carousel card on the landing page
 async function getCarouselCards(page) {
-  return page.locator('.carousel-card');
+  return page.locator('.bleed-card');
 }
 
 // ── 1. Opening a carousel card shows UnitDetail with nav ─────────────────────
@@ -42,7 +42,7 @@ test('nav counter shows position within carousel', async ({ page }) => {
   await cards.first().waitFor({ state: 'visible' });
 
   // Click the second card in the first carousel
-  const firstCarouselCards = page.locator('.carousel').first().locator('.carousel-card');
+  const firstCarouselCards = page.locator('.carousel').first().locator('.bleed-card');
   const cardCount = await firstCarouselCards.count();
   // Need at least 2 cards to test navigation; if not enough skip gracefully
   if (cardCount < 2) return;
@@ -71,7 +71,7 @@ test('Next button navigates to the next item', async ({ page }) => {
   await page.reload();
 
   // Open first card in the first carousel that has at least 2 cards
-  const firstCarouselCards = page.locator('.carousel').first().locator('.carousel-card');
+  const firstCarouselCards = page.locator('.carousel').first().locator('.bleed-card');
   await firstCarouselCards.first().waitFor({ state: 'visible' });
   const cardCount = await firstCarouselCards.count();
   if (cardCount < 2) return;
@@ -89,7 +89,7 @@ test('Previous button navigates back after going Next', async ({ page }) => {
   await seedUnits(page, 6);
   await page.reload();
 
-  const firstCarouselCards = page.locator('.carousel').first().locator('.carousel-card');
+  const firstCarouselCards = page.locator('.carousel').first().locator('.bleed-card');
   await firstCarouselCards.first().waitFor({ state: 'visible' });
   const cardCount = await firstCarouselCards.count();
   if (cardCount < 2) return;
@@ -109,7 +109,7 @@ test('keyboard ArrowRight and ArrowLeft navigate between items', async ({ page }
   await seedUnits(page, 6);
   await page.reload();
 
-  const firstCarouselCards = page.locator('.carousel').first().locator('.carousel-card');
+  const firstCarouselCards = page.locator('.carousel').first().locator('.bleed-card');
   await firstCarouselCards.first().waitFor({ state: 'visible' });
   const cardCount = await firstCarouselCards.count();
   if (cardCount < 2) return;

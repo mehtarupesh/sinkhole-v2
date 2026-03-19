@@ -68,7 +68,7 @@ async function seedPendingShare(page, share) {
 /** Opens the saved-units overlay from the landing page. */
 async function openUnitsList(page) {
   await page.getByRole('button', { name: 'Saved' }).click();
-  await page.waitForSelector('.units-panel');
+  await page.waitForSelector('.search-overlay');
 }
 
 module.exports = { setHostId, seedUnit, seedPendingShare, openUnitsList };

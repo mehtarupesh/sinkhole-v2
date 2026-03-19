@@ -6,8 +6,8 @@
  *   onChange   fn       (newValue: string) => void
  *   disabled   bool     disables all interactions (e.g. during save)
  */
-import { useState, useRef, useEffect } from 'react';
-import { MicIcon } from './Icons';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { MicIcon, StopIcon } from './Icons';
 import { getSetting } from '../utils/db';
 import { transcribeAudio } from '../utils/transcribe';
 
@@ -21,6 +21,7 @@ export default function NoteField({ value, onChange, disabled = false }) {
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
+  const textInputRef = useRef(null);
 
   useEffect(() => () => clearInterval(timerRef.current), []);
 
@@ -77,75 +78,95 @@ export default function NoteField({ value, onChange, disabled = false }) {
     setLocalError('');
   }
 
-  function switchMode(mode) {
-    // Going to voice: clear value (fresh recording will set it)
-    // Going to text: keep value so user can edit the existing quote
+  const switchMode = useCallback((mode) => {
     if (mode === 'voice') onChange('');
     setNoteMode(mode);
     setLocalError('');
-  }
+    if (mode === 'text') {
+      requestAnimationFrame(() => textInputRef.current?.focus());
+    }
+  }, [onChange]);
 
   const canToggleMode = recState !== 'recording' && recState !== 'transcribing';
 
   return (
-    <div className="add-unit__voice">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: (value || localError) ? 8 : 0 }}>
-        {noteMode === 'voice' ? (
-          recState === 'transcribing' ? (
-            <p style={{ fontSize: 12, color: '#737373', margin: 0 }}>Transcribing…</p>
+    <div className="note-field">
+      {noteMode === 'voice' ? (
+        <div className="note-field__voice-row">
+          {recState === 'transcribing' ? (
+            <span className="note-field__status">Transcribing…</span>
+          ) : recState === 'recording' ? (
+            <button
+              type="button"
+              className="note-field__rec-btn note-field__rec-btn--stop"
+              onClick={stopRecording}
+              disabled={disabled}
+              aria-label="Stop recording"
+            >
+              <StopIcon size={14} />
+              <span>{countdown}s</span>
+            </button>
           ) : (
             <button
               type="button"
-              className={`add-unit__mic-btn${recState === 'recording' ? ' add-unit__mic-btn--active' : ''}`}
-              onClick={recState === 'recording' ? stopRecording : startRecording}
+              className="note-field__rec-btn"
+              onClick={startRecording}
               disabled={disabled}
-              aria-label={recState === 'recording' ? 'Stop recording' : 'Record voice note'}
+              aria-label="Record voice note"
             >
-              <MicIcon active={recState === 'recording'} />
-              {recState === 'recording'
-                ? `Stop · ${countdown}s`
-                : recState === 'done'
-                  ? 'Re-record'
-                  : 'Voice note'}
+              <MicIcon size={16} />
+              <span>{recState === 'done' ? 'Re-record' : 'Record note'}</span>
             </button>
-          )
-        ) : (
+          )}
+
+          {canToggleMode && (
+            <button
+              type="button"
+              className="note-field__toggle"
+              onClick={() => switchMode('text')}
+              disabled={disabled}
+            >
+              type instead
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="note-field__text-row">
           <input
+            ref={textInputRef}
             type="text"
-            className="connect-input"
-            placeholder="Type a note…"
+            className="note-field__input"
+            placeholder="Add a note…"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             disabled={disabled}
-            style={{ flex: 1 }}
           />
-        )}
-
-        {canToggleMode && (
-          <button
-            type="button"
-            style={{ fontSize: 11, color: '#525252', background: 'none', border: 'none', cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
-            onClick={() => switchMode(noteMode === 'voice' ? 'text' : 'voice')}
-            disabled={disabled}
-          >
-            {noteMode === 'voice' ? 'type instead' : 'voice instead'}
-          </button>
-        )}
-      </div>
+          {canToggleMode && (
+            <button
+              type="button"
+              className="note-field__toggle"
+              onClick={() => switchMode('voice')}
+              disabled={disabled}
+            >
+              voice
+            </button>
+          )}
+        </div>
+      )}
 
       {noteMode === 'voice' && value && recState !== 'transcribing' && (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-          <p className="add-unit__quote" style={{ flex: 1, margin: 0 }}>
-            <span className="add-unit__quote-mark">"</span>
+        <div className="note-field__transcript">
+          <p className="note-field__quote">
+            <span className="note-field__quote-mark">&ldquo;</span>
             {value}
           </p>
           <button
             type="button"
-            style={{ fontSize: 11, color: '#525252', background: 'none', border: 'none', cursor: 'pointer', padding: 0, lineHeight: 1 }}
+            className="note-field__discard"
             onClick={discard}
             aria-label="Discard note"
           >
-            ×
+            &times;
           </button>
         </div>
       )}

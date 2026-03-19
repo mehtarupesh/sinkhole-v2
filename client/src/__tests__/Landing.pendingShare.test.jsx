@@ -86,8 +86,8 @@ describe('Landing – pending share', () => {
     renderLanding('/?pendingShare=1');
 
     await waitFor(() => expect(screen.getByText('Add')).toBeInTheDocument());
-    // image type pill should be active
-    const imageBtn = screen.getByText('image');
-    expect(imageBtn.className).toContain('add-unit__type-btn--active');
+    // image type icon should be active
+    const imageBtn = screen.getByLabelText('image');
+    expect(imageBtn.className).toContain('add-unit__type-icon--active');
   });
 });

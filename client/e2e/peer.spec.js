@@ -63,7 +63,7 @@ test('sync A to B', async ({ browser }) => {
   // Navigate back and verify B has A's unit
   await pageB.goto('/');
   await openUnitsList(pageB);
-  await expect(pageB.locator('.unit-card__text').first()).toContainText('From device A');
+  await expect(pageB.locator('.bleed-card__text').first()).toContainText('From device A');
 
   await ctxA.close();
   await ctxB.close();
@@ -93,7 +93,7 @@ test('sync B to A', async ({ browser }) => {
   // Navigate back and verify A has B's unit
   await pageA.goto('/');
   await openUnitsList(pageA);
-  await expect(pageA.locator('.unit-card__text').first()).toContainText('From device B');
+  await expect(pageA.locator('.bleed-card__text').first()).toContainText('From device B');
 
   await ctxA.close();
   await ctxB.close();
@@ -131,11 +131,11 @@ test('bidirectional sync: both devices end up with all units', async ({ browser 
   // Both should have 2 units
   await pageA.goto('/');
   await openUnitsList(pageA);
-  await expect(pageA.locator('.unit-card')).toHaveCount(2);
+  await expect(pageA.locator('.bleed-card')).toHaveCount(2);
 
   await pageB.goto('/');
   await openUnitsList(pageB);
-  await expect(pageB.locator('.unit-card')).toHaveCount(2);
+  await expect(pageB.locator('.bleed-card')).toHaveCount(2);
 
   await ctxA.close();
   await ctxB.close();

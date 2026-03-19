@@ -27,17 +27,17 @@ describe('AddUnitModal', () => {
 
   // ── Rendering ─────────────────────────────────────────────────────────────
 
-  it('renders the modal with title and type buttons', () => {
+  it('renders the modal with title and type icon buttons', () => {
     renderModal();
     expect(screen.getByText('Add')).toBeInTheDocument();
-    expect(screen.getByText('snippet')).toBeInTheDocument();
-    expect(screen.getByText('password')).toBeInTheDocument();
-    expect(screen.getByText('image')).toBeInTheDocument();
+    expect(screen.getByLabelText('snippet')).toBeInTheDocument();
+    expect(screen.getByLabelText('password')).toBeInTheDocument();
+    expect(screen.getByLabelText('image')).toBeInTheDocument();
   });
 
   it('renders the NoteField with voice mode by default', () => {
     renderModal();
-    expect(screen.getByText('Voice note')).toBeInTheDocument();
+    expect(screen.getByText('Record note')).toBeInTheDocument();
     expect(screen.getByText('type instead')).toBeInTheDocument();
   });
 
@@ -55,25 +55,25 @@ describe('AddUnitModal', () => {
 
   it('switches to password input when password type is selected', () => {
     renderModal();
-    fireEvent.click(screen.getByText('password'));
+    fireEvent.click(screen.getByLabelText('password'));
     expect(screen.getByPlaceholderText('Enter password…')).toBeInTheDocument();
   });
 
   it('switches to file input when image type is selected', () => {
     renderModal();
-    fireEvent.click(screen.getByText('image'));
+    fireEvent.click(screen.getByLabelText('image'));
     expect(document.querySelector('input[type="file"]')).toBeInTheDocument();
   });
 
   it('marks the active type button', () => {
     renderModal();
-    const snippetBtn = screen.getByText('snippet');
-    const passwordBtn = screen.getByText('password');
-    expect(snippetBtn.className).toContain('add-unit__type-btn--active');
-    expect(passwordBtn.className).not.toContain('add-unit__type-btn--active');
+    const snippetBtn = screen.getByLabelText('snippet');
+    const passwordBtn = screen.getByLabelText('password');
+    expect(snippetBtn.className).toContain('add-unit__type-icon--active');
+    expect(passwordBtn.className).not.toContain('add-unit__type-icon--active');
     fireEvent.click(passwordBtn);
-    expect(passwordBtn.className).toContain('add-unit__type-btn--active');
-    expect(snippetBtn.className).not.toContain('add-unit__type-btn--active');
+    expect(passwordBtn.className).toContain('add-unit__type-icon--active');
+    expect(snippetBtn.className).not.toContain('add-unit__type-icon--active');
   });
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -87,14 +87,14 @@ describe('AddUnitModal', () => {
 
   it('shows an error when saving password with empty content', async () => {
     renderModal();
-    fireEvent.click(screen.getByText('password'));
+    fireEvent.click(screen.getByLabelText('password'));
     fireEvent.click(screen.getByText('Save'));
     expect(await screen.findByText('Content is required')).toBeInTheDocument();
   });
 
   it('shows an error when saving image with no file selected', async () => {
     renderModal();
-    fireEvent.click(screen.getByText('image'));
+    fireEvent.click(screen.getByLabelText('image'));
     fireEvent.click(screen.getByText('Save'));
     expect(await screen.findByText('Please select a file')).toBeInTheDocument();
   });
@@ -121,7 +121,7 @@ describe('AddUnitModal', () => {
     });
     // Switch to text mode and type a note
     fireEvent.click(screen.getByText('type instead'));
-    fireEvent.change(screen.getByPlaceholderText('Type a note…'), {
+    fireEvent.change(screen.getByPlaceholderText('Add a note…'), {
       target: { value: 'my typed note' },
     });
     fireEvent.click(screen.getByText('Save'));
@@ -147,9 +147,9 @@ describe('AddUnitModal', () => {
   it('can switch NoteField to text mode and back', () => {
     renderModal();
     fireEvent.click(screen.getByText('type instead'));
-    expect(screen.getByPlaceholderText('Type a note…')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('voice instead'));
-    expect(screen.getByText('Voice note')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Add a note…')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('voice'));
+    expect(screen.getByText('Record note')).toBeInTheDocument();
   });
 
   // ── Closing ───────────────────────────────────────────────────────────────

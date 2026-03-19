@@ -1,9 +1,14 @@
 import { useState, useRef } from 'react';
-import { CloseIcon } from './Icons';
+import { CloseIcon, SnippetTypeIcon, LockTypeIcon, ImageTypeIcon } from './Icons';
 import { updateUnit } from '../utils/db';
 import NoteField from './NoteField';
+import ImageLightbox from './ImageLightbox';
 
-const TYPE_LABELS = { snippet: 'snippet', password: 'password', image: 'image' };
+const TYPE_ICONS = {
+  snippet: SnippetTypeIcon,
+  password: LockTypeIcon,
+  image: ImageTypeIcon,
+};
 
 export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
   const [content, setContent] = useState(unit.content);
@@ -11,6 +16,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
   const [mimeType, setMimeType] = useState(unit.mimeType || '');
   const [quote, setQuote] = useState(unit.quote || '');
   const [showPassword, setShowPassword] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
@@ -53,6 +59,8 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
     await onDelete(unit.id);
   };
 
+  const TypeIcon = TYPE_ICONS[unit.type];
+
   return (
     <div className="unit-detail-modal">
       <div className="modal__header">
@@ -63,8 +71,8 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
       </div>
 
       <div className="add-unit__type-row">
-        <span className="add-unit__type-btn add-unit__type-btn--active">
-          {TYPE_LABELS[unit.type] ?? unit.type}
+        <span className="add-unit__type-icon add-unit__type-icon--active">
+          {TypeIcon && <TypeIcon />}
         </span>
       </div>
 
@@ -74,26 +82,25 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
             className="add-unit__textarea"
             value={content}
             onChange={(e) => { setContent(e.target.value); setError(''); }}
-            rows={4}
             autoFocus
           />
         )}
 
         {unit.type === 'password' && (
-          <div className="add-unit__password-field">
+          <div className="add-unit__password-wrap">
             <input
               type={showPassword ? 'text' : 'password'}
-              className="connect-input"
+              className="add-unit__password-input"
               value={content}
               onChange={(e) => { setContent(e.target.value); setError(''); }}
               autoFocus
             />
             <button
               type="button"
-              className="add-unit__type-btn"
+              className="add-unit__password-toggle"
               onClick={() => setShowPassword((v) => !v)}
             >
-              {showPassword ? 'hide' : 'show'}
+              {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
         )}
@@ -101,17 +108,24 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
         {unit.type === 'image' && (
           <div className="add-unit__file-area">
             {content && mimeType?.startsWith('image/') && (
-              <img src={content} alt={fileName} className="add-unit__preview" />
+              <button
+                type="button"
+                className="add-unit__preview-btn"
+                onClick={() => setShowLightbox(true)}
+                aria-label="View full image"
+              >
+                <img src={content} alt={fileName} className="add-unit__preview" />
+              </button>
             )}
             {content && !mimeType?.startsWith('image/') && (
               <p className="add-unit__file-name">{fileName}</p>
             )}
             <button
               type="button"
-              className="add-unit__type-btn"
+              className="add-unit__change-file"
               onClick={() => fileRef.current?.click()}
             >
-              Choose different file
+              Choose Different File
             </button>
             <input
               ref={fileRef}
@@ -125,6 +139,10 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
       </div>
 
       {error && <p className="modal__error">{error}</p>}
+
+      {showLightbox && content && mimeType?.startsWith('image/') && (
+        <ImageLightbox src={content} alt={fileName} onClose={() => setShowLightbox(false)} />
+      )}
 
       <NoteField value={quote} onChange={setQuote} disabled={saving} />
 
