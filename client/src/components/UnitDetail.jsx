@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { CloseIcon, SnippetTypeIcon, LockTypeIcon, ImageTypeIcon } from './Icons';
+import { CloseIcon, SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon } from './Icons';
 import { updateUnit } from '../utils/db';
 import NoteField from './NoteField';
 import ImageLightbox from './ImageLightbox';
@@ -69,9 +69,20 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
             {TypeIcon && <TypeIcon />}
           </span>
         </div>
-        <button type="button" className="btn-close" onClick={onBack} aria-label="Close">
-          <CloseIcon />
-        </button>
+        <div className="modal__header-actions">
+          <button
+            type="button"
+            className={`unit-detail__delete${confirmDelete ? ' unit-detail__delete--confirm' : ''}`}
+            onClick={handleDelete}
+            onBlur={() => setConfirmDelete(false)}
+            aria-label="Delete unit"
+          >
+            {confirmDelete ? 'Confirm?' : <TrashIcon />}
+          </button>
+          <button type="button" className="btn-close" onClick={onBack} aria-label="Close">
+            <CloseIcon />
+          </button>
+        </div>
       </div>
 
       <div className="add-unit__body">
@@ -144,26 +155,14 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
 
       <NoteField value={quote} onChange={setQuote} disabled={saving} />
 
-      <div className="unit-detail__actions">
-        <button
-          type="button"
-          className={`unit-detail__delete${confirmDelete ? ' unit-detail__delete--confirm' : ''}`}
-          onClick={handleDelete}
-          onBlur={() => setConfirmDelete(false)}
-          aria-label="Delete unit"
-        >
-          {confirmDelete ? 'Confirm delete' : 'Delete'}
-        </button>
-
-        <button
-          type="button"
-          className="connect-btn add-unit__save-btn"
-          onClick={handleSave}
-          disabled={saving || !isDirty}
-        >
-          {saving ? '…' : 'Save'}
-        </button>
-      </div>
+      <button
+        type="button"
+        className="connect-btn add-unit__save-btn"
+        onClick={handleSave}
+        disabled={saving || !isDirty}
+      >
+        {saving ? '…' : 'Save'}
+      </button>
 
       <p className="unit-detail__meta">
         Created {new Date(unit.createdAt).toLocaleString()}

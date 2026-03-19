@@ -91,6 +91,23 @@ export default function NoteField({ value, onChange, disabled = false }) {
 
   return (
     <div className="note-field">
+      {noteMode === 'voice' && value && recState !== 'transcribing' && (
+        <div className="note-field__transcript">
+          <p className="note-field__quote">
+            <span className="note-field__quote-mark">&ldquo;</span>
+            {value}
+          </p>
+          <button
+            type="button"
+            className="note-field__discard"
+            onClick={discard}
+            aria-label="Discard note"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
       {noteMode === 'voice' ? (
         <div className="note-field__voice-row">
           {recState === 'transcribing' ? (
@@ -151,23 +168,6 @@ export default function NoteField({ value, onChange, disabled = false }) {
               voice
             </button>
           )}
-        </div>
-      )}
-
-      {noteMode === 'voice' && value && recState !== 'transcribing' && (
-        <div className="note-field__transcript">
-          <p className="note-field__quote">
-            <span className="note-field__quote-mark">&ldquo;</span>
-            {value}
-          </p>
-          <button
-            type="button"
-            className="note-field__discard"
-            onClick={discard}
-            aria-label="Discard note"
-          >
-            &times;
-          </button>
         </div>
       )}
 
