@@ -31,7 +31,7 @@ export function CloseIcon() {
 
 export function ConnectIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
       <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
     </svg>
@@ -40,7 +40,7 @@ export function ConnectIcon() {
 
 export function PlusIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M12 5v14M5 12h14" />
     </svg>
   );
@@ -66,7 +66,7 @@ export function StopIcon({ size = 16 }) {
 
 export function SearchIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <circle cx="11" cy="11" r="8" />
       <path d="M21 21l-4.35-4.35" />
     </svg>
@@ -75,7 +75,7 @@ export function SearchIcon() {
 
 export function GearIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
@@ -139,12 +139,20 @@ export function TrashIcon() {
   );
 }
 
-export function SparklesIcon() {
+export function OneBIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M12 3l1.5 4L17.5 8.5l-4 1.5L12 14l-1.5-4L6.5 8.5l4-1.5z" />
-      <path d="M19 2l.6 1.8 1.8.6-1.8.6L19 6.8l-.6-1.8L16.6 4.4l1.8-.6z" />
-      <path d="M5 17l.6 1.8 1.8.6-1.8.6L5 21.8l-.6-1.8L2.6 19.4l1.8-.6z" />
+    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden>
+      <text
+        x="11" y="19"
+        textAnchor="middle"
+        fontFamily="'Space Grotesk', system-ui, sans-serif"
+        fontSize="20"
+        letterSpacing="-0.5"
+      >
+        <tspan fontWeight="400" fill="rgba(255,255,255,0.35)">1</tspan>
+        <tspan fontWeight="700" fill="currentColor">b</tspan>
+      </text>
+      <path d="M20 -1l1.1 3.3 3.3 1.1-3.3 1.1-1.1 3.3-1.1-3.3L15.6 3.3l3.3-1.1z" fill="currentColor" opacity="0.65" />
     </svg>
   );
 }

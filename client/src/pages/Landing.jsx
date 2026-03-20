@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { PlusIcon, SearchIcon, ConnectIcon, GearIcon, SparklesIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon } from '../components/Icons';
+import { PlusIcon, SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon } from '../components/Icons';
 import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorization } from '../utils/db';
 import { buildCarousels } from '../utils/carouselGroups';
 import { categorizeUnits } from '../utils/categorize';
@@ -235,7 +235,7 @@ export default function Landing() {
             title="Categorize"
             aria-label="Categorize"
           >
-            <SparklesIcon />
+            <OneBIcon />
           </button>
           <button type="button" className="btn-icon" onClick={() => setShowSettingsModal(true)} title="Settings" aria-label="Settings">
             <GearIcon />
