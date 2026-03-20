@@ -752,6 +752,13 @@ body {
   line-height: 1.6;
   resize: vertical;
   font-family: inherit;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.add-unit__textarea--has-value:not(:focus) {
+  background: transparent;
+  border-color: transparent;
+  cursor: pointer;
 }
 
 .add-unit__file-area {
@@ -882,66 +889,9 @@ body {
   gap: 10px;
 }
 
-.note-field__voice-row,
-.note-field__text-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.note-field__rec-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  color: #a3a3a3;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-
-.note-field__rec-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e5e5e5;
-}
-
-.note-field__rec-btn--stop {
-  background: rgba(248, 113, 113, 0.12);
-  border-color: rgba(248, 113, 113, 0.35);
-  color: #f87171;
-}
-
-.note-field__rec-btn--stop:hover {
-  background: rgba(248, 113, 113, 0.2);
-  color: #f87171;
-}
-
-.note-field__status {
-  font-size: 12px;
-  color: #737373;
-}
-
-.note-field__toggle {
-  padding: 0;
-  background: none;
-  border: none;
-  color: #525252;
-  font-size: 11px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color 0.15s;
-}
-
-.note-field__toggle:hover {
-  color: #a3a3a3;
-}
-
 .note-field__input {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -949,40 +899,62 @@ body {
   color: #e5e5e5;
   font-size: 13px;
   font-family: inherit;
+  transition: background 0.2s, border-color 0.2s, font-style 0.2s, color 0.2s;
 }
 
-.note-field__transcript {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.note-field__quote {
-  flex: 1;
-  margin: 0;
-  font-size: 13px;
-  color: #a3a3a3;
+.note-field__input--has-value:not(:focus) {
+  background: transparent;
+  border-color: transparent;
   font-style: italic;
-}
-
-.note-field__quote-mark {
-  color: #525252;
-}
-
-.note-field__discard {
-  flex-shrink: 0;
-  padding: 2px 4px;
-  background: none;
-  border: none;
-  color: #525252;
-  font-size: 14px;
-  cursor: pointer;
-  line-height: 1;
-  transition: color 0.15s;
-}
-
-.note-field__discard:hover {
   color: #a3a3a3;
+  cursor: pointer;
+}
+
+.note-field__rec-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.note-field__rec-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #a3a3a3;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.note-field__rec-circle:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.note-field__rec-circle:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e5e5e5;
+}
+
+.note-field__rec-circle--stop {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.35);
+  color: #f87171;
+}
+
+.note-field__rec-circle--stop:not(:disabled):hover {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+.note-field__countdown {
+  font-size: 12px;
+  color: #f87171;
 }
 
 /* Legacy aliases kept for PrototypeModal */

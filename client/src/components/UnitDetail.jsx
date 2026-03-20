@@ -88,10 +88,9 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
       <div className="add-unit__body">
         {unit.type === 'snippet' && (
           <textarea
-            className="add-unit__textarea"
+            className={`add-unit__textarea${content ? ' add-unit__textarea--has-value' : ''}`}
             value={content}
             onChange={(e) => { setContent(e.target.value); setError(''); }}
-            autoFocus
           />
         )}
 

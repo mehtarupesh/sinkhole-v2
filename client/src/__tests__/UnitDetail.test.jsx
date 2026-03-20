@@ -62,9 +62,9 @@ describe('UnitDetail', () => {
     expect(img).toBeInTheDocument();
   });
 
-  it('renders existing quote in NoteField voice mode', () => {
+  it('renders existing quote in NoteField text input', () => {
     renderDetail(WITH_QUOTE);
-    expect(screen.getByText('voice text')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('voice text')).toBeInTheDocument();
   });
 
   it('shows createdAt timestamp', () => {
@@ -79,10 +79,10 @@ describe('UnitDetail', () => {
     expect(saveBtn).toBeDisabled();
   });
 
-  it('renders the NoteField with voice mode by default', () => {
+  it('renders the NoteField with text input and record button', () => {
     renderDetail();
-    expect(screen.getByText('Record note')).toBeInTheDocument();
-    expect(screen.getByText('type instead')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Add a note…')).toBeInTheDocument();
+    expect(screen.getByLabelText('Record voice note')).toBeInTheDocument();
   });
 
   // ── Editing ───────────────────────────────────────────────────────────────
@@ -96,7 +96,6 @@ describe('UnitDetail', () => {
 
   it('enables Save button when a typed note is added', () => {
     renderDetail(SNIPPET);
-    fireEvent.click(screen.getByText('type instead'));
     fireEvent.change(screen.getByPlaceholderText('Add a note…'), { target: { value: 'a note' } });
     expect(screen.getByText('Save')).not.toBeDisabled();
   });
@@ -122,18 +121,8 @@ describe('UnitDetail', () => {
 
   // ── NoteField integration ─────────────────────────────────────────────────
 
-  it('can switch NoteField between voice and text mode', () => {
-    renderDetail();
-    fireEvent.click(screen.getByText('type instead'));
-    expect(screen.getByPlaceholderText('Add a note…')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('voice'));
-    expect(screen.getByText('Record note')).toBeInTheDocument();
-  });
-
-  it('existing quote is editable in text mode', () => {
+  it('shows existing quote in editable text input', () => {
     renderDetail(WITH_QUOTE);
-    fireEvent.click(screen.getByText('type instead'));
-    // existing quote value should be in the text input
     expect(screen.getByDisplayValue('voice text')).toBeInTheDocument();
   });
 
@@ -150,7 +139,6 @@ describe('UnitDetail', () => {
   it('includes a typed note in the saved unit', async () => {
     renderDetail(SNIPPET);
     fireEvent.change(screen.getByDisplayValue('hello world'), { target: { value: 'note with voice' } });
-    fireEvent.click(screen.getByText('type instead'));
     fireEvent.change(screen.getByPlaceholderText('Add a note…'), { target: { value: 'typed note' } });
     fireEvent.click(screen.getByText('Save'));
     await waitFor(() =>

@@ -34,10 +34,10 @@ describe('AddUnitModal', () => {
     expect(screen.getByLabelText('image')).toBeInTheDocument();
   });
 
-  it('renders the NoteField with voice mode by default', () => {
+  it('renders the NoteField with text input and record button', () => {
     renderModal();
-    expect(screen.getByText('Record note')).toBeInTheDocument();
-    expect(screen.getByText('type instead')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Add a note…')).toBeInTheDocument();
+    expect(screen.getByLabelText('Record voice note')).toBeInTheDocument();
   });
 
   it('renders the Save button', () => {
@@ -118,8 +118,6 @@ describe('AddUnitModal', () => {
     fireEvent.change(screen.getByPlaceholderText('Enter text…'), {
       target: { value: 'note with quote' },
     });
-    // Switch to text mode and type a note
-    fireEvent.click(screen.getByText('type instead'));
     fireEvent.change(screen.getByPlaceholderText('Add a note…'), {
       target: { value: 'my typed note' },
     });
@@ -143,12 +141,10 @@ describe('AddUnitModal', () => {
 
   // ── NoteField integration ─────────────────────────────────────────────────
 
-  it('can switch NoteField to text mode and back', () => {
+  it('renders NoteField text input alongside record button', () => {
     renderModal();
-    fireEvent.click(screen.getByText('type instead'));
     expect(screen.getByPlaceholderText('Add a note…')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('voice'));
-    expect(screen.getByText('Record note')).toBeInTheDocument();
+    expect(screen.getByLabelText('Record voice note')).toBeInTheDocument();
   });
 
   // ── Closing ───────────────────────────────────────────────────────────────
