@@ -122,7 +122,10 @@ export default function Landing() {
       {isDragging && <div className="drop-hint">Drop to add</div>}
 
       <div className="landing__center">
-        <h1 className="landing__title">1Burrow</h1>
+        <h1 className="landing__title">
+          <span className="landing__title-one">1</span>
+          <span className="landing__title-b">b</span>urrow
+        </h1>
         <p className="landing__sub">Stash now | Forage later</p>
       </div>
 

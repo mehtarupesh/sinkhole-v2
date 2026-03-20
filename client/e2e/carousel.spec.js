@@ -1,20 +1,21 @@
 const { test, expect } = require('@playwright/test');
 const { seedUnit } = require('./helpers');
 
-// Seeds enough units so carousels are guaranteed to populate
+// Seeds units with deterministic, staggered createdAt values
 async function seedUnits(page, count = 6) {
+  const base = Date.now();
   for (let i = 1; i <= count; i++) {
     await seedUnit(page, {
       uid: `carousel-uid-${i}`,
       type: 'snippet',
       content: `Carousel unit ${i}`,
-      createdAt: Date.now() + i,
+      createdAt: base + i * 1000, // i=1 is oldest, i=count is newest
     });
   }
 }
 
-// Returns the first visible carousel card on the landing page
-async function getCarouselCards(page) {
+// Returns all visible carousel cards on the landing page
+function getCarouselCards(page) {
   return page.locator('.bleed-card');
 }
 
@@ -24,7 +25,7 @@ test('clicking a carousel card opens unit detail with nav', async ({ page }) => 
   await seedUnits(page, 6);
   await page.reload();
 
-  const cards = await getCarouselCards(page);
+  const cards = getCarouselCards(page);
   await cards.first().waitFor({ state: 'visible' });
   await cards.first().click();
 
@@ -38,13 +39,10 @@ test('nav counter shows position within carousel', async ({ page }) => {
   await seedUnits(page, 6);
   await page.reload();
 
-  const cards = await getCarouselCards(page);
-  await cards.first().waitFor({ state: 'visible' });
-
-  // Click the second card in the first carousel
   const firstCarouselCards = page.locator('.carousel').first().locator('.bleed-card');
+  await firstCarouselCards.first().waitFor({ state: 'visible' });
+
   const cardCount = await firstCarouselCards.count();
-  // Need at least 2 cards to test navigation; if not enough skip gracefully
   if (cardCount < 2) return;
 
   await firstCarouselCards.nth(1).click();
@@ -57,7 +55,7 @@ test('Previous button is disabled when on first item', async ({ page }) => {
   await seedUnits(page, 6);
   await page.reload();
 
-  const cards = await getCarouselCards(page);
+  const cards = getCarouselCards(page);
   await cards.first().waitFor({ state: 'visible' });
   await cards.first().click();
 
@@ -70,7 +68,6 @@ test('Next button navigates to the next item', async ({ page }) => {
   await seedUnits(page, 6);
   await page.reload();
 
-  // Open first card in the first carousel that has at least 2 cards
   const firstCarouselCards = page.locator('.carousel').first().locator('.bleed-card');
   await firstCarouselCards.first().waitFor({ state: 'visible' });
   const cardCount = await firstCarouselCards.count();
@@ -130,7 +127,7 @@ test('Escape key closes the unit detail', async ({ page }) => {
   await seedUnits(page, 6);
   await page.reload();
 
-  const cards = await getCarouselCards(page);
+  const cards = getCarouselCards(page);
   await cards.first().waitFor({ state: 'visible' });
   await cards.first().click();
 
@@ -145,12 +142,47 @@ test('clicking the backdrop closes the unit detail', async ({ page }) => {
   await seedUnits(page, 6);
   await page.reload();
 
-  const cards = await getCarouselCards(page);
+  const cards = getCarouselCards(page);
   await cards.first().waitFor({ state: 'visible' });
   await cards.first().click();
 
   await expect(page.locator('.units-panel')).toBeVisible();
-  // Click on the overlay backdrop (top-left corner, outside the panel)
   await page.locator('.units-overlay').click({ position: { x: 10, y: 10 } });
   await expect(page.locator('.units-panel')).not.toBeVisible();
+});
+
+// ── 9. "Recent" carousel is always the first carousel ────────────────────────
+test('"Recent" carousel appears first on the landing page', async ({ page }) => {
+  await page.goto('/');
+  await seedUnits(page, 4);
+  await page.reload();
+
+  await page.locator('.carousel').first().waitFor({ state: 'visible' });
+  const firstTitle = await page.locator('.carousel__title').first().textContent();
+  expect(firstTitle?.trim().toUpperCase()).toBe('RECENT');
+});
+
+// ── 10. "Recent" carousel shows the newest unit first ────────────────────────
+test('"Recent" carousel shows newest unit as first card', async ({ page }) => {
+  const base = Date.now();
+
+  await page.goto('/');
+  await seedUnit(page, {
+    uid: 'old-unit',
+    type: 'snippet',
+    content: 'Old unit content',
+    createdAt: base,
+  });
+  await seedUnit(page, {
+    uid: 'new-unit',
+    type: 'snippet',
+    content: 'New unit content',
+    createdAt: base + 10000,
+  });
+  await page.reload();
+
+  const recentCarousel = page.locator('.carousel').filter({ hasText: /recent/i });
+  await recentCarousel.waitFor({ state: 'visible' });
+  const firstCard = recentCarousel.locator('.bleed-card').first();
+  await expect(firstCard).toContainText('New unit content');
 });

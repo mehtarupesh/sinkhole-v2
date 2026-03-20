@@ -3,6 +3,7 @@ import Landing from './pages/Landing';
 import Host from './pages/Host';
 import Scan from './pages/Scan';
 import Connect from './pages/Connect';
+import Simulate from './pages/Simulate';
 import { getStableHostId } from './utils/stableHostId';
 
 const version =
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/host" element={<Host />} />
         <Route path="/scan" element={<Scan />} />
         <Route path="/connect" element={<Connect />} />
+        <Route path="/simulate" element={<Simulate />} />
       </Routes>
       <span className="app-footer" title={version ? `Build ${version}` : 'Host ID'}>
         {version && <span>{version}</span>}
