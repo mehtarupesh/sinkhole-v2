@@ -17,10 +17,23 @@ vi.mock('../utils/pendingShare', () => ({
   clearPendingShare: vi.fn().mockResolvedValue(),
 }));
 
+vi.mock('../utils/transcribe', () => ({ transcribeAudio: vi.fn() }));
+
 // AddUnitModal is rendered by Landing — let it render for real so we can assert on it
 vi.mock('../utils/db', () => ({
-  addUnit: vi.fn().mockResolvedValue(1),
-  getAllUnits: vi.fn().mockResolvedValue([]),
+  addUnit:           vi.fn().mockResolvedValue(1),
+  getAllUnits:        vi.fn().mockResolvedValue([]),
+  getSetting:        vi.fn().mockResolvedValue(null),
+  getCategorization: vi.fn().mockResolvedValue([{ id: 'g', title: 'G', uids: [] }]),
+  setCategorization: vi.fn().mockResolvedValue(),
+}));
+
+vi.mock('../utils/categorize', () => ({
+  categorizeUnits: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('../utils/carouselGroups', () => ({
+  buildCarousels: vi.fn().mockReturnValue([]),
 }));
 
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';

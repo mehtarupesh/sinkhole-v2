@@ -1,14 +1,6 @@
 export const MAX        = 10; // max units shown per categorized carousel
 export const RECENT_MAX = 15; // max units shown in the "Recent" carousel
 
-// Placeholder category definitions (first 3 are random buckets; needs-context is rule-based)
-export const CAROUSEL_DEFS = [
-  { id: 'passwords',     title: 'Passwords' },
-  { id: 'mental-health', title: 'Mental Health' },
-  { id: 'misc',          title: 'Everything Else' },
-  { id: 'needs-context', title: 'Add Some Context?' },
-];
-
 /**
  * Shared finalizer applied to every categorized carousel group.
  * - Sorts each group newest-first (by createdAt desc)
@@ -48,30 +40,36 @@ export function buildRecentCarousel(units) {
 /**
  * Builds the full carousel list shown on the landing page.
  * "Recent" is always first; "Add Some Context?" is always last.
- * The middle carousels are randomly distributed placeholders until real
- * LLM categorization is wired up.
+ *
+ * When storedGroups is provided (LLM result saved in IndexedDB), those groups
+ * are used for the middle carousels. Units not in the vault anymore are silently
+ * excluded. Without storedGroups, only Recent and needs-context are shown.
  *
  * @param {object[]} units
+ * @param {{ id:string, title:string, uids:string[] }[] | null} storedGroups
  * @returns {{ id:string, title:string, units:object[] }[]}
  */
-export function buildCarousels(units) {
-  const recent      = buildRecentCarousel(units);
-  const needsCtx    = units.filter((u) => !u.quote);
-  const shuffled    = [...units].sort(() => Math.random() - 0.5);
+export function buildCarousels(units, storedGroups = null) {
+  const recent   = buildRecentCarousel(units);
+  const needsCtx = units.filter((u) => !u.quote);
 
-  // Randomly distribute across the first 3 placeholder buckets
-  const randomGroups = CAROUSEL_DEFS.slice(0, 3).map((def, i) => ({
-    ...def,
-    units: shuffled.slice(i * MAX, (i + 1) * MAX),
-  }));
+  if (storedGroups) {
+    const byUid = Object.fromEntries(units.map((u) => [u.uid, u]));
+    const rawGroups = storedGroups.map((g) => ({
+      id:    g.id,
+      title: g.title,
+      units: g.uids.map((uid) => byUid[uid]).filter(Boolean),
+    }));
+    const categorized = finalizeCarousels([
+      ...rawGroups,
+      ...(needsCtx.length > 0 ? [{ id: 'needs-context', title: 'Add Some Context?', units: needsCtx }] : []),
+    ]);
+    return [...(recent ? [recent] : []), ...categorized];
+  }
 
-  const categorized = finalizeCarousels([
-    ...randomGroups,
-    { ...CAROUSEL_DEFS[3], units: needsCtx }, // needs-context
-  ]);
-
-  return [
-    ...(recent ? [recent] : []),
-    ...categorized,
-  ];
+  // No stored categorization yet — Recent + needs-context only
+  const categorized = finalizeCarousels(
+    needsCtx.length > 0 ? [{ id: 'needs-context', title: 'Add Some Context?', units: needsCtx }] : []
+  );
+  return [...(recent ? [recent] : []), ...categorized];
 }

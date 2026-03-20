@@ -13,10 +13,17 @@ vi.mock('../utils/pendingShare', () => ({
 vi.mock('../utils/transcribe', () => ({ transcribeAudio: vi.fn() }));
 
 vi.mock('../utils/db', () => ({
-  getAllUnits:  vi.fn(),
-  deleteUnit:   vi.fn().mockResolvedValue(),
-  updateUnit:   vi.fn(),
-  getSetting:   vi.fn().mockResolvedValue(null),
+  getAllUnits:        vi.fn(),
+  deleteUnit:        vi.fn().mockResolvedValue(),
+  updateUnit:        vi.fn(),
+  getSetting:        vi.fn().mockResolvedValue(null),
+  // Return a non-null value so Landing doesn't auto-trigger categorization
+  getCategorization: vi.fn().mockResolvedValue([{ id: 'g', title: 'G', uids: [] }]),
+  setCategorization: vi.fn().mockResolvedValue(),
+}));
+
+vi.mock('../utils/categorize', () => ({
+  categorizeUnits: vi.fn().mockResolvedValue([]),
 }));
 
 // Control carousel content directly so tests are deterministic

@@ -139,6 +139,16 @@ export function TrashIcon() {
   );
 }
 
+export function SparklesIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 3l1.5 4L17.5 8.5l-4 1.5L12 14l-1.5-4L6.5 8.5l4-1.5z" />
+      <path d="M19 2l.6 1.8 1.8.6-1.8.6L19 6.8l-.6-1.8L16.6 4.4l1.8-.6z" />
+      <path d="M5 17l.6 1.8 1.8.6-1.8.6L5 21.8l-.6-1.8L2.6 19.4l1.8-.6z" />
+    </svg>
+  );
+}
+
 // Share / broadcast: first click = ready to share, second = turn off. Arc = "broadcasting".
 export function SignalStatusIcon({ connected }) {
   return (

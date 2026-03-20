@@ -3,7 +3,6 @@ import {
   buildCarousels,
   buildRecentCarousel,
   finalizeCarousels,
-  CAROUSEL_DEFS,
   MAX,
   RECENT_MAX,
 } from '../utils/carouselGroups';
@@ -144,12 +143,12 @@ describe('buildCarousels', () => {
     carousels.forEach((c) => expect(c.units.length).toBeGreaterThan(0));
   });
 
-  it('includes all CAROUSEL_DEF ids when there are enough units', () => {
-    const expectedIds = CAROUSEL_DEFS.map((d) => d.id);
-    const units = Array.from({ length: 50 }, (_, i) => makeUnit(i + 1));
-    const carousels = buildCarousels(units);
-    const ids = carousels.map((c) => c.id);
-    expectedIds.forEach((id) => expect(ids).toContain(id));
+  it('without storedGroups: only shows recent and needs-context', () => {
+    const units = [makeUnit(1), makeUnit(2, { quote: 'note' })];
+    const ids = buildCarousels(units).map((c) => c.id);
+    expect(ids).toContain('recent');
+    expect(ids).toContain('needs-context');
+    expect(ids.filter((id) => id !== 'recent' && id !== 'needs-context')).toHaveLength(0);
   });
 
   // ── needs-context carousel ────────────────────────────────────────────────
@@ -191,5 +190,60 @@ describe('buildCarousels', () => {
     const units = [makeUnit(1), makeUnit(3), makeUnit(2)]; // no quotes
     const ctx = buildCarousels(units).find((c) => c.id === 'needs-context');
     expect(ctx.units[0].id).toBe(3);
+  });
+});
+
+// ── buildCarousels with storedGroups ─────────────────────────────────────────
+
+describe('buildCarousels — with storedGroups', () => {
+  it('maps stored uids to current unit objects', () => {
+    const units = [makeUnit(1), makeUnit(2)];
+    const stored = [{ id: 'my-group', title: 'My Group', uids: ['uid-1'] }];
+    const group = buildCarousels(units, stored).find((c) => c.id === 'my-group');
+    expect(group).toBeDefined();
+    expect(group.units[0].id).toBe(1);
+  });
+
+  it('excludes uids not present in the vault (deleted units)', () => {
+    const units = [makeUnit(1)];
+    const stored = [{ id: 'g', title: 'G', uids: ['uid-1', 'uid-gone'] }];
+    const group = buildCarousels(units, stored).find((c) => c.id === 'g');
+    expect(group.units).toHaveLength(1);
+    expect(group.units[0].id).toBe(1);
+  });
+
+  it('drops stored groups that have no surviving units', () => {
+    const units = [makeUnit(1)];
+    const stored = [{ id: 'empty-group', title: 'Gone', uids: ['uid-gone'] }];
+    const ids = buildCarousels(units, stored).map((c) => c.id);
+    expect(ids).not.toContain('empty-group');
+  });
+
+  it('"recent" is always first even with storedGroups', () => {
+    const units = [makeUnit(1)];
+    const stored = [{ id: 'g', title: 'G', uids: ['uid-1'] }];
+    expect(buildCarousels(units, stored)[0].id).toBe('recent');
+  });
+
+  it('still computes needs-context fresh (units without quote)', () => {
+    const units = [makeUnit(1, { quote: 'note' }), makeUnit(2)]; // unit 2 has no quote
+    const stored = [{ id: 'g', title: 'G', uids: ['uid-1'] }];
+    const ctx = buildCarousels(units, stored).find((c) => c.id === 'needs-context');
+    expect(ctx).toBeDefined();
+    expect(ctx.units[0].id).toBe(2);
+  });
+
+  it('no needs-context carousel when all units have quotes (with storedGroups)', () => {
+    const units = [makeUnit(1, { quote: 'a' }), makeUnit(2, { quote: 'b' })];
+    const stored = [{ id: 'g', title: 'G', uids: ['uid-1', 'uid-2'] }];
+    expect(buildCarousels(units, stored).find((c) => c.id === 'needs-context')).toBeUndefined();
+  });
+
+  it('stored group units are sorted newest-first and capped at MAX', () => {
+    const units = Array.from({ length: MAX + 3 }, (_, i) => makeUnit(i + 1));
+    const stored = [{ id: 'g', title: 'G', uids: units.map((u) => u.uid) }];
+    const group = buildCarousels(units, stored).find((c) => c.id === 'g');
+    expect(group.units).toHaveLength(MAX);
+    expect(group.units[0].id).toBe(MAX + 3); // newest first
   });
 });

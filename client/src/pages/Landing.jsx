@@ -3,9 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { PlusIcon, SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/Icons';
-import { getAllUnits, deleteUnit } from '../utils/db';
+import { PlusIcon, SearchIcon, ConnectIcon, GearIcon, SparklesIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon } from '../components/Icons';
+import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorization } from '../utils/db';
 import { buildCarousels } from '../utils/carouselGroups';
+import { categorizeUnits } from '../utils/categorize';
 import AddUnitModal from '../components/AddUnitModal';
 import UnitsOverlay from '../components/UnitsOverlay';
 import PrototypeModal from '../components/PrototypeModal';
@@ -17,21 +18,82 @@ export default function Landing() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [addUnitInitial, setAddUnitInitial] = useState(null);
+  const [addUnitInitial, setAddUnitInitial]     = useState(null);
   const [showUnitsOverlay, setShowUnitsOverlay] = useState(false);
   const [showPrototypeModal, setShowPrototypeModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [units, setUnits] = useState([]);
+  const [showSettingsModal, setShowSettingsModal]   = useState(false);
+  const [units, setUnits]             = useState([]);
+  // undefined = still loading from DB, null = loaded but none saved, array = loaded groups
+  const [storedGroups, setStoredGroups] = useState(undefined);
+  const [categorizing, setCategorizing] = useState(false);
+  const [toast, setToast]               = useState(null);
   // selectedCtx: { units: Unit[], index: number } | null
-  const [selectedCtx, setSelectedCtx] = useState(null);
+  const [selectedCtx, setSelectedCtx]   = useState(null);
 
   const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null;
+
+  // Keep a ref so runCategorize always reads current units without needing them as a dep
+  const unitsRef        = useRef([]);
+  unitsRef.current      = units;
+  const isCategorizing  = useRef(false);
 
   const reloadUnits = useCallback(() => {
     getAllUnits().then(setUnits);
   }, []);
 
-  useEffect(() => { reloadUnits(); }, [reloadUnits]);
+  // ── Categorize ──────────────────────────────────────────────────────────────
+
+  // Core categorize logic — takes units explicitly so it can be called at mount
+  // with freshly-loaded data before state has settled.
+  const runCategorize = useCallback(async (us) => {
+    if (isCategorizing.current) return;
+    isCategorizing.current = true;
+    setCategorizing(true);
+    try {
+      const apiKey = await getSetting('gemini_key');
+      if (!apiKey) throw new Error('No Gemini API key. Add one in Settings ⚙');
+      const carousels = await categorizeUnits(us, apiKey);
+      // Store only LLM groups (no Recent / needs-context — those are always computed fresh)
+      const groups = carousels
+        .filter((c) => c.id !== 'recent' && c.id !== 'needs-context')
+        .map((c) => ({ id: c.id, title: c.title, uids: c.units.map((u) => u.uid) }));
+      await setCategorization(groups);
+      setStoredGroups(groups);
+    } catch (e) {
+      setToast(e.message ?? 'Categorization failed.');
+    } finally {
+      setCategorizing(false);
+      isCategorizing.current = false;
+    }
+  }, []); // stable — units always passed as arg
+
+  const handleCategorize = useCallback(() => {
+    runCategorize(unitsRef.current);
+  }, [runCategorize]);
+
+  // ── Initial load ────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    Promise.all([getAllUnits(), getCategorization()]).then(([loadedUnits, stored]) => {
+      setUnits(loadedUnits);
+      const groups = stored ?? null;
+      setStoredGroups(groups);
+      // Auto-categorize if no stored groups and there's something to categorize
+      if (!groups && loadedUnits.length > 0) {
+        runCategorize(loadedUnits);
+      }
+    });
+  }, [runCategorize]);
+
+  // ── Toast auto-dismiss ──────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(id);
+  }, [toast]);
+
+  // ── Add unit ────────────────────────────────────────────────────────────────
 
   const openAddUnit = useCallback((initial = {}) => setAddUnitInitial(initial), []);
   const closeAddUnit = useCallback(() => {
@@ -58,7 +120,10 @@ export default function Landing() {
     });
   }, [hasPendingShare]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const carousels = useMemo(() => buildCarousels(units), [units]);
+  const carousels = useMemo(
+    () => buildCarousels(units, storedGroups ?? null),
+    [units, storedGroups]
+  );
   const hasUnits = units.length > 0;
 
   // ── Unit detail navigation ─────────────────────────────────────────────────
@@ -121,6 +186,15 @@ export default function Landing() {
     <div className={`landing${isDragging ? ' landing--dragging' : ''}${hasUnits ? ' landing--has-units' : ''}`}>
       {isDragging && <div className="drop-hint">Drop to add</div>}
 
+      {toast && (
+        <div className="toast" role="alert">
+          <span>{toast}</span>
+          <button type="button" className="toast__close" onClick={() => setToast(null)} aria-label="Dismiss">
+            <CloseIcon />
+          </button>
+        </div>
+      )}
+
       <div className="landing__center">
         <h1 className="landing__title">
           <span className="landing__title-one">1</span>
@@ -152,6 +226,16 @@ export default function Landing() {
           </button>
           <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
             <ConnectIcon />
+          </button>
+          <button
+            type="button"
+            className={`btn-icon btn-categorize${categorizing ? ' btn-categorize--loading' : ''}`}
+            onClick={handleCategorize}
+            disabled={categorizing || !hasUnits}
+            title="Categorize"
+            aria-label="Categorize"
+          >
+            <SparklesIcon />
           </button>
           <button type="button" className="btn-icon" onClick={() => setShowSettingsModal(true)} title="Settings" aria-label="Settings">
             <GearIcon />

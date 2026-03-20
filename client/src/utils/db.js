@@ -111,6 +111,18 @@ export async function getAllSettings() {
   });
 }
 
+// ── Categorization ────────────────────────────────────────────────────────────
+
+/** Returns stored LLM groups [{ id, title, uids }] or null if none saved. */
+export async function getCategorization() {
+  return getSetting('categorization');
+}
+
+/** Overwrites the stored LLM groups (single slot — always latest). */
+export async function setCategorization(groups) {
+  return setSetting('categorization', groups);
+}
+
 export async function dumpDB() {
   const [units, settings] = await Promise.all([getAllUnits(), getAllSettings()]);
   return { version: DB_VERSION, exportedAt: Date.now(), units, settings };
