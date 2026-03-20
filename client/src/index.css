@@ -1219,9 +1219,15 @@ body {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.bleed-card:hover {
+.bleed-card:hover,
+.bleed-card:focus-visible {
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  outline: none;
+}
+
+.bleed-card:focus {
+  outline: none;
 }
 
 /* Badge — frosted pill, top-left */
