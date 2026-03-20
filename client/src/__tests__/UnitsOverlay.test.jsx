@@ -112,7 +112,7 @@ describe('UnitsOverlay', () => {
     fireEvent.click(screen.getByLabelText('Delete unit'));
     expect(deleteUnit).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByText('Confirm delete'));
+    fireEvent.click(screen.getByText('Confirm?'));
     await waitFor(() => expect(deleteUnit).toHaveBeenCalledWith(SAMPLE_UNITS[0].id));
   });
 
@@ -122,7 +122,7 @@ describe('UnitsOverlay', () => {
 
     fireEvent.click(screen.getByLabelText('Open unit 1'));
     fireEvent.click(screen.getByLabelText('Delete unit'));
-    fireEvent.click(screen.getByText('Confirm delete'));
+    fireEvent.click(screen.getByText('Confirm?'));
 
     await waitFor(() => expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument());
     expect(screen.queryByText('hello world')).not.toBeInTheDocument();

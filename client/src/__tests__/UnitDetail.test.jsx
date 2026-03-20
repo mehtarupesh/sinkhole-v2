@@ -173,9 +173,9 @@ describe('UnitDetail', () => {
 
   it('requires two clicks to delete', () => {
     const { onDelete } = renderDetail();
-    fireEvent.click(screen.getByText('Delete'));
+    fireEvent.click(screen.getByLabelText('Delete unit'));
     expect(onDelete).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByText('Confirm delete'));
+    fireEvent.click(screen.getByText('Confirm?'));
     expect(onDelete).toHaveBeenCalledWith(SNIPPET.id);
   });
 
