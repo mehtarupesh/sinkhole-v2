@@ -1291,6 +1291,7 @@ body {
   min-height: 0;
   overflow: hidden;
   border-radius: 13px;
+  display: flex;
 }
 
 .bleed-card--quoted .bleed-card__media {
@@ -1300,10 +1301,9 @@ body {
 }
 
 .bleed-card__img {
-  position: absolute;
-  inset: 0;
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  height: 100%;
   object-fit: cover;
 }
 
