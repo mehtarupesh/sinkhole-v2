@@ -1,5 +1,5 @@
 const DB_NAME = 'sinkhole-db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_UNITS = 'units';
 const STORE_SETTINGS = 'settings';
 
