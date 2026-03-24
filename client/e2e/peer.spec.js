@@ -131,11 +131,11 @@ test('bidirectional sync: both devices end up with all units', async ({ browser 
   // Both should have 2 units
   await pageA.goto('/');
   await openUnitsList(pageA);
-  await expect(pageA.locator('.bleed-card')).toHaveCount(2);
+  await expect(pageA.locator('.search-grid .bleed-card')).toHaveCount(2);
 
   await pageB.goto('/');
   await openUnitsList(pageB);
-  await expect(pageB.locator('.bleed-card')).toHaveCount(2);
+  await expect(pageB.locator('.search-grid .bleed-card')).toHaveCount(2);
 
   await ctxA.close();
   await ctxB.close();

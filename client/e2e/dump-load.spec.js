@@ -10,7 +10,7 @@ async function openSettings(page) {
 async function readUnitsFromDB(page) {
   return page.evaluate(() => {
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open('sinkhole-db', 2);
+      const req = indexedDB.open('sinkhole-db', 3);
       req.onsuccess = ({ target: { result: db } }) => {
         const store = db.transaction('units', 'readonly').objectStore('units');
         const r = store.getAll();

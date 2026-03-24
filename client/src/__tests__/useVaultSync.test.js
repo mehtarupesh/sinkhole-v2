@@ -55,7 +55,6 @@ describe('useVaultSync', () => {
       initialProps: { conns: [conn] },
     });
     rerender({ conns: [conn] });
-    // on should have been called exactly once for the 'data' event
     const dataCalls = conn.on.mock.calls.filter(([e]) => e === 'data');
     expect(dataCalls).toHaveLength(1);
   });
@@ -72,7 +71,7 @@ describe('useVaultSync', () => {
 
   // ── sync(conn) ────────────────────────────────────────────────────────────
 
-  it('sync(conn) sends local units with requestBack: true', async () => {
+  it('sync(conn) sends an offer with local uids', async () => {
     const conn = makeConn();
     const { result } = renderHook(() => useVaultSync([conn]));
 
@@ -80,8 +79,8 @@ describe('useVaultSync', () => {
 
     expect(conn.send).toHaveBeenCalledWith({
       type: 'sinkhole-vault-sync',
-      units: expect.any(Array),
-      requestBack: true,
+      phase: 'offer',
+      uids: ['local-1'],
     });
   });
 
@@ -114,20 +113,7 @@ describe('useVaultSync', () => {
     expect(result.current.getState(conn).status).toBe('error');
   });
 
-  // ── Receiving ─────────────────────────────────────────────────────────────
-
-  it('merges units from an incoming vault-sync message', async () => {
-    const conn = makeConn();
-    const { result } = renderHook(() => useVaultSync([conn]));
-    const peerUnits = [{ uid: 'peer-1', type: 'snippet', content: 'peer', createdAt: 999 }];
-
-    await act(async () => {
-      conn._trigger('data', { type: 'sinkhole-vault-sync', units: peerUnits, requestBack: false });
-    });
-
-    expect(mergeUnits).toHaveBeenCalledWith(peerUnits);
-    expect(result.current.getState(conn)).toEqual({ status: 'done', added: 2 });
-  });
+  // ── Receiving: offer ──────────────────────────────────────────────────────
 
   it('ignores messages with a different type', async () => {
     const conn = makeConn();
@@ -140,27 +126,87 @@ describe('useVaultSync', () => {
     expect(mergeUnits).not.toHaveBeenCalled();
   });
 
-  it('sends back local units when requestBack is true', async () => {
+  it('responds to offer with transfer containing units peer is missing and want', async () => {
     const conn = makeConn();
     renderHook(() => useVaultSync([conn]));
 
     await act(async () => {
-      conn._trigger('data', { type: 'sinkhole-vault-sync', units: [], requestBack: true });
+      conn._trigger('data', { type: 'sinkhole-vault-sync', phase: 'offer', uids: [] });
     });
 
     expect(conn.send).toHaveBeenCalledWith({
       type: 'sinkhole-vault-sync',
+      phase: 'transfer',
       units: expect.any(Array),
-      requestBack: false,
+      want: [],
     });
   });
 
-  it('does not send back when requestBack is false', async () => {
+  it('omits units the peer already has from the offer response', async () => {
     const conn = makeConn();
     renderHook(() => useVaultSync([conn]));
 
     await act(async () => {
-      conn._trigger('data', { type: 'sinkhole-vault-sync', units: [], requestBack: false });
+      conn._trigger('data', { type: 'sinkhole-vault-sync', phase: 'offer', uids: ['local-1'] });
+    });
+
+    expect(conn.send).toHaveBeenCalledWith(
+      expect.objectContaining({ units: [] })
+    );
+  });
+
+  // ── Receiving: transfer ───────────────────────────────────────────────────
+
+  it('merges units from a transfer and sets done', async () => {
+    const conn = makeConn();
+    const { result } = renderHook(() => useVaultSync([conn]));
+    const peerUnits = [{ uid: 'peer-1', type: 'snippet', content: 'peer', createdAt: 999 }];
+
+    await act(async () => {
+      conn._trigger('data', { type: 'sinkhole-vault-sync', phase: 'transfer', units: peerUnits });
+    });
+
+    expect(mergeUnits).toHaveBeenCalledWith(peerUnits);
+    expect(result.current.getState(conn)).toEqual({ status: 'done', added: 2 });
+  });
+
+  it('sends back requested units when transfer includes want', async () => {
+    const conn = makeConn();
+    renderHook(() => useVaultSync([conn]));
+
+    await act(async () => {
+      conn._trigger('data', {
+        type: 'sinkhole-vault-sync',
+        phase: 'transfer',
+        units: [],
+        want: ['local-1'],
+      });
+    });
+
+    expect(conn.send).toHaveBeenCalledWith({
+      type: 'sinkhole-vault-sync',
+      phase: 'transfer',
+      units: expect.arrayContaining([expect.objectContaining({ uid: 'local-1' })]),
+    });
+  });
+
+  it('does not send back when transfer has no want', async () => {
+    const conn = makeConn();
+    renderHook(() => useVaultSync([conn]));
+
+    await act(async () => {
+      conn._trigger('data', { type: 'sinkhole-vault-sync', phase: 'transfer', units: [] });
+    });
+
+    expect(conn.send).not.toHaveBeenCalled();
+  });
+
+  it('does not send back when transfer want is empty', async () => {
+    const conn = makeConn();
+    renderHook(() => useVaultSync([conn]));
+
+    await act(async () => {
+      conn._trigger('data', { type: 'sinkhole-vault-sync', phase: 'transfer', units: [], want: [] });
     });
 
     expect(conn.send).not.toHaveBeenCalled();
@@ -172,7 +218,7 @@ describe('useVaultSync', () => {
     const { result } = renderHook(() => useVaultSync([conn1, conn2]));
 
     await act(async () => {
-      conn1._trigger('data', { type: 'sinkhole-vault-sync', units: [], requestBack: false });
+      conn1._trigger('data', { type: 'sinkhole-vault-sync', phase: 'transfer', units: [] });
     });
 
     expect(result.current.getState(conn1).status).toBe('done');

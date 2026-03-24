@@ -6,7 +6,7 @@ const { ExpressPeerServer } = require('peer');
 module.exports = async function globalSetup() {
   const app = express();
   const server = http.createServer(app);
-  const peerServer = ExpressPeerServer(server, { path: '/' });
+  const peerServer = ExpressPeerServer(server, { path: '/', expire_timeout: 1 });
   app.use('/peerjs', peerServer);
 
   await new Promise((resolve, reject) => {
