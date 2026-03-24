@@ -51,6 +51,14 @@ export default function Connect() {
     return () => stop();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') navigate('/');
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [navigate]);
+
   // Auto-connect when arriving from Scan page via ?peerId=
   const urlPeerId = searchParams.get('peerId');
   useEffect(() => {
