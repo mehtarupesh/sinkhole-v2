@@ -218,7 +218,8 @@ body {
 /* ── Mirror vault sync ── */
 .mirror-sync {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
@@ -243,6 +244,27 @@ body {
 .mirror-sync__btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.sync-log {
+  margin-top: 8px;
+  max-height: 110px;
+  overflow-y: auto;
+  width: 100%;
+}
+
+.sync-log__entry {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: 11px;
+  font-family: monospace;
+  color: #737373;
+}
+
+.sync-log__ts {
+  color: #525252;
+  flex-shrink: 0;
 }
 
 /* ── Shared: connect form ── */

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { usePeer } from '../hooks/usePeer';
@@ -7,13 +7,6 @@ import { useVaultSync } from '../hooks/useVaultSync';
 import { getJoinUrl } from '../utils/getJoinUrl';
 import { getStableHostId, isValidPeerId } from '../utils/stableHostId';
 import { CloseIcon } from '../components/Icons';
-
-function syncLabel(status, added) {
-  if (status === 'syncing') return 'Syncing…';
-  if (status === 'error') return 'Sync failed';
-  if (status === 'done') return added > 0 ? `Synced · ${added} added` : 'Already in sync';
-  return 'Sync vault';
-}
 
 /**
  * Dedicated page for P2P connection and vault sync.
@@ -43,7 +36,12 @@ export default function Connect() {
 
   const conn = connections[0] ?? null;
   const [mirrorState, pushMirror] = useSync(conn, { content: '' });
-  const { status: syncStatus, added: syncAdded } = getVaultState(conn);
+  const { status: syncStatus, log: syncLog } = getVaultState(conn);
+  const logRef = useRef(null);
+
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [syncLog]);
 
   // Start peer and prepare QR on mount; stop on unmount.
   useEffect(() => {
@@ -125,8 +123,20 @@ export default function Connect() {
                 onClick={() => syncVault(conn)}
                 disabled={syncStatus === 'syncing'}
               >
-                {syncLabel(syncStatus, syncAdded)}
+                Sync
               </button>
+              {syncLog.length > 0 && (
+                <div className="sync-log" ref={logRef}>
+                  {syncLog.map((entry, i) => (
+                    <div key={i} className="sync-log__entry">
+                      <span className="sync-log__ts">
+                        {new Date(entry.ts).toLocaleTimeString()}
+                      </span>
+                      <span className="sync-log__text">{entry.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </>
         ) : (

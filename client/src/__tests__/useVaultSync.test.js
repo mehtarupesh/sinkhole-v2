@@ -31,12 +31,12 @@ describe('useVaultSync', () => {
   it('getState returns idle/zero for a new connection', () => {
     const conn = makeConn();
     const { result } = renderHook(() => useVaultSync([conn]));
-    expect(result.current.getState(conn)).toEqual({ status: 'idle', added: 0 });
+    expect(result.current.getState(conn)).toEqual(expect.objectContaining({ status: 'idle', added: 0 }));
   });
 
   it('getState returns idle/zero for null', () => {
     const { result } = renderHook(() => useVaultSync([]));
-    expect(result.current.getState(null)).toEqual({ status: 'idle', added: 0 });
+    expect(result.current.getState(null)).toEqual(expect.objectContaining({ status: 'idle', added: 0 }));
   });
 
   // ── Listener registration ─────────────────────────────────────────────────
@@ -167,7 +167,7 @@ describe('useVaultSync', () => {
     });
 
     expect(mergeUnits).toHaveBeenCalledWith(peerUnits);
-    expect(result.current.getState(conn)).toEqual({ status: 'done', added: 2 });
+    expect(result.current.getState(conn)).toEqual(expect.objectContaining({ status: 'done', added: 2 }));
   });
 
   it('sends back requested units when transfer includes want', async () => {
