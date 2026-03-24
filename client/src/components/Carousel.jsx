@@ -1,3 +1,6 @@
+import Linkify from './Linkify';
+import LinkPreview from './LinkPreview';
+
 function BadgeIcon() {
   const s = { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
   return (
@@ -42,7 +45,10 @@ export function CarouselCard({ unit, onClick }) {
       )}
 
       {unit.type === 'snippet' && (
-        <p className="bleed-card__text">{unit.content}</p>
+        <>
+          <p className="bleed-card__text"><Linkify>{unit.content}</Linkify></p>
+          <LinkPreview text={unit.content} />
+        </>
       )}
 
       {unit.type === 'password' && (

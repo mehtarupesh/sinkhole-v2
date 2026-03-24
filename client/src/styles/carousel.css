@@ -137,6 +137,40 @@
   -webkit-line-clamp: 3;
 }
 
+.bleed-card__text .linkify {
+  color: #7aafff;
+  text-decoration: underline;
+  text-decoration-color: rgba(122, 175, 255, 0.3);
+  text-underline-offset: 2px;
+}
+
+/* ── Link preview chip ── */
+.link-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 3px 8px 3px 5px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  text-decoration: none;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.link-preview__favicon {
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+
+.link-preview__domain {
+  font-size: 11px;
+  color: #7aafff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Password variant ── */
 .bleed-card--pw {
   text-align: center;
