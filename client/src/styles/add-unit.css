@@ -1,0 +1,292 @@
+/* ── Add Unit Modal ── */
+.add-unit-modal {
+  max-width: 480px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.add-unit__type-row {
+  display: flex;
+  gap: 6px;
+}
+
+.add-unit__type-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #525252;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.add-unit__type-icon:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #737373;
+}
+
+.add-unit__type-icon--active {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #e5e5e5;
+}
+
+.add-unit__type-btn {
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  color: #a3a3a3;
+  font-size: 12px;
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.add-unit__type-btn--active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fafafa;
+}
+
+.add-unit__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.add-unit__textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #e5e5e5;
+  font-size: 15px;
+  line-height: 1.6;
+  resize: vertical;
+  font-family: inherit;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.add-unit__textarea--has-value:not(:focus) {
+  background: transparent;
+  border-color: transparent;
+  cursor: pointer;
+}
+
+.add-unit__file-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.add-unit__file-input {
+  font-size: 13px;
+  color: #a3a3a3;
+}
+
+.add-unit__preview-btn {
+  display: block;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: zoom-in;
+  border-radius: 10px;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.add-unit__preview {
+  max-width: 100%;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+.add-unit__drop-zone {
+  width: 100%;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  color: #404040;
+  cursor: pointer;
+  font-size: 13px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.add-unit__drop-zone:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #737373;
+}
+
+.add-unit__change-file {
+  padding: 6px 12px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #525252;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.add-unit__change-file:hover {
+  color: #a3a3a3;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.add-unit__file-name {
+  margin: 0;
+  font-size: 12px;
+  color: #737373;
+}
+
+.add-unit__password-field {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.add-unit__password-field .connect-input {
+  flex: 1;
+}
+
+.add-unit__password-wrap {
+  position: relative;
+}
+
+.add-unit__password-input {
+  width: 100%;
+  padding: 14px 64px 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #e5e5e5;
+  font-size: 16px;
+  font-family: inherit;
+}
+
+.add-unit__password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: #525252;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.add-unit__password-toggle:hover {
+  color: #a3a3a3;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── NoteField ── */
+.note-field {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 14px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.note-field__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #e5e5e5;
+  font-size: 13px;
+  font-family: inherit;
+  transition: background 0.2s, border-color 0.2s, font-style 0.2s, color 0.2s;
+}
+
+.note-field__input--has-value:not(:focus) {
+  background: transparent;
+  border-color: transparent;
+  font-style: italic;
+  color: #a3a3a3;
+  cursor: pointer;
+}
+
+.note-field__rec-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.note-field__rec-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #a3a3a3;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.note-field__rec-circle:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.note-field__rec-circle:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e5e5e5;
+}
+
+.note-field__rec-circle--stop {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.35);
+  color: #f87171;
+}
+
+.note-field__rec-circle--stop:not(:disabled):hover {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+.note-field__countdown {
+  font-size: 12px;
+  color: #f87171;
+}
+
+/* Legacy aliases kept for PrototypeModal */
+.add-unit__voice { border-top: 1px solid rgba(255,255,255,0.07); padding-top: 12px; margin-bottom: 14px; }
+.add-unit__mic-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #a3a3a3; font-size: 12px; cursor: pointer; }
+.add-unit__mic-btn--active { color: #f87171; border-color: rgba(248,113,113,0.4); }
+.add-unit__quote { margin: 8px 0 0; font-size: 13px; color: #a3a3a3; font-style: italic; }
+.add-unit__quote-mark { color: #525252; }
+
+.add-unit__save-btn {
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+}

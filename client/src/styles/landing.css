@@ -1,0 +1,115 @@
+/* ── Landing page ── */
+.landing {
+  min-height: 100vh;
+  padding: 24px;
+  padding-bottom: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.landing__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  min-height: 45vh;
+}
+
+.landing--has-units .landing__center {
+  min-height: auto;
+  padding: 28px 0 24px;
+}
+
+.landing__carousels {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.landing__title {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  color: #fafafa;
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.landing__title-one {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.35);
+  margin-right: 1px;
+}
+
+.landing__title-b {
+  font-weight: 700;
+  color: #fafafa;
+}
+
+.landing__sub {
+  margin: 0;
+  color: #737373;
+  font-size: 0.9rem;
+  max-width: 280px;
+}
+
+.landing__actions-wrap {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+.landing__actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(18, 18, 18, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  white-space: nowrap;
+}
+
+.landing__conn-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* ── Drop hint ── */
+.landing--dragging::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  margin: 16px;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.drop-hint {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+  z-index: 51;
+  letter-spacing: 0.05em;
+}
