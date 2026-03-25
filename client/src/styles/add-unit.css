@@ -609,28 +609,6 @@
   background: rgba(74, 222, 128, 0.08);
 }
 
-/* Save button fill-up animation (auto-save countdown) */
-.add-unit__save-btn--filling {
-  position: relative;
-  overflow: hidden;
-}
-
-.add-unit__save-btn--filling::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.14);
-  transform: scaleX(0);
-  transform-origin: left center;
-  animation: btn-fill-up 3s linear forwards;
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-@keyframes btn-fill-up {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
 
 /* ── Auto-suggest ── */
 

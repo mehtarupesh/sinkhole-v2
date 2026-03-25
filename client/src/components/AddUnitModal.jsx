@@ -48,9 +48,7 @@ export default function AddUnitModal({
   const copyTimerRef = useRef(null);
   const textareaRef = useRef(null);
   const swipeStart = useRef(null);
-  const autoSaveTimerRef = useRef(null);
-  const fromTranscriptionRef = useRef(false);
-  const [autoSaving, setAutoSaving] = useState(false);
+
   const saving = saveState !== '';
   const hasContent = type === 'image' ? !!content : !!content.trim();
   const hasNote = !!quote.trim();
@@ -159,27 +157,10 @@ export default function AddUnitModal({
     }
   };
 
-  const handleSave = () => {
-    cancelAutoSave();
-    performSave(quote);
-  };
-
-  const startAutoSave = (quoteText) => {
-    setAutoSaving(true);
-    autoSaveTimerRef.current = setTimeout(() => {
-      setAutoSaving(false);
-      performSave(quoteText);
-    }, 3000);
-  };
-
-  const cancelAutoSave = () => {
-    clearTimeout(autoSaveTimerRef.current);
-    setAutoSaving(false);
-  };
+  const handleSave = () => performSave(quote);
 
   const handleTranscriptionDone = (transcript) => {
     setQuote(transcript);
-    fromTranscriptionRef.current = true;
     runSuggest(transcript);
   };
 
@@ -223,12 +204,7 @@ export default function AddUnitModal({
         setCategoryId(''); // clear any manual selection
       }
       setSuggestState('done');
-      if (fromTranscriptionRef.current) {
-        fromTranscriptionRef.current = false;
-        startAutoSave(effectiveNote);
-      }
     } catch (e) {
-      fromTranscriptionRef.current = false;
       setSuggestState(e.message === 'no-key' ? 'no-key' : 'error');
     }
   };
@@ -253,25 +229,20 @@ export default function AddUnitModal({
 
   // ── Ghost chip long-press to edit ─────────────────────────────────────────
 
-  const handleGhostPointerDown = (e) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
+  const handleGhostPointerDown = () => {
     ghostLongPressTimer.current = setTimeout(() => {
       ghostLongPressTimer.current = null;
       setGhostEditValue(suggestedTitle ?? '');
       setEditingGhost(true);
-      // Focus happens via autoFocus / ref after render
     }, 500);
   };
 
-  const handleGhostPointerUp = (e) => {
-    if (ghostLongPressTimer.current) {
-      // Short press — treat as toggle accept/deselect
-      clearTimeout(ghostLongPressTimer.current);
-      ghostLongPressTimer.current = null;
-      setGhostAccepted((v) => !v);
-      if (ghostAccepted) setCategoryId('');
-    }
-    // If timer already fired (long press), editingGhost was set — do nothing here
+  const handleGhostClick = () => {
+    if (!ghostLongPressTimer.current) return;
+    clearTimeout(ghostLongPressTimer.current);
+    ghostLongPressTimer.current = null;
+    setGhostAccepted((v) => !v);
+    if (ghostAccepted) setCategoryId('');
   };
 
   const handleGhostPointerCancel = () => {
@@ -527,7 +498,7 @@ export default function AddUnitModal({
                   type="button"
                   className={`category-field__chip auto-suggest-ghost-chip${ghostAccepted ? ' category-field__chip--active auto-suggest-ghost-chip--accepted' : ''}`}
                   onPointerDown={handleGhostPointerDown}
-                  onPointerUp={handleGhostPointerUp}
+                  onClick={handleGhostClick}
                   onPointerCancel={handleGhostPointerCancel}
                   onPointerLeave={handleGhostPointerCancel}
                 >
@@ -571,8 +542,8 @@ export default function AddUnitModal({
           </button>
           <button
             type="button"
-            className={`connect-btn add-unit__save-btn${saveState === 'done' ? ' add-unit__save-btn--done' : ''}${autoSaving ? ' add-unit__save-btn--filling' : ''}`}
-            onClick={autoSaving ? cancelAutoSave : handleSave}
+            className={`connect-btn add-unit__save-btn${saveState === 'done' ? ' add-unit__save-btn--done' : ''}`}
+            onClick={handleSave}
             disabled={saving}
           >
             {saveState === 'done' ? 'Saved ✓' : saving ? '…' : 'Save'}
