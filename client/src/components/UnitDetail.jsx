@@ -57,12 +57,12 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
     }
   };
 
-  const handleSave = async () => {
+  const performSave = async (quoteText) => {
     setSaveState('saving');
     try {
       const changes = { content, fileName, mimeType };
-      if (quote.trim()) {
-        changes.quote = quote.trim();
+      if (quoteText?.trim()) {
+        changes.quote = quoteText.trim();
       } else {
         changes.quote = undefined;
       }
@@ -75,6 +75,9 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
       setSaveState('');
     }
   };
+
+  const handleSave = () => performSave(quote);
+  const handleTranscriptionDone = (transcript) => performSave(transcript);
 
   const handleDelete = async () => {
     if (!confirmDelete) { setConfirmDelete(true); return; }
@@ -194,7 +197,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
         <ImageLightbox src={content} alt={fileName} onClose={() => setShowLightbox(false)} />
       )}
 
-      <NoteField value={quote} onChange={setQuote} disabled={saving} />
+      <NoteField value={quote} onChange={setQuote} disabled={saving} onTranscriptionDone={handleTranscriptionDone} />
 
       <CategoryField groups={storedGroups} value={categoryId} onChange={setCategoryId} disabled={saving} />
 

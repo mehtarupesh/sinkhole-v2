@@ -1,32 +1,79 @@
 /**
- * NoteField — voice + text quote input (controlled)
+ * NoteField — hold-to-record voice note with live waveform (controlled)
  *
  * Props:
- *   value      string   current quote (controlled by parent)
- *   onChange   fn       (newValue: string) => void
- *   disabled   bool     disables all interactions (e.g. during save)
+ *   value                string   current note (controlled by parent)
+ *   onChange             fn       (newValue: string) => void
+ *   disabled             bool     disables all interactions
+ *   onTranscriptionDone  fn       (transcript: string) => void — called after transcription
  */
-import { useState, useRef, useEffect } from 'react';
-import { MicIcon, StopIcon } from './Icons';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { getSetting } from '../utils/db';
 import { transcribeAudio } from '../utils/transcribe';
 
-const MAX_REC_SECS = 10;
+const MAX_REC_SECS = 60;
+const BARS = 28;
+const RADIUS = 31;
+const CIRC = 2 * Math.PI * RADIUS;
 
-export default function NoteField({ value, onChange, disabled = false }) {
-  const [recState, setRecState] = useState('idle'); // idle | recording | transcribing | done
-  const [countdown, setCountdown] = useState(MAX_REC_SECS);
+export default function NoteField({ value, onChange, disabled = false, onTranscriptionDone }) {
+  const [recState, setRecState] = useState('idle'); // idle | recording | transcribing
+  const [elapsed, setElapsed] = useState(0);
   const [localError, setLocalError] = useState('');
+
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
+  const canvasRef = useRef(null);
+  const animFrameRef = useRef(null);
+  const analyserRef = useRef(null);
 
-  useEffect(() => () => clearInterval(timerRef.current), []);
+  useEffect(() => () => {
+    clearInterval(timerRef.current);
+    cancelAnimationFrame(animFrameRef.current);
+  }, []);
+
+  const drawLoop = useCallback(() => {
+    const canvas = canvasRef.current;
+    const analyser = analyserRef.current;
+    if (!canvas || !analyser) return;
+    const ctx = canvas.getContext('2d');
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+    function frame() {
+      animFrameRef.current = requestAnimationFrame(frame);
+      analyser.getByteFrequencyData(data);
+      const { width: w, height: h } = canvas;
+      ctx.clearRect(0, 0, w, h);
+      const step = Math.floor(data.length / BARS);
+      const barW = (w / BARS) * 0.55;
+      const gapW = (w / BARS) * 0.45;
+      for (let i = 0; i < BARS; i++) {
+        const v = data[i * step] / 255;
+        const bh = Math.max(3, v * h * 0.88);
+        const x = i * (barW + gapW) + gapW / 2;
+        const y = (h - bh) / 2;
+        ctx.fillStyle = `rgba(248, 113, 113, ${0.35 + v * 0.65})`;
+        ctx.beginPath();
+        ctx.roundRect(x, y, barW, bh, 2);
+        ctx.fill();
+      }
+    }
+    frame();
+  }, []);
 
   async function startRecording() {
     setLocalError('');
+    setElapsed(0);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioCtx = new AudioContext();
+      const src = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 128;
+      src.connect(analyser);
+      analyserRef.current = analyser;
+
       chunksRef.current = [];
       const rec = new MediaRecorder(stream);
       recorderRef.current = rec;
@@ -34,16 +81,19 @@ export default function NoteField({ value, onChange, disabled = false }) {
       rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       rec.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
+        cancelAnimationFrame(animFrameRef.current);
         clearInterval(timerRef.current);
-        setCountdown(MAX_REC_SECS);
+        setElapsed(0);
+
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         setRecState('transcribing');
         try {
           const apiKey = await getSetting('gemini_key');
-          if (!apiKey) throw new Error('No API key — add your Gemini key in Settings.');
+          if (!apiKey) throw new Error('No Gemini key — add it in Settings.');
           const transcript = await transcribeAudio(blob, apiKey);
           onChange(transcript);
           setRecState('idle');
+          onTranscriptionDone?.(transcript);
         } catch (err) {
           setLocalError(err.message || 'Transcription failed.');
           setRecState('idle');
@@ -52,12 +102,16 @@ export default function NoteField({ value, onChange, disabled = false }) {
 
       rec.start();
       setRecState('recording');
-      let left = MAX_REC_SECS;
-      setCountdown(left);
+      drawLoop();
+
       timerRef.current = setInterval(() => {
-        left -= 1;
-        setCountdown(left);
-        if (left <= 0) { clearInterval(timerRef.current); rec.stop(); }
+        setElapsed((prev) => {
+          if (prev + 1 >= MAX_REC_SECS) {
+            recorderRef.current?.stop();
+            return 0;
+          }
+          return prev + 1;
+        });
       }, 1000);
     } catch {
       setLocalError('Microphone access denied.');
@@ -65,51 +119,94 @@ export default function NoteField({ value, onChange, disabled = false }) {
   }
 
   function stopRecording() {
-    clearInterval(timerRef.current);
-    recorderRef.current?.stop();
+    if (recorderRef.current?.state === 'recording') {
+      recorderRef.current.stop();
+    }
   }
 
-  const busy = recState === 'recording' || recState === 'transcribing';
+  function handlePointerDown(e) {
+    if (disabled || recState !== 'idle') return;
+    e.preventDefault();
+    startRecording();
+  }
+
+  function handlePointerUp() {
+    if (recState === 'recording') stopRecording();
+  }
+
+  const isRec = recState === 'recording';
+  const isTranscribing = recState === 'transcribing';
+  const dashFill = CIRC * (elapsed / MAX_REC_SECS);
 
   return (
     <div className="note-field">
+      {/* Live waveform — slides in during recording */}
+      <canvas
+        ref={canvasRef}
+        className={`note-field__waveform${isRec ? ' note-field__waveform--visible' : ''}`}
+        width={280}
+        height={48}
+        aria-hidden="true"
+      />
+
+      {/* Mic button with SVG arc progress ring */}
+      <div className="note-field__mic-wrap">
+        <svg className="note-field__arc" viewBox="0 0 72 72" aria-hidden="true">
+          <circle className="note-field__arc-track" cx="36" cy="36" r={RADIUS} />
+          {isRec && (
+            <circle
+              className="note-field__arc-fill"
+              cx="36"
+              cy="36"
+              r={RADIUS}
+              strokeDasharray={`${dashFill} ${CIRC}`}
+            />
+          )}
+        </svg>
+
+        <button
+          type="button"
+          className={`note-field__mic-btn${isRec ? ' note-field__mic-btn--recording' : ''}${isTranscribing ? ' note-field__mic-btn--transcribing' : ''}`}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+          onContextMenu={(e) => e.preventDefault()}
+          disabled={disabled || isTranscribing}
+          aria-label={isRec ? 'Release to save note' : 'Hold to record note'}
+        >
+          {isTranscribing ? (
+            <span className="note-field__spinner" />
+          ) : (
+            <MicIcon filled={isRec} />
+          )}
+        </button>
+      </div>
+
+      <p className="note-field__hint">
+        {isRec ? 'Release to save' : isTranscribing ? 'Transcribing…' : 'Hold to speak'}
+      </p>
+
       <input
         type="text"
         className={`note-field__input${value ? ' note-field__input--has-value' : ''}`}
-        placeholder={recState === 'transcribing' ? 'Transcribing…' : 'Add a note…'}
+        placeholder="or type a note…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        disabled={disabled || busy}
+        disabled={disabled || isRec || isTranscribing}
       />
-
-      <div className="note-field__rec-row">
-        {recState === 'recording' ? (
-          <>
-            <button
-              type="button"
-              className="note-field__rec-circle note-field__rec-circle--stop"
-              onClick={stopRecording}
-              disabled={disabled}
-              aria-label="Stop recording"
-            >
-              <StopIcon size={18} />
-            </button>
-            <span className="note-field__countdown">{countdown}s</span>
-          </>
-        ) : (
-          <button
-            type="button"
-            className="note-field__rec-circle"
-            onClick={startRecording}
-            disabled={disabled || recState === 'transcribing'}
-            aria-label="Record voice note"
-          >
-            <MicIcon size={22} />
-          </button>
-        )}
-      </div>
 
       {localError && <p className="modal__error" style={{ marginTop: 4 }}>{localError}</p>}
     </div>
+  );
+}
+
+function MicIcon({ filled }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="2" width="6" height="11" rx="3" fill={filled ? 'currentColor' : 'none'} />
+      <path d="M5 10a7 7 0 0 0 14 0" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+      <line x1="8" y1="22" x2="16" y2="22" />
+    </svg>
   );
 }

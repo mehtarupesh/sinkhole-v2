@@ -106,7 +106,7 @@ export default function AddUnitModal({
     reader.readAsDataURL(file);
   };
 
-  const handleSave = async () => {
+  const performSave = async (quoteText) => {
     const hasContent = type === 'image' ? !!content : !!content.trim();
     if (!hasContent) {
       setError(type === 'image' ? 'Please select a file' : 'Content is required');
@@ -117,7 +117,7 @@ export default function AddUnitModal({
       const unit = { type, content };
       if (fileName) unit.fileName = fileName;
       if (mimeType) unit.mimeType = mimeType;
-      if (quote.trim()) unit.quote = quote.trim();
+      if (quoteText?.trim()) unit.quote = quoteText.trim();
       const { uid } = await addUnit(unit);
       navigator.vibrate?.(40);
       setSaveState('done');
@@ -128,6 +128,9 @@ export default function AddUnitModal({
       setSaveState('');
     }
   };
+
+  const handleSave = () => performSave(quote);
+  const handleTranscriptionDone = (transcript) => performSave(transcript);
 
   return (
     <div
@@ -273,7 +276,7 @@ export default function AddUnitModal({
           <ImageLightbox src={content} alt={fileName} onClose={() => setShowLightbox(false)} />
         )}
 
-        <NoteField value={quote} onChange={setQuote} disabled={saving} />
+        <NoteField value={quote} onChange={setQuote} disabled={saving} onTranscriptionDone={handleTranscriptionDone} />
 
         <CategoryField groups={storedGroups} value={categoryId} onChange={setCategoryId} disabled={saving} />
 

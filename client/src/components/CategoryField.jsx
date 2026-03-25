@@ -1,8 +1,8 @@
 /**
- * CategoryField — optional category selector (controlled)
+ * CategoryField — horizontal chip row for category selection (controlled)
  *
  * Props:
- *   groups   {id, title}[]  available categories (from storedGroups)
+ *   groups   {id, title}[]  available categories
  *   value    string         selected group id, or '' for none
  *   onChange fn             (groupId: string) => void
  *   disabled bool
@@ -11,18 +11,19 @@ export default function CategoryField({ groups, value, onChange, disabled = fals
   if (!groups?.length) return null;
   return (
     <div className="category-field">
-      <select
-        className={`category-field__select${value ? ' category-field__select--has-value' : ''}`}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        aria-label="Category"
-      >
-        <option value="">Add to category…</option>
+      <div className="category-field__chips">
         {groups.map((g) => (
-          <option key={g.id} value={g.id}>{g.title}</option>
+          <button
+            key={g.id}
+            type="button"
+            className={`category-field__chip${value === g.id ? ' category-field__chip--active' : ''}`}
+            onClick={() => onChange(value === g.id ? '' : g.id)}
+            disabled={disabled}
+          >
+            {g.title}
+          </button>
         ))}
-      </select>
+      </div>
     </div>
   );
 }
