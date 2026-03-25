@@ -123,6 +123,12 @@
   .category-cloud-section__line {
     display: none;
   }
+  .category-cloud {
+    gap: 8px 10px;
+  }
+  .category-cloud__pill {
+    padding: 5px 12px;
+  }
 }
 
 .category-cloud__pill {

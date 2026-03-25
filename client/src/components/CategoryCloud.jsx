@@ -13,9 +13,10 @@ export default function CategoryCloud({ storedGroups, onCategoryClick }) {
   const logMax = Math.log(maxCount + 1);
   const range = logMax - logMin || 1;
 
-  // Font size between 12px and 22px
-  const MIN_SIZE = 12;
-  const MAX_SIZE = 22;
+  // Font size: smaller range on mobile so multiple pills fit per row
+  const isMobile = window.innerWidth <= 640;
+  const MIN_SIZE = isMobile ? 11 : 12;
+  const MAX_SIZE = isMobile ? 16 : 22;
 
   return (
     <div className="category-cloud-section">
