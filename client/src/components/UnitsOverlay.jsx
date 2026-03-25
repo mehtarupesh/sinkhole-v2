@@ -12,7 +12,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedUnit, setSelectedUnit] = useState(null);
   const inputRef = useRef(null);
-  const swipeStartY = useRef(null);
+  const swipeStart = useRef(null);
 
   useEffect(() => {
     getAllUnits().then((all) => setUnits(all.slice().reverse()));
@@ -76,14 +76,15 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   }
 
   const handleTouchStart = (e) => {
-    swipeStartY.current = e.touches[0].clientY;
+    swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
 
   const handleTouchEnd = (e) => {
-    if (swipeStartY.current === null) return;
-    const delta = e.changedTouches[0].clientY - swipeStartY.current;
-    swipeStartY.current = null;
-    if (delta > 80) onClose();
+    if (!swipeStart.current) return;
+    const dx = e.changedTouches[0].clientX - swipeStart.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeStart.current.y);
+    swipeStart.current = null;
+    if (dx > 80 && dx > dy * 1.5) onClose();
   };
 
   return (
@@ -104,8 +105,8 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button type="button" className="btn-close" onClick={onClose} aria-label="Close">
-          <CloseIcon />
+        <button type="button" className="search-close-btn" onClick={onClose} aria-label="Close">
+          Done
         </button>
       </div>
 

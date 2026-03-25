@@ -127,6 +127,23 @@
   caret-color: #e5e5e5;
 }
 
+.search-close-btn {
+  background: none;
+  border: none;
+  color: #737373;
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 500;
+  padding: 4px 0 4px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.search-close-btn:hover {
+  color: #e5e5e5;
+}
+
 .search-input::placeholder {
   color: #333;
 }
