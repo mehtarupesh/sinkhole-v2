@@ -106,21 +106,22 @@ describe('db', () => {
   });
 
   describe('addUnit', () => {
-    it('stores a unit and returns its generated id', async () => {
-      const id = await addUnit({ type: 'snippet', content: 'hello' });
+    it('stores a unit and returns its generated id and uid', async () => {
+      const { id, uid } = await addUnit({ type: 'snippet', content: 'hello' });
       expect(typeof id).toBe('number');
+      expect(typeof uid).toBe('string');
     });
 
     it('generates a uid for each new unit', async () => {
-      const id = await addUnit({ type: 'snippet', content: 'hello' });
+      const { id, uid } = await addUnit({ type: 'snippet', content: 'hello' });
       const item = mockDB._store.data.get(id);
       expect(typeof item.uid).toBe('string');
-      expect(item.uid.length).toBeGreaterThan(0);
+      expect(item.uid).toBe(uid);
     });
 
     it('generates unique uids across units', async () => {
-      const id1 = await addUnit({ type: 'snippet', content: 'a' });
-      const id2 = await addUnit({ type: 'snippet', content: 'b' });
+      const { id: id1 } = await addUnit({ type: 'snippet', content: 'a' });
+      const { id: id2 } = await addUnit({ type: 'snippet', content: 'b' });
       expect(mockDB._store.data.get(id1).uid).not.toBe(mockDB._store.data.get(id2).uid);
     });
 
@@ -166,14 +167,14 @@ describe('db', () => {
 
   describe('updateUnit', () => {
     it('merges changes into the existing unit', async () => {
-      const id = await addUnit({ type: 'snippet', content: 'original' });
+      const { id } = await addUnit({ type: 'snippet', content: 'original' });
       const updated = await updateUnit(id, { content: 'changed' });
       expect(updated.content).toBe('changed');
       expect(updated.type).toBe('snippet');
     });
 
     it('preserves unchanged fields', async () => {
-      const id = await addUnit({ type: 'snippet', content: 'text', quote: 'note' });
+      const { id } = await addUnit({ type: 'snippet', content: 'text', quote: 'note' });
       await updateUnit(id, { content: 'new text' });
       const item = mockDB._store.data.get(id);
       expect(item.quote).toBe('note');
@@ -181,7 +182,7 @@ describe('db', () => {
 
     it('stamps updatedAt', async () => {
       const before = Date.now();
-      const id = await addUnit({ type: 'snippet', content: 'text' });
+      const { id } = await addUnit({ type: 'snippet', content: 'text' });
       const updated = await updateUnit(id, { content: 'changed' });
       const after = Date.now();
       expect(updated.updatedAt).toBeGreaterThanOrEqual(before);
@@ -195,7 +196,7 @@ describe('db', () => {
 
   describe('deleteUnit', () => {
     it('removes the unit from the store', async () => {
-      const id = await addUnit({ type: 'snippet', content: 'to delete' });
+      const { id } = await addUnit({ type: 'snippet', content: 'to delete' });
       expect(mockDB._store.data.has(id)).toBe(true);
       await deleteUnit(id);
       expect(mockDB._store.data.has(id)).toBe(false);
@@ -214,7 +215,7 @@ describe('db', () => {
     });
 
     it('skips units whose uid already exists locally', async () => {
-      const id = await addUnit({ type: 'snippet', content: 'local' });
+      const { id } = await addUnit({ type: 'snippet', content: 'local' });
       const { uid } = mockDB._store.data.get(id);
 
       const added = await mergeUnits([

@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { CloseIcon, SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon } from './Icons';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { CloseIcon, SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon, CopyIcon, CheckIcon } from './Icons';
 import { updateUnit } from '../utils/db';
 import NoteField from './NoteField';
+import CategoryField from './CategoryField';
 import ImageLightbox from './ImageLightbox';
 
 const TYPE_ICONS = {
@@ -10,23 +11,54 @@ const TYPE_ICONS = {
   image: ImageTypeIcon,
 };
 
-export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
+export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGroups = [] }) {
   const [content, setContent] = useState(unit.content);
   const [fileName, setFileName] = useState(unit.fileName || '');
   const [mimeType, setMimeType] = useState(unit.mimeType || '');
   const [quote, setQuote] = useState(unit.quote || '');
   const [showPassword, setShowPassword] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saveState, setSaveState] = useState(''); // '' | 'saving' | 'done'
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const textareaRef = useRef(null);
+  const saving = saveState !== '';
+  const initialCategoryId = useRef(
+    storedGroups?.find((g) => g.uids?.includes(unit.uid))?.id ?? ''
+  ).current;
+  const [categoryId, setCategoryId] = useState(initialCategoryId);
+  const copyTimerRef = useRef(null);
+
+  const resizeTextarea = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, []);
+
+  useEffect(() => { resizeTextarea(); }, [content, resizeTextarea]);
+
   const isDirty =
     content !== unit.content ||
     quote !== (unit.quote || '') ||
-    fileName !== (unit.fileName || '');
+    fileName !== (unit.fileName || '') ||
+    categoryId !== initialCategoryId;
+
+  const handleCopy = async () => {
+    if (!content) return;
+    try {
+      await navigator.clipboard.writeText(content);
+      clearTimeout(copyTimerRef.current);
+      setCopied(true);
+      copyTimerRef.current = setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard unavailable
+    }
+  };
 
   const handleSave = async () => {
-    setSaving(true);
+    setSaveState('saving');
     try {
       const changes = { content, fileName, mimeType };
       if (quote.trim()) {
@@ -35,10 +67,12 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
         changes.quote = undefined;
       }
       const updated = await updateUnit(unit.id, changes);
-      onSaved(updated);
+      navigator.vibrate?.(40);
+      setSaveState('done');
+      setTimeout(() => onSaved(updated, categoryId || null), 500);
     } catch {
       setError('Failed to save.');
-      setSaving(false);
+      setSaveState('');
     }
   };
 
@@ -89,11 +123,22 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
 
       <div className="add-unit__body">
         {unit.type === 'snippet' && (
-          <textarea
-            className={`add-unit__textarea${content ? ' add-unit__textarea--has-value' : ''}`}
-            value={content}
-            onChange={(e) => { setContent(e.target.value); setError(''); }}
-          />
+          <div className="add-unit__content-wrap">
+            <textarea
+              ref={textareaRef}
+              className={`add-unit__textarea${content ? ' add-unit__textarea--has-value' : ''}`}
+              value={content}
+              onChange={(e) => { setContent(e.target.value); setError(''); }}
+            />
+            <button
+              type="button"
+              className={`add-unit__copy-btn${copied ? ' add-unit__copy-btn--copied' : ''}`}
+              onClick={handleCopy}
+              aria-label="Copy to clipboard"
+            >
+              {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+            </button>
+          </div>
         )}
 
         {unit.type === 'password' && (
@@ -103,15 +148,24 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
               className="add-unit__password-input"
               value={content}
               onChange={(e) => { setContent(e.target.value); setError(''); }}
-              autoFocus
             />
-            <button
-              type="button"
-              className="add-unit__password-toggle"
-              onClick={() => setShowPassword((v) => !v)}
-            >
-              {showPassword ? 'Hide' : 'Show'}
-            </button>
+            <div className="add-unit__password-btns">
+              <button
+                type="button"
+                className={`add-unit__copy-btn${copied ? ' add-unit__copy-btn--copied' : ''}`}
+                onClick={handleCopy}
+                aria-label="Copy to clipboard"
+              >
+                {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+              </button>
+              <button
+                type="button"
+                className="add-unit__password-toggle"
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
         )}
 
@@ -142,13 +196,15 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
 
       <NoteField value={quote} onChange={setQuote} disabled={saving} />
 
+      <CategoryField groups={storedGroups} value={categoryId} onChange={setCategoryId} disabled={saving} />
+
       <button
         type="button"
-        className="connect-btn add-unit__save-btn"
+        className={`connect-btn add-unit__save-btn${saveState === 'done' ? ' add-unit__save-btn--done' : ''}`}
         onClick={handleSave}
         disabled={saving || !isDirty}
       >
-        {saving ? '…' : 'Save'}
+        {saveState === 'done' ? 'Saved ✓' : saving ? '…' : 'Save'}
       </button>
 
       <p className="unit-detail__meta">

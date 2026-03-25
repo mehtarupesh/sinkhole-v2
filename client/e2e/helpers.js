@@ -71,4 +71,47 @@ async function openUnitsList(page) {
   await page.waitForSelector('.search-overlay');
 }
 
-module.exports = { setHostId, seedUnit, seedPendingShare, openUnitsList };
+/**
+ * Seeds stored categorization groups into the settings store.
+ * groups: [{ id, title, uids }]
+ */
+async function seedCategorization(page, groups) {
+  await page.evaluate(({ dbName, groups }) => {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(dbName, 3);
+      req.onupgradeneeded = ({ target: { result: db } }) => {
+        if (!db.objectStoreNames.contains('settings')) {
+          db.createObjectStore('settings', { keyPath: 'key' });
+        }
+      };
+      req.onsuccess = ({ target: { result: db } }) => {
+        const store = db.transaction('settings', 'readwrite').objectStore('settings');
+        const r = store.put({ key: 'categorization', value: groups });
+        r.onsuccess = () => resolve();
+        r.onerror = ({ target: { error } }) => reject(error);
+      };
+      req.onerror = ({ target: { error } }) => reject(error);
+    });
+  }, { dbName: UNITS_DB, groups });
+}
+
+/**
+ * Reads stored categorization groups from the settings store.
+ * Returns null if none saved.
+ */
+async function getCategorization(page) {
+  return page.evaluate(({ dbName }) => {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(dbName, 3);
+      req.onsuccess = ({ target: { result: db } }) => {
+        const store = db.transaction('settings', 'readonly').objectStore('settings');
+        const r = store.get('categorization');
+        r.onsuccess = ({ target: { result } }) => resolve(result?.value ?? null);
+        r.onerror = ({ target: { error } }) => reject(error);
+      };
+      req.onerror = ({ target: { error } }) => reject(error);
+    });
+  }, { dbName: UNITS_DB });
+}
+
+module.exports = { setHostId, seedUnit, seedPendingShare, openUnitsList, seedCategorization, getCategorization };

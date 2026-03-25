@@ -2,6 +2,7 @@
 .add-unit-modal {
   max-width: 480px;
   max-height: 85vh;
+  max-height: 85dvh; /* shrinks when keyboard opens on Android */
   display: flex;
   flex-direction: column;
 }
@@ -61,9 +62,104 @@
   margin-bottom: 12px;
 }
 
+/* ── Content wrap (relative container for floating copy btn) ── */
+.add-unit__content-wrap {
+  position: relative;
+}
+
+.add-unit__content-wrap .add-unit__textarea {
+  padding-right: 44px; /* room for copy button */
+}
+
+/* ── Copy button ── */
+.add-unit__copy-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #525252;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.add-unit__copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #a3a3a3;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.add-unit__copy-btn--copied {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.35);
+  background: rgba(74, 222, 128, 0.08);
+}
+
+/* Floated inside textarea wrapper */
+.add-unit__content-wrap .add-unit__copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+/* ── Type-switch confirmation banner ── */
+.add-unit__type-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: rgba(251, 146, 60, 0.07);
+  border: 1px solid rgba(251, 146, 60, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #fb923c;
+}
+
+.add-unit__type-confirm-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.add-unit__type-confirm-yes {
+  padding: 3px 10px;
+  background: rgba(251, 146, 60, 0.12);
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  border-radius: 5px;
+  color: #fb923c;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.add-unit__type-confirm-yes:hover {
+  background: rgba(251, 146, 60, 0.22);
+}
+
+.add-unit__type-confirm-no {
+  padding: 3px 10px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  color: #737373;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.add-unit__type-confirm-no:hover {
+  color: #a3a3a3;
+}
+
 .add-unit__textarea {
   width: 100%;
-  min-height: 200px;
+  min-height: 100px;
   padding: 14px 16px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -71,7 +167,8 @@
   color: #e5e5e5;
   font-size: 15px;
   line-height: 1.6;
-  resize: vertical;
+  resize: none;
+  overflow: hidden;
   font-family: inherit;
   transition: background 0.2s, border-color 0.2s;
 }
@@ -166,25 +263,35 @@
 }
 
 .add-unit__password-wrap {
-  position: relative;
-}
-
-.add-unit__password-input {
-  width: 100%;
-  padding: 14px 64px 14px 16px;
+  display: flex;
+  align-items: center;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
+  overflow: hidden;
+}
+
+.add-unit__password-input {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 8px 14px 16px;
+  background: none;
+  border: none;
+  outline: none;
   color: #e5e5e5;
   font-size: 16px;
   font-family: inherit;
 }
 
+.add-unit__password-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 4px;
+  flex-shrink: 0;
+}
+
 .add-unit__password-toggle {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
   padding: 4px 10px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -192,6 +299,7 @@
   color: #525252;
   font-size: 11px;
   cursor: pointer;
+  white-space: nowrap;
   transition: color 0.15s, background 0.15s;
 }
 
@@ -285,8 +393,50 @@
 .add-unit__quote { margin: 8px 0 0; font-size: 13px; color: #a3a3a3; font-style: italic; }
 .add-unit__quote-mark { color: #525252; }
 
+/* ── CategoryField ── */
+.category-field {
+  padding: 0 0 14px;
+}
+
+.category-field__select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #525252;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.category-field__select:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.category-field__select--has-value {
+  color: #a3a3a3;
+}
+
+.category-field__select option {
+  background: #1c1c1c;
+  color: #e5e5e5;
+}
+
 .add-unit__save-btn {
   width: 100%;
   padding: 10px;
   text-align: center;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+
+.add-unit__save-btn--done {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.35);
+  background: rgba(74, 222, 128, 0.08);
 }

@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../utils/db', () => ({
-  addUnit: vi.fn().mockResolvedValue(1),
+  addUnit: vi.fn().mockResolvedValue({ id: 1, uid: 'test-uid' }),
   getSetting: vi.fn().mockResolvedValue('fake-key'),
 }));
 
@@ -145,6 +145,34 @@ describe('AddUnitModal', () => {
     renderModal();
     expect(screen.getByPlaceholderText('Add a note…')).toBeInTheDocument();
     expect(screen.getByLabelText('Record voice note')).toBeInTheDocument();
+  });
+
+  // ── Category ──────────────────────────────────────────────────────────────
+
+  it('does not render category select when no storedGroups', () => {
+    renderModal();
+    expect(screen.queryByLabelText('Category')).not.toBeInTheDocument();
+  });
+
+  it('renders category select when storedGroups provided', () => {
+    renderModal({ storedGroups: [{ id: 'g1', title: 'Work', uids: [] }] });
+    expect(screen.getByLabelText('Category')).toBeInTheDocument();
+    expect(screen.getByText('Work')).toBeInTheDocument();
+  });
+
+  it('calls onSaved with uid and selected categoryId', async () => {
+    const { onSaved } = renderModal({ storedGroups: [{ id: 'g1', title: 'Work', uids: [] }] });
+    fireEvent.change(screen.getByPlaceholderText('Enter text…'), { target: { value: 'hello' } });
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'g1' } });
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith('test-uid', 'g1'));
+  });
+
+  it('calls onSaved with null categoryId when no category selected', async () => {
+    const { onSaved } = renderModal({ storedGroups: [{ id: 'g1', title: 'Work', uids: [] }] });
+    fireEvent.change(screen.getByPlaceholderText('Enter text…'), { target: { value: 'hello' } });
+    fireEvent.click(screen.getByText('Save'));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith('test-uid', null));
   });
 
   // ── Closing ───────────────────────────────────────────────────────────────

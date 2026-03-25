@@ -18,6 +18,7 @@ export default function Landing() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [addUnitInitial, setAddUnitInitial]     = useState(null);
   const [showUnitsOverlay, setShowUnitsOverlay] = useState(false);
   const [showPrototypeModal, setShowPrototypeModal] = useState(false);
@@ -32,6 +33,21 @@ export default function Landing() {
 
   const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null;
 
+  // Push unit-detail overlay above the virtual keyboard on iOS
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      setKeyboardOffset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+
   // Keep a ref so runCategorize always reads current units without needing them as a dep
   const unitsRef        = useRef([]);
   unitsRef.current      = units;
@@ -39,6 +55,23 @@ export default function Landing() {
 
   const reloadUnits = useCallback(() => {
     getAllUnits().then(setUnits);
+  }, []);
+
+  // ── Add unit ─────────────────────────────────────────────────────────────────
+  // (defined early so handleCategoryAssign can reference it)
+
+  const handleCategoryAssign = useCallback((uid, categoryId) => {
+    setStoredGroups((prev) => {
+      if (!prev || !uid) return prev;
+      const updated = prev.map((g) => ({
+        ...g,
+        uids: g.id === categoryId
+          ? [...g.uids.filter((u) => u !== uid), uid]
+          : g.uids.filter((u) => u !== uid),
+      }));
+      setCategorization(updated); // async, fire-and-forget
+      return updated;
+    });
   }, []);
 
   // ── Categorize ──────────────────────────────────────────────────────────────
@@ -96,10 +129,11 @@ export default function Landing() {
   // ── Add unit ────────────────────────────────────────────────────────────────
 
   const openAddUnit = useCallback((initial = {}) => setAddUnitInitial(initial), []);
-  const closeAddUnit = useCallback(() => {
-    setAddUnitInitial(null);
+  const closeAddUnit = useCallback(() => setAddUnitInitial(null), []);
+  const handleAddUnitSaved = useCallback((uid, categoryId) => {
     reloadUnits();
-  }, [reloadUnits]);
+    if (uid && categoryId) handleCategoryAssign(uid, categoryId);
+  }, [reloadUnits, handleCategoryAssign]);
 
   // Cmd/Ctrl+V anywhere on the page opens the add modal with clipboard content
   useClipboardPaste(openAddUnit, { disabled: isAnyModalOpen });
@@ -171,10 +205,11 @@ export default function Landing() {
     else if (delta < -50) goNext();
   }, [goPrev, goNext]);
 
-  const handleUnitSaved = useCallback((updated) => {
+  const handleUnitSaved = useCallback((updated, categoryId) => {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+    if (updated.uid) handleCategoryAssign(updated.uid, categoryId);
     setSelectedCtx(null);
-  }, []);
+  }, [handleCategoryAssign]);
 
   const handleUnitDelete = useCallback(async (id) => {
     await deleteUnit(id);
@@ -246,6 +281,8 @@ export default function Landing() {
       {addUnitInitial !== null && (
         <AddUnitModal
           onClose={closeAddUnit}
+          onSaved={handleAddUnitSaved}
+          storedGroups={storedGroups ?? []}
           initialType={addUnitInitial.type}
           initialContent={addUnitInitial.content}
           initialFileName={addUnitInitial.fileName}
@@ -254,7 +291,11 @@ export default function Landing() {
       )}
 
       {selectedCtx && currentUnit && (
-        <div className="overlay units-overlay" onClick={closeDetail}>
+        <div
+          className="overlay units-overlay"
+          onClick={closeDetail}
+          style={keyboardOffset > 0 ? { paddingBottom: keyboardOffset + 24 } : undefined}
+        >
           <div
             className="unit-detail-wrap"
             onClick={(e) => e.stopPropagation()}
@@ -268,6 +309,7 @@ export default function Landing() {
                 onBack={closeDetail}
                 onSaved={handleUnitSaved}
                 onDelete={handleUnitDelete}
+                storedGroups={storedGroups ?? []}
               />
             </div>
             <div className="unit-detail-nav" data-testid="unit-detail-nav">

@@ -16,6 +16,7 @@
   gap: 12px;
   overflow-y: auto;
   max-height: 85vh;
+  max-height: 85dvh;
 }
 
 /* ── Unit card (used in SettingsModal preview) ── */

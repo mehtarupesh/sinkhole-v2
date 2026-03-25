@@ -25,10 +25,11 @@ function generateUid() {
 
 export async function addUnit(unit) {
   const db = await openDB();
+  const uid = generateUid();
   return new Promise((resolve, reject) => {
     const store = db.transaction(STORE_UNITS, 'readwrite').objectStore(STORE_UNITS);
-    const req = store.add({ uid: generateUid(), ...unit, createdAt: Date.now() });
-    req.onsuccess = ({ target: { result } }) => resolve(result);
+    const req = store.add({ uid, ...unit, createdAt: Date.now() });
+    req.onsuccess = ({ target: { result: id } }) => resolve({ id, uid });
     req.onerror = ({ target: { error } }) => reject(error);
   });
 }

@@ -13,7 +13,7 @@ vi.mock('../utils/transcribe', () => ({
 import { updateUnit } from '../utils/db';
 import UnitDetail from '../components/UnitDetail';
 
-const SNIPPET = { id: 1, type: 'snippet', content: 'hello world', createdAt: Date.now() };
+const SNIPPET = { id: 1, uid: 'uid-1', type: 'snippet', content: 'hello world', createdAt: Date.now() };
 const PASSWORD = { id: 2, type: 'password', content: 'secret', createdAt: Date.now() };
 const IMAGE = { id: 3, type: 'image', content: 'data:image/png;base64,abc', fileName: 'pic.png', mimeType: 'image/png', createdAt: Date.now() };
 const WITH_QUOTE = { id: 4, type: 'snippet', content: 'note', quote: 'voice text', createdAt: Date.now() };
@@ -173,5 +173,37 @@ describe('UnitDetail', () => {
     const { onBack } = renderDetail();
     fireEvent.click(screen.getByLabelText('Close'));
     expect(onBack).toHaveBeenCalled();
+  });
+
+  // ── Category ──────────────────────────────────────────────────────────────
+
+  it('does not render category select when no storedGroups', () => {
+    renderDetail();
+    expect(screen.queryByLabelText('Category')).not.toBeInTheDocument();
+  });
+
+  it('renders category select when storedGroups provided', () => {
+    renderDetail(SNIPPET, { storedGroups: [{ id: 'g1', title: 'Work', uids: [] }] });
+    expect(screen.getByLabelText('Category')).toBeInTheDocument();
+    expect(screen.getByText('Work')).toBeInTheDocument();
+  });
+
+  it('pre-selects the category the unit already belongs to', () => {
+    renderDetail(SNIPPET, { storedGroups: [{ id: 'g1', title: 'Work', uids: ['uid-1'] }] });
+    expect(screen.getByLabelText('Category')).toHaveValue('g1');
+  });
+
+  it('enables Save and passes categoryId when category changes', async () => {
+    const { onSaved } = renderDetail(SNIPPET, {
+      storedGroups: [{ id: 'g1', title: 'Work', uids: [] }],
+    });
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'g1' } });
+    const saveBtn = screen.getByText('Save');
+    expect(saveBtn).not.toBeDisabled();
+    fireEvent.click(saveBtn);
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(
+      expect.any(Object),
+      'g1'
+    ));
   });
 });
