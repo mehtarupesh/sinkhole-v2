@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { PlusIcon, SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon } from '../components/Icons';
+import { SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon } from '../components/Icons';
 import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorization } from '../utils/db';
 import { buildCarousels } from '../utils/carouselGroups';
 import { categorizeUnits } from '../utils/categorize';
@@ -233,6 +233,7 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
               title={c.title}
               units={c.units}
               onUnitClick={openUnit}
+              onAddClick={c.id === 'recent' ? () => openAddUnit() : undefined}
             />
           ))}
         </div>
@@ -240,14 +241,8 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
 
       <div className="landing__actions-wrap">
         <div className="landing__actions">
-          <button type="button" className="btn-icon" onClick={() => openAddUnit()} title="Add" aria-label="Add">
-            <PlusIcon />
-          </button>
-          <button type="button" className="btn-icon" onClick={() => setShowUnitsOverlay(true)} title="Saved" aria-label="Saved">
+<button type="button" className="btn-icon" onClick={() => setShowUnitsOverlay(true)} title="Saved" aria-label="Saved">
             <SearchIcon />
-          </button>
-          <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
-            <ConnectIcon />
           </button>
           <button
             type="button"
@@ -258,6 +253,9 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
             aria-label="Categorize"
           >
             <OneBIcon />
+          </button>
+          <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
+            <ConnectIcon />
           </button>
           <button type="button" className="btn-icon" onClick={() => setShowSettingsModal(true)} title="Settings" aria-label="Settings">
             <GearIcon />

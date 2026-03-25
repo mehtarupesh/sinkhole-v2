@@ -82,11 +82,18 @@ export function CarouselCard({ unit, onClick }) {
   );
 }
 
-export default function Carousel({ title, units, onUnitClick }) {
+export default function Carousel({ title, units, onUnitClick, onAddClick }) {
   if (!units?.length) return null;
   return (
     <div className="carousel">
-      <h2 className="carousel__title">{title}</h2>
+      <div className="carousel__header">
+        <h2 className="carousel__title">{title}</h2>
+        {onAddClick && (
+          <button type="button" className="carousel__add-btn" onClick={onAddClick} aria-label="Add">
+            +
+          </button>
+        )}
+      </div>
       <div className="carousel__row">
         {units.map((unit, i) => (
           <CarouselCard key={unit.id} unit={unit} onClick={() => onUnitClick(unit, units, i)} />

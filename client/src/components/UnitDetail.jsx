@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { CloseIcon, SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon, CopyIcon, CheckIcon } from './Icons';
+import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon, CopyIcon, CheckIcon } from './Icons';
 import { updateUnit } from '../utils/db';
 import NoteField from './NoteField';
 import CategoryField from './CategoryField';
@@ -29,6 +29,13 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   ).current;
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const copyTimerRef = useRef(null);
+
+  // Close on Escape (desktop)
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onBack(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onBack]);
 
   const resizeTextarea = useCallback(() => {
     const el = textareaRef.current;
@@ -118,9 +125,6 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
               </svg>
             </a>
           )}
-          <button type="button" className="btn-close" onClick={onBack} aria-label="Close">
-            <CloseIcon />
-          </button>
         </div>
       </div>
 
@@ -201,14 +205,19 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
 
       <CategoryField groups={storedGroups} value={categoryId} onChange={setCategoryId} disabled={saving} />
 
-      <button
-        type="button"
-        className={`connect-btn add-unit__save-btn${saveState === 'done' ? ' add-unit__save-btn--done' : ''}`}
-        onClick={handleSave}
-        disabled={saving || !isDirty}
-      >
-        {saveState === 'done' ? 'Saved ✓' : saving ? '…' : 'Save'}
-      </button>
+      <div className="add-unit__actions">
+        <button type="button" className="add-unit__cancel-btn" onClick={onBack} disabled={saving}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className={`connect-btn add-unit__save-btn${saveState === 'done' ? ' add-unit__save-btn--done' : ''}`}
+          onClick={handleSave}
+          disabled={saving || !isDirty}
+        >
+          {saveState === 'done' ? 'Saved ✓' : saving ? '…' : 'Save'}
+        </button>
+      </div>
 
       <p className="unit-detail__meta">
         Created {new Date(unit.createdAt).toLocaleString()}

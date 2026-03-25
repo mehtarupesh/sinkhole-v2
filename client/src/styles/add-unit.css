@@ -514,8 +514,36 @@
   font-weight: 500;
 }
 
+.add-unit__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.add-unit__cancel-btn {
+  flex: 1;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #737373;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.add-unit__cancel-btn:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #a3a3a3;
+}
+
+.add-unit__cancel-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .add-unit__save-btn {
-  width: 100%;
+  flex: 1;
   padding: 10px;
   text-align: center;
   transition: color 0.2s, background 0.2s, border-color 0.2s;

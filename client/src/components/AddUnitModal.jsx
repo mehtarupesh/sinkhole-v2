@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { CloseIcon, SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, CopyIcon, CheckIcon } from './Icons';
+import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, CopyIcon, CheckIcon } from './Icons';
 import { addUnit } from '../utils/db';
 import NoteField from './NoteField';
 import CategoryField from './CategoryField';
@@ -46,6 +46,13 @@ export default function AddUnitModal({
   }, []);
 
   useEffect(() => { resizeTextarea(); }, [content, resizeTextarea]);
+
+  // Close on Escape (desktop)
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   // Push the modal above the virtual keyboard on iOS
   useEffect(() => {
@@ -154,9 +161,6 @@ export default function AddUnitModal({
               </button>
             ))}
           </div>
-          <button type="button" className="btn-close" onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
         </div>
 
         {pendingType && (
@@ -280,14 +284,19 @@ export default function AddUnitModal({
 
         <CategoryField groups={storedGroups} value={categoryId} onChange={setCategoryId} disabled={saving} />
 
-        <button
-          type="button"
-          className={`connect-btn add-unit__save-btn${saveState === 'done' ? ' add-unit__save-btn--done' : ''}`}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saveState === 'done' ? 'Saved ✓' : saving ? '…' : 'Save'}
-        </button>
+        <div className="add-unit__actions">
+          <button type="button" className="add-unit__cancel-btn" onClick={onClose} disabled={saving}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={`connect-btn add-unit__save-btn${saveState === 'done' ? ' add-unit__save-btn--done' : ''}`}
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saveState === 'done' ? 'Saved ✓' : saving ? '…' : 'Save'}
+          </button>
+        </div>
       </div>
     </div>
   );
