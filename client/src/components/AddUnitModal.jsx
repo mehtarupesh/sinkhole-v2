@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, CopyIcon, CheckIcon } from './Icons';
-import { addUnit } from '../utils/db';
+import { addUnit, getSetting } from '../utils/db';
 import NoteField from './NoteField';
 import CategoryField from './CategoryField';
 import ImageLightbox from './ImageLightbox';
+import { suggestCategory } from '../utils/suggestCategory';
 
 const TYPE_CONFIG = [
   { type: 'snippet', Icon: SnippetTypeIcon },
@@ -33,11 +34,27 @@ export default function AddUnitModal({
   const [copied, setCopied] = useState(false);
   const [pendingType, setPendingType] = useState(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  // Auto-suggest
+  const [suggestState, setSuggestState] = useState('idle'); // 'idle'|'needs-selection'|'loading'|'done'|'error'|'no-key'
+  const [shareContent, setShareContent] = useState(false);
+  const [shareNote, setShareNote] = useState(false);
+  const [suggestedTitle, setSuggestedTitle] = useState(null); // new category the LLM proposes
+  const [ghostAccepted, setGhostAccepted] = useState(false); // user tapped the ghost chip
+  const [editingGhost, setEditingGhost] = useState(false);   // long-press edit mode
+  const [ghostEditValue, setGhostEditValue] = useState('');  // value while editing
+  const ghostLongPressTimer = useRef(null);
+  const ghostEditRef = useRef(null);
   const fileRef = useRef(null);
   const copyTimerRef = useRef(null);
   const textareaRef = useRef(null);
   const swipeStart = useRef(null);
   const saving = saveState !== '';
+  const hasContent = type === 'image' ? !!content : !!content.trim();
+  const hasNote = !!quote.trim();
+  const canAutoSuggest = !saving && (hasContent || hasNote) && suggestState !== 'loading';
+  const sparkleBlinking = suggestState === 'needs-selection';
+  // + button: hide when a new category is already queued (ghostAccepted) or actively being edited
+  const showAddChip = !saving && !ghostAccepted && !editingGhost;
 
   const resizeTextarea = useCallback(() => {
     const el = textareaRef.current;
@@ -129,7 +146,9 @@ export default function AddUnitModal({
       const { uid } = await addUnit(unit);
       navigator.vibrate?.(40);
       setSaveState('done');
-      onSaved?.(uid, categoryId || null);
+      // Resolve category: ghost chip accepted → use its slug id
+      const resolvedCategoryId = pendingNewCategory ? pendingNewCategory.id : (categoryId || null);
+      onSaved?.(uid, resolvedCategoryId, pendingNewCategory);
       setTimeout(onClose, 500);
     } catch {
       setError('Failed to save. Please try again.');
@@ -139,6 +158,111 @@ export default function AddUnitModal({
 
   const handleSave = () => performSave(quote);
   const handleTranscriptionDone = (transcript) => performSave(transcript);
+
+  // ── Auto-suggest ──────────────────────────────────────────────────────────
+
+  const blinkTimerRef = useRef(null);
+
+  const runSuggest = async () => {
+    if (!shareContent && !shareNote) {
+      setSuggestState('needs-selection');
+      clearTimeout(blinkTimerRef.current);
+      blinkTimerRef.current = setTimeout(() => setSuggestState('idle'), 2500);
+      return;
+    }
+    setSuggestState('loading');
+    try {
+      const apiKey = await getSetting('gemini_key');
+      if (!apiKey) throw new Error('no-key');
+
+      // Build what to share based on user consent
+      let sharedContent = null;
+      if (shareContent && content) {
+        sharedContent = content; // data URL for files, plain text for snippet/password
+      }
+
+      const result = await suggestCategory({
+        content: sharedContent,
+        mimeType,
+        quote: shareNote ? quote : null,
+        type,
+        existingCategories: storedGroups ?? [],
+      }, apiKey);
+
+      if (result.categoryId) {
+        setCategoryId(result.categoryId);
+        setSuggestedTitle(null);
+      } else if (result.suggestedTitle) {
+        setSuggestedTitle(result.suggestedTitle);
+        setGhostAccepted(false);
+        setCategoryId(''); // clear any manual selection
+      }
+      setSuggestState('done');
+    } catch (e) {
+      setSuggestState(e.message === 'no-key' ? 'no-key' : 'error');
+    }
+  };
+
+  // Slugify a suggested title into a usable id
+  const slugify = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  // When saving, derive the new category object (if user accepted ghost chip)
+  const pendingNewCategory = ghostAccepted && suggestedTitle
+    ? { id: slugify(suggestedTitle), title: suggestedTitle }
+    : null;
+
+  // ── Manual new category (+ button) ───────────────────────────────────────
+
+  const handleAddNewCategory = () => {
+    setSuggestedTitle(null); // clear any AI suggestion
+    setGhostAccepted(false);
+    setGhostEditValue('');
+    setEditingGhost(true);
+    setSuggestState('done'); // show the ghost row
+  };
+
+  // ── Ghost chip long-press to edit ─────────────────────────────────────────
+
+  const handleGhostPointerDown = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    ghostLongPressTimer.current = setTimeout(() => {
+      ghostLongPressTimer.current = null;
+      setGhostEditValue(suggestedTitle ?? '');
+      setEditingGhost(true);
+      // Focus happens via autoFocus / ref after render
+    }, 500);
+  };
+
+  const handleGhostPointerUp = (e) => {
+    if (ghostLongPressTimer.current) {
+      // Short press — treat as toggle accept/deselect
+      clearTimeout(ghostLongPressTimer.current);
+      ghostLongPressTimer.current = null;
+      setGhostAccepted((v) => !v);
+      if (ghostAccepted) setCategoryId('');
+    }
+    // If timer already fired (long press), editingGhost was set — do nothing here
+  };
+
+  const handleGhostPointerCancel = () => {
+    clearTimeout(ghostLongPressTimer.current);
+    ghostLongPressTimer.current = null;
+  };
+
+  const commitGhostEdit = (value) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      // User deleted — dismiss ghost entirely, go back to idle
+      setSuggestedTitle(null);
+      setGhostAccepted(false);
+      setEditingGhost(false);
+      setSuggestState('idle');
+    } else {
+      setSuggestedTitle(trimmed);
+      setGhostAccepted(true);
+      setEditingGhost(false);
+    }
+  };
 
   const handleTouchStart = (e) => {
     swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -209,38 +333,58 @@ export default function AddUnitModal({
                   {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
                 </button>
               )}
+              {hasContent && (
+                <button
+                  type="button"
+                  className={`share-sparkle share-sparkle--content${shareContent ? ' share-sparkle--on' : ''}${sparkleBlinking ? ' share-sparkle--blink' : ''}`}
+                  onClick={() => setShareContent((v) => !v)}
+                  aria-label="Include content in AI suggestion"
+                  title={shareContent ? 'Content shared with AI' : 'Tap to share content with AI'}
+                />
+              )}
             </div>
           )}
 
           {type === 'password' && (
-            <div className="add-unit__password-wrap">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                className="add-unit__password-input"
-                placeholder="Enter password…"
-                value={content}
-                onChange={(e) => { setContent(e.target.value); setError(''); }}
-                autoFocus
-              />
-              <div className="add-unit__password-btns">
-                {content && (
+            <div className="share-sparkle-wrap">
+              <div className="add-unit__password-wrap">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="add-unit__password-input"
+                  placeholder="Enter password…"
+                  value={content}
+                  onChange={(e) => { setContent(e.target.value); setError(''); }}
+                  autoFocus
+                />
+                <div className="add-unit__password-btns">
+                  {content && (
+                    <button
+                      type="button"
+                      className={`add-unit__copy-btn${copied ? ' add-unit__copy-btn--copied' : ''}`}
+                      onClick={handleCopy}
+                      aria-label="Copy to clipboard"
+                    >
+                      {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+                    </button>
+                  )}
                   <button
                     type="button"
-                    className={`add-unit__copy-btn${copied ? ' add-unit__copy-btn--copied' : ''}`}
-                    onClick={handleCopy}
-                    aria-label="Copy to clipboard"
+                    className="add-unit__password-toggle"
+                    onClick={() => setShowPassword((v) => !v)}
                   >
-                    {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+                    {showPassword ? 'Hide' : 'Show'}
                   </button>
-                )}
+                </div>
+              </div>
+              {hasContent && (
                 <button
                   type="button"
-                  className="add-unit__password-toggle"
-                  onClick={() => setShowPassword((v) => !v)}
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
+                  className={`share-sparkle share-sparkle--content${shareContent ? ' share-sparkle--on' : ''}${sparkleBlinking ? ' share-sparkle--blink' : ''}`}
+                  onClick={() => setShareContent((v) => !v)}
+                  aria-label="Include content in AI suggestion"
+                  title={shareContent ? 'Password shared with AI · sensitive' : 'Tap to share password with AI'}
+                />
+              )}
             </div>
           )}
 
@@ -285,6 +429,15 @@ export default function AddUnitModal({
                 style={{ display: 'none' }}
                 onChange={handleFileChange}
               />
+              {hasContent && (
+                <button
+                  type="button"
+                  className={`share-sparkle share-sparkle--content${shareContent ? ' share-sparkle--on' : ''}${sparkleBlinking ? ' share-sparkle--blink' : ''}`}
+                  onClick={() => setShareContent((v) => !v)}
+                  aria-label="Include file in AI suggestion"
+                  title={shareContent ? 'File shared with AI' : 'Tap to share file with AI'}
+                />
+              )}
             </div>
           )}
         </div>
@@ -295,9 +448,94 @@ export default function AddUnitModal({
           <ImageLightbox src={content} alt={fileName} onClose={() => setShowLightbox(false)} />
         )}
 
-        <NoteField value={quote} onChange={setQuote} disabled={saving} onTranscriptionDone={handleTranscriptionDone} />
+        <div className="share-sparkle-wrap">
+          <NoteField value={quote} onChange={setQuote} disabled={saving} onTranscriptionDone={handleTranscriptionDone} />
+          {hasNote && (
+            <button
+              type="button"
+              className={`share-sparkle share-sparkle--note${shareNote ? ' share-sparkle--on' : ''}${sparkleBlinking ? ' share-sparkle--blink' : ''}`}
+              onClick={() => setShareNote((v) => !v)}
+              aria-label="Include note in AI suggestion"
+              title={shareNote ? 'Note shared with AI' : 'Tap to share note with AI'}
+            />
+          )}
+        </div>
 
-        <CategoryField groups={storedGroups} value={categoryId} onChange={setCategoryId} disabled={saving} />
+        {/* ── Category + Auto-suggest ── */}
+        <div className="auto-suggest-wrap">
+          <div className="auto-suggest-chips-row">
+            <CategoryField
+              groups={storedGroups}
+              value={ghostAccepted && pendingNewCategory ? pendingNewCategory.id : categoryId}
+              onChange={(id) => { setCategoryId(id); setSuggestedTitle(null); setGhostAccepted(false); setSuggestState('idle'); }}
+              disabled={saving || suggestState === 'loading'}
+            />
+            {showAddChip && (
+              <button type="button" className="auto-suggest-add-chip" onClick={handleAddNewCategory} aria-label="Add new category">
+                +
+              </button>
+            )}
+          </div>
+
+          {/* Ghost chip / inline editor for new category */}
+          {(editingGhost || (suggestState === 'done' && suggestedTitle)) && (
+            <div className="auto-suggest-ghost-row">
+              {editingGhost ? (
+                <input
+                  ref={ghostEditRef}
+                  autoFocus
+                  className="auto-suggest-ghost-input"
+                  value={ghostEditValue}
+                  onChange={(e) => setGhostEditValue(e.target.value)}
+                  onBlur={(e) => commitGhostEdit(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); commitGhostEdit(ghostEditValue); }
+                    if (e.key === 'Escape') { e.stopPropagation(); commitGhostEdit(''); }
+                  }}
+                  aria-label="Edit category name"
+                />
+              ) : (
+                <button
+                  type="button"
+                  className={`category-field__chip auto-suggest-ghost-chip${ghostAccepted ? ' category-field__chip--active auto-suggest-ghost-chip--accepted' : ''}`}
+                  onPointerDown={handleGhostPointerDown}
+                  onPointerUp={handleGhostPointerUp}
+                  onPointerCancel={handleGhostPointerCancel}
+                  onPointerLeave={handleGhostPointerCancel}
+                >
+                  {suggestedTitle}
+                </button>
+              )}
+              <span className={`auto-suggest-hint${ghostAccepted && !editingGhost ? ' auto-suggest-hint--done' : ''}`}>
+                {editingGhost ? 'Edit · Enter to confirm · Esc to dismiss' : ghostAccepted ? 'New category ✓' : 'AI suggested · tap · hold to edit'}
+              </span>
+            </div>
+          )}
+
+          {/* Status line */}
+          {suggestState === 'needs-selection' && (
+            <p className="auto-suggest-status auto-suggest-status--warn">Tap ✦ on content or note to share with AI</p>
+          )}
+          {suggestState === 'loading' && (
+            <p className="auto-suggest-status">Thinking…</p>
+          )}
+          {suggestState === 'done' && !suggestedTitle && categoryId && (
+            <p className="auto-suggest-status auto-suggest-status--done">AI suggested ✓</p>
+          )}
+          {suggestState === 'error' && (
+            <p className="auto-suggest-status auto-suggest-status--error">Couldn't suggest — try again</p>
+          )}
+          {suggestState === 'no-key' && (
+            <p className="auto-suggest-status auto-suggest-status--error">Add a Gemini API key in Settings ⚙</p>
+          )}
+
+          {/* Trigger button */}
+          {canAutoSuggest && (
+            <button type="button" className="auto-suggest-trigger" onClick={runSuggest}>
+              ✦ suggest category
+            </button>
+          )}
+        </div>
 
         <div className="add-unit__actions">
           <button type="button" className="add-unit__cancel-btn" onClick={onClose} disabled={saving}>

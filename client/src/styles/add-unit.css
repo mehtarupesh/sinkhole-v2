@@ -180,6 +180,7 @@
 }
 
 .add-unit__file-area {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -606,4 +607,318 @@
   color: #4ade80;
   border-color: rgba(74, 222, 128, 0.35);
   background: rgba(74, 222, 128, 0.08);
+}
+
+/* ── Auto-suggest ── */
+
+.auto-suggest-wrap {
+  width: 100%;
+}
+
+/* Row that holds CategoryField chips + the + button inline */
+.auto-suggest-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 14px;
+}
+
+/* Override CategoryField's own bottom padding when inside the row */
+.auto-suggest-chips-row .category-field {
+  padding-bottom: 0;
+}
+
+.auto-suggest-chips-row .category-field__chips {
+  padding-bottom: 0;
+}
+
+/* + chip — same height as category chips, dashed border */
+.auto-suggest-add-chip {
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  color: #525252;
+  font-size: 16px;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.auto-suggest-add-chip:hover {
+  color: #a3a3a3;
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+/* Trigger pill */
+.auto-suggest-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  margin-bottom: 14px;
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  color: #525252;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.auto-suggest-trigger:hover {
+  color: #a3a3a3;
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+/* Privacy consent panel */
+.auto-suggest-privacy {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auto-suggest-privacy__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #a3a3a3;
+  letter-spacing: 0.02em;
+}
+
+.auto-suggest-privacy__option {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+}
+
+.auto-suggest-privacy__option input[type="checkbox"] {
+  display: none;
+}
+
+.auto-suggest-privacy__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #d4d4d4;
+}
+
+/* Custom checkbox via sibling */
+.auto-suggest-privacy__option input[type="checkbox"] + .auto-suggest-privacy__label::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.auto-suggest-privacy__option input[type="checkbox"]:checked + .auto-suggest-privacy__label::before {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+.auto-suggest-privacy__sensitive {
+  font-size: 11px;
+  color: #f97316;
+}
+
+.auto-suggest-privacy__preview {
+  margin-left: 20px;
+  font-size: 11px;
+  color: #525252;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auto-suggest-privacy__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.auto-suggest-privacy__cancel {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #525252;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.auto-suggest-privacy__cancel:hover {
+  color: #a3a3a3;
+}
+
+.auto-suggest-privacy__confirm {
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  color: #e5e5e5;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.auto-suggest-privacy__confirm:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.auto-suggest-privacy__confirm:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Ghost chip (AI-suggested new category) */
+.auto-suggest-ghost-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+.auto-suggest-ghost-chip {
+  border-style: dashed !important;
+  color: #a3a3a3 !important;
+}
+
+.auto-suggest-ghost-chip--accepted {
+  border-style: solid !important;
+}
+
+/* Inline edit input for ghost chip — grows to fit, styled like an active chip */
+.auto-suggest-ghost-input {
+  min-width: 80px;
+  max-width: 200px;
+  width: auto;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20px;
+  color: #fafafa;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  transition: box-shadow 0.15s;
+  /* Grow with content */
+  field-sizing: content;
+}
+
+.auto-suggest-ghost-input:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+.auto-suggest-hint {
+  font-size: 11px;
+  color: #404040;
+  white-space: nowrap;
+}
+
+.auto-suggest-hint--done {
+  color: #4ade80;
+}
+
+/* Status line */
+.auto-suggest-status {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: #525252;
+}
+
+.auto-suggest-status--done {
+  color: #4ade80;
+}
+
+.auto-suggest-status--error {
+  color: #f97316;
+}
+
+.auto-suggest-status--warn {
+  color: #fb923c;
+}
+
+/* ── Sparkle share toggle ── */
+
+/* Wrapper for password and NoteField — gives us a relative positioning context */
+.share-sparkle-wrap {
+  position: relative;
+}
+
+/* The sparkle button itself */
+.share-sparkle {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  color: #404040;
+  transition: color 0.15s, opacity 0.15s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Unicode sparkle glyph via pseudo-element */
+.share-sparkle::before {
+  content: '✦';
+}
+
+.share-sparkle:hover {
+  color: #737373;
+}
+
+/* Highlighted (sharing enabled) */
+.share-sparkle--on {
+  color: #e5e5e5;
+}
+
+.share-sparkle--on:hover {
+  color: #ffffff;
+}
+
+/* NoteField sparkle sits at the bottom-right of the note textarea area */
+.share-sparkle--note {
+  bottom: 10px;
+  right: 4px;
+}
+
+/* Blink animation — draws attention when user hasn't selected anything */
+@keyframes sparkle-blink {
+  0%, 100% { color: #404040; transform: scale(1); }
+  50%       { color: #fb923c; transform: scale(1.3); }
+}
+
+.share-sparkle--blink {
+  animation: sparkle-blink 0.35s ease 4;
 }

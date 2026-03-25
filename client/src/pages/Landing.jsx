@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon } from '../components/Icons';
+import { SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon } from '../components/Icons';
 import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorization } from '../utils/db';
 import { buildCarousels } from '../utils/carouselGroups';
 import { categorizeUnits } from '../utils/categorize';
@@ -132,8 +132,16 @@ export default function Landing() {
 
   const openAddUnit = useCallback((initial = {}) => setAddUnitInitial(initial), []);
   const closeAddUnit = useCallback(() => setAddUnitInitial(null), []);
-  const handleAddUnitSaved = useCallback((uid, categoryId) => {
+  const handleAddUnitSaved = useCallback((uid, categoryId, newCategory) => {
     reloadUnits();
+    if (newCategory) {
+      // Create the AI-suggested category then assign the unit to it
+      setStoredGroups((prev) => {
+        const groups = [...(prev ?? []), { ...newCategory, uids: [] }];
+        setCategorization(groups); // fire-and-forget
+        return groups;
+      });
+    }
     if (uid && categoryId) handleCategoryAssign(uid, categoryId);
   }, [reloadUnits, handleCategoryAssign]);
 
@@ -242,7 +250,6 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
             title={recentCarousel.title}
             units={recentCarousel.units}
             onUnitClick={openUnit}
-            onAddClick={() => openAddUnit()}
           />
         </div>
       )}
@@ -267,7 +274,10 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
 
       <div className="landing__actions-wrap">
         <div className="landing__actions">
-        <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
+        <button type="button" className="btn-icon" onClick={() => openAddUnit()} title="Add" aria-label="Add">
+            <PlusIcon />
+          </button>
+          <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
             <ConnectIcon />
           </button>
 <button type="button" className="btn-icon" onClick={() => setShowUnitsOverlay(true)} title="Saved" aria-label="Saved">
