@@ -206,12 +206,17 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
       <CategoryField groups={storedGroups} value={categoryId} onChange={setCategoryId} disabled={saving} />
 
       <div className="add-unit__actions">
-        <button type="button" className="add-unit__cancel-btn" onClick={onBack} disabled={saving}>
+        <button
+          type="button"
+          className={`add-unit__cancel-btn${!isDirty ? ' add-unit__cancel-btn--primary' : ''}`}
+          onClick={onBack}
+          disabled={saving}
+        >
           Cancel
         </button>
         <button
           type="button"
-          className={`connect-btn add-unit__save-btn${saveState === 'done' ? ' add-unit__save-btn--done' : ''}`}
+          className={`connect-btn add-unit__save-btn${!isDirty ? ' add-unit__save-btn--secondary' : ''}${saveState === 'done' ? ' add-unit__save-btn--done' : ''}`}
           onClick={handleSave}
           disabled={saving || !isDirty}
         >

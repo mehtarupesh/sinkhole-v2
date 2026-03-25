@@ -40,10 +40,7 @@ export default function UnitsOverlay({ onClose }) {
 
   const q = query.toLowerCase();
   const filtered = units.filter((u) =>
-    !q ||
-    u.content?.toLowerCase().includes(q) ||
-    u.fileName?.toLowerCase().includes(q) ||
-    u.quote?.toLowerCase().includes(q)
+    u.quote && (!q || u.quote.toLowerCase().includes(q))
   );
 
   if (selectedUnit) {
