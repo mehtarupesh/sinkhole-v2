@@ -114,8 +114,15 @@
   justify-content: center;
   align-items: center;
   gap: 12px 14px;
+  min-width: 0;
+  width: 100%;
   max-width: 680px;
-  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .category-cloud-section__line {
+    display: none;
+  }
 }
 
 .category-cloud__pill {
