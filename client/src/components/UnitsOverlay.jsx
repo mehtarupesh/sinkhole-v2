@@ -12,6 +12,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedUnit, setSelectedUnit] = useState(null);
   const inputRef = useRef(null);
+  const swipeStartY = useRef(null);
 
   useEffect(() => {
     getAllUnits().then((all) => setUnits(all.slice().reverse()));
@@ -19,7 +20,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   }, []);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    if (!initialCategory) inputRef.current?.focus();
   }, []);
 
   useEffect(() => {
@@ -74,26 +75,23 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     );
   }
 
+  const handleTouchStart = (e) => {
+    swipeStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (swipeStartY.current === null) return;
+    const delta = e.changedTouches[0].clientY - swipeStartY.current;
+    swipeStartY.current = null;
+    if (delta > 80) onClose();
+  };
+
   return (
-    <div className="search-overlay">
-      <div className="search-grid-wrap">
-        {filtered.length === 0 ? (
-          <p className="search-empty">{query ? 'No matches' : 'Nothing saved yet'}</p>
-        ) : (
-          <div className="search-grid">
-            {filtered.map((unit) => (
-              <CarouselCard
-                key={unit.id}
-                unit={unit}
-                onClick={() => setSelectedUnit(unit)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <CategoryField groups={groups} value={selectedCategory} onChange={setSelectedCategory} />
-
+    <div
+      className="search-overlay"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="search-header">
         <span className="search-header__icon">
           <SearchIcon />
@@ -109,6 +107,24 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
         <button type="button" className="btn-close" onClick={onClose} aria-label="Close">
           <CloseIcon />
         </button>
+      </div>
+
+      <CategoryField groups={groups} value={selectedCategory} onChange={setSelectedCategory} />
+
+      <div className="search-grid-wrap">
+        {filtered.length === 0 ? (
+          <p className="search-empty">{query ? 'No matches' : 'Nothing saved yet'}</p>
+        ) : (
+          <div className="search-grid">
+            {filtered.map((unit) => (
+              <CarouselCard
+                key={unit.id}
+                unit={unit}
+                onClick={() => setSelectedUnit(unit)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
