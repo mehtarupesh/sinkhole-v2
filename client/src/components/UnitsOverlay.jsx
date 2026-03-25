@@ -49,11 +49,14 @@ export default function UnitsOverlay({ onClose }) {
   }, [groups]);
 
   const q = query.toLowerCase();
-  const filtered = units.filter((u) =>
-    u.quote &&
-    (!q || u.quote.toLowerCase().includes(q)) &&
-    (!selectedCategory || uidToCategory[u.uid] === selectedCategory)
-  );
+  const filtered = units.filter((u) => {
+    const searchableContent = u.type === 'image' ? null : u.content;
+    return (
+      u.quote &&
+      (!q || u.quote.toLowerCase().includes(q) || u.fileName?.toLowerCase().includes(q) || searchableContent?.toLowerCase().includes(q)) &&
+      (!selectedCategory || uidToCategory[u.uid] === selectedCategory)
+    );
+  });
 
   if (selectedUnit) {
     return (
@@ -64,6 +67,7 @@ export default function UnitsOverlay({ onClose }) {
             onBack={() => setSelectedUnit(null)}
             onSaved={handleSaved}
             onDelete={handleDelete}
+            storedGroups={groups}
           />
         </div>
       </div>
@@ -72,6 +76,24 @@ export default function UnitsOverlay({ onClose }) {
 
   return (
     <div className="search-overlay">
+      <div className="search-grid-wrap">
+        {filtered.length === 0 ? (
+          <p className="search-empty">{query ? 'No matches' : 'Nothing saved yet'}</p>
+        ) : (
+          <div className="search-grid">
+            {filtered.map((unit) => (
+              <CarouselCard
+                key={unit.id}
+                unit={unit}
+                onClick={() => setSelectedUnit(unit)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <CategoryField groups={groups} value={selectedCategory} onChange={setSelectedCategory} />
+
       <div className="search-header">
         <span className="search-header__icon">
           <SearchIcon />
@@ -87,24 +109,6 @@ export default function UnitsOverlay({ onClose }) {
         <button type="button" className="btn-close" onClick={onClose} aria-label="Close">
           <CloseIcon />
         </button>
-      </div>
-
-      <CategoryField groups={groups} value={selectedCategory} onChange={setSelectedCategory} />
-
-      <div className="search-grid-wrap">
-        {filtered.length === 0 ? (
-          <p className="search-empty">{query ? 'No matches' : 'Nothing saved yet'}</p>
-        ) : (
-          <div className="search-grid">
-            {filtered.map((unit) => (
-              <CarouselCard
-                key={unit.id}
-                unit={unit}
-                onClick={() => setSelectedUnit(unit)}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

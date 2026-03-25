@@ -475,6 +475,9 @@
   font-size: 13px;
   font-family: inherit;
   text-align: center;
+  resize: none;
+  field-sizing: content;
+  min-height: 36px;
   transition: background 0.2s, border-color 0.2s, font-style 0.2s, color 0.2s;
 }
 
@@ -516,18 +519,12 @@
 
 .category-field__chips {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  overflow-x: auto;
   padding-bottom: 2px;
-  scrollbar-width: none;
-}
-
-.category-field__chips::-webkit-scrollbar {
-  display: none;
 }
 
 .category-field__chip {
-  flex-shrink: 0;
   padding: 5px 12px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);

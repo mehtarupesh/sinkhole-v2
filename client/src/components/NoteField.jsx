@@ -214,8 +214,7 @@ export default function NoteField({ value, onChange, disabled = false, onTranscr
       </p>
 
       {/* Text input — fallback for manual entry, or to edit transcript */}
-      <input
-        type="text"
+      <textarea
         className={[
           'note-field__input',
           value && 'note-field__input--has-value',
