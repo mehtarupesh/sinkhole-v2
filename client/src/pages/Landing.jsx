@@ -112,7 +112,19 @@ export default function Landing() {
     Promise.all([getAllUnits(), getCategorization()]).then(([loadedUnits, stored]) => {
       setUnits(loadedUnits);
       const groups = stored ?? null;
-      setStoredGroups(groups);
+
+      if (groups) {
+        const liveUids = new Set(loadedUnits.map((u) => u.uid));
+        const cleaned = groups
+          .map((g) => ({ ...g, uids: g.uids.filter((uid) => liveUids.has(uid)) }))
+          .filter((g) => g.uids.length > 0);
+        if (cleaned.length !== groups.length || cleaned.some((g, i) => g.uids.length !== groups[i].uids.length)) {
+          setCategorization(cleaned);
+        }
+        setStoredGroups(cleaned);
+      } else {
+        setStoredGroups(groups);
+      }
       // Auto-categorize if no stored groups and there's something to categorize
       if (!groups && loadedUnits.length > 0) {
         runCategorize(loadedUnits);
@@ -217,10 +229,21 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
   }, [handleCategoryAssign]);
 
   const handleUnitDelete = useCallback(async (id) => {
+    const deletedUnit = units.find((u) => u.id === id);
     await deleteUnit(id);
     setUnits((prev) => prev.filter((u) => u.id !== id));
+    if (deletedUnit?.uid) {
+      setStoredGroups((prev) => {
+        if (!prev) return prev;
+        const cleaned = prev
+          .map((g) => ({ ...g, uids: g.uids.filter((uid) => uid !== deletedUnit.uid) }))
+          .filter((g) => g.uids.length > 0);
+        setCategorization(cleaned);
+        return cleaned;
+      });
+    }
     setSelectedCtx(null);
-  }, []);
+  }, [units]);
 
   return (
     <div className={`landing${isDragging ? ' landing--dragging' : ''}${hasUnits ? ' landing--has-units' : ''}`}>

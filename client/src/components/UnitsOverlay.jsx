@@ -53,8 +53,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const filtered = units.filter((u) => {
     const searchableContent = u.type === 'image' ? null : u.content;
     return (
-      u.quote &&
-      (!q || u.quote.toLowerCase().includes(q) || u.fileName?.toLowerCase().includes(q) || searchableContent?.toLowerCase().includes(q)) &&
+      (!q || u.quote?.toLowerCase().includes(q) || u.fileName?.toLowerCase().includes(q) || searchableContent?.toLowerCase().includes(q)) &&
       (!selectedCategory || uidToCategory[u.uid] === selectedCategory)
     );
   });
