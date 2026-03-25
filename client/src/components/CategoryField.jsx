@@ -12,7 +12,7 @@ export default function CategoryField({ groups, value, onChange, disabled = fals
   return (
     <div className="category-field">
       <div className="category-field__chips">
-        {groups.map((g) => (
+        {[...groups].sort((a, b) => (b.id === value ? 1 : 0) - (a.id === value ? 1 : 0)).map((g) => (
           <button
             key={g.id}
             type="button"

@@ -192,20 +192,7 @@ export default function Landing() {
     return () => document.removeEventListener('keydown', handler);
   }, [selectedCtx, closeDetail, goPrev, goNext]);
 
-  // Touch swipe: horizontal delta > 50px navigates
-  const touchStartX = useRef(null);
-  const handleTouchStart = useCallback((e) => {
-    touchStartX.current = e.touches[0].clientX;
-  }, []);
-  const handleTouchEnd = useCallback((e) => {
-    if (touchStartX.current === null) return;
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
-    touchStartX.current = null;
-    if (delta > 50) goPrev();
-    else if (delta < -50) goNext();
-  }, [goPrev, goNext]);
-
-  const handleUnitSaved = useCallback((updated, categoryId) => {
+const handleUnitSaved = useCallback((updated, categoryId) => {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
     if (updated.uid) handleCategoryAssign(updated.uid, categoryId);
     setSelectedCtx(null);
@@ -299,8 +286,7 @@ export default function Landing() {
           <div
             className="unit-detail-wrap"
             onClick={(e) => e.stopPropagation()}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+
           >
             <div className="units-panel">
               <UnitDetail
