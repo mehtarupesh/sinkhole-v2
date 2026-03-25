@@ -23,6 +23,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const textareaRef = useRef(null);
+  const swipeStart = useRef(null);
   const saving = saveState !== '';
   const initialCategoryId = useRef(
     storedGroups?.find((g) => g.uids?.includes(unit.uid))?.id ?? ''
@@ -93,8 +94,20 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
 
   const TypeIcon = TYPE_ICONS[unit.type];
 
+  const handleTouchStart = (e) => {
+    swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!swipeStart.current) return;
+    const dx = e.changedTouches[0].clientX - swipeStart.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeStart.current.y);
+    swipeStart.current = null;
+    if (dx > 80 && dx > dy * 1.5) onBack();
+  };
+
   return (
-    <div className="unit-detail-modal">
+    <div className="unit-detail-modal" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       <div className="modal__header">
         <div className="add-unit__type-row">
           <span className="add-unit__type-icon add-unit__type-icon--active">

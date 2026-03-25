@@ -36,6 +36,7 @@ export default function AddUnitModal({
   const fileRef = useRef(null);
   const copyTimerRef = useRef(null);
   const textareaRef = useRef(null);
+  const swipeStart = useRef(null);
   const saving = saveState !== '';
 
   const resizeTextarea = useCallback(() => {
@@ -139,11 +140,25 @@ export default function AddUnitModal({
   const handleSave = () => performSave(quote);
   const handleTranscriptionDone = (transcript) => performSave(transcript);
 
+  const handleTouchStart = (e) => {
+    swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!swipeStart.current) return;
+    const dx = e.changedTouches[0].clientX - swipeStart.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeStart.current.y);
+    swipeStart.current = null;
+    if (dx > 80 && dx > dy * 1.5) onClose();
+  };
+
   return (
     <div
       className="overlay"
       style={keyboardOffset > 0 ? { paddingBottom: keyboardOffset + 24 } : undefined}
       onClick={onClose}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="modal add-unit-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
