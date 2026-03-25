@@ -1,17 +1,21 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CloseIcon, SearchIcon } from './Icons';
-import { getAllUnits, deleteUnit } from '../utils/db';
+import { getAllUnits, deleteUnit, getCategorization } from '../utils/db';
 import { CarouselCard } from './Carousel';
 import UnitDetail from './UnitDetail';
+import CategoryField from './CategoryField';
 
 export default function UnitsOverlay({ onClose }) {
   const [units, setUnits] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [query, setQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedUnit, setSelectedUnit] = useState(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
     getAllUnits().then((all) => setUnits(all.slice().reverse()));
+    getCategorization().then((g) => setGroups(g || []));
   }, []);
 
   useEffect(() => {
@@ -38,9 +42,17 @@ export default function UnitsOverlay({ onClose }) {
     setSelectedUnit(null);
   }, []);
 
+  const uidToCategory = useMemo(() => {
+    const map = {};
+    groups.forEach((g) => g.uids.forEach((uid) => { map[uid] = g.id; }));
+    return map;
+  }, [groups]);
+
   const q = query.toLowerCase();
   const filtered = units.filter((u) =>
-    u.quote && (!q || u.quote.toLowerCase().includes(q))
+    u.quote &&
+    (!q || u.quote.toLowerCase().includes(q)) &&
+    (!selectedCategory || uidToCategory[u.uid] === selectedCategory)
   );
 
   if (selectedUnit) {
@@ -76,6 +88,8 @@ export default function UnitsOverlay({ onClose }) {
           <CloseIcon />
         </button>
       </div>
+
+      <CategoryField groups={groups} value={selectedCategory} onChange={setSelectedCategory} />
 
       <div className="search-grid-wrap">
         {filtered.length === 0 ? (
