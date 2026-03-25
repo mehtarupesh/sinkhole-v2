@@ -113,6 +113,7 @@ export default function NoteField({ value, onChange, disabled = false, onTranscr
       };
 
       rec.start();
+      navigator.vibrate?.(40);
       setRecState('recording');
       drawLoop();
 
@@ -126,7 +127,10 @@ export default function NoteField({ value, onChange, disabled = false, onTranscr
   }
 
   function stopRecording() {
-    if (recorderRef.current?.state === 'recording') recorderRef.current.stop();
+    if (recorderRef.current?.state === 'recording') {
+      navigator.vibrate?.(40);
+      recorderRef.current.stop();
+    }
   }
 
   // ── Pending countdown ────────────────────────────────────────────────────────
