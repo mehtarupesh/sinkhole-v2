@@ -241,6 +241,9 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
 
       <div className="landing__actions-wrap">
         <div className="landing__actions">
+        <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
+            <ConnectIcon />
+          </button>
 <button type="button" className="btn-icon" onClick={() => setShowUnitsOverlay(true)} title="Saved" aria-label="Saved">
             <SearchIcon />
           </button>
@@ -253,9 +256,6 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
             aria-label="Categorize"
           >
             <OneBIcon />
-          </button>
-          <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
-            <ConnectIcon />
           </button>
           <button type="button" className="btn-icon" onClick={() => setShowSettingsModal(true)} title="Settings" aria-label="Settings">
             <GearIcon />
