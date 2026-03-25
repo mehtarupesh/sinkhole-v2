@@ -5,11 +5,11 @@ import { CarouselCard } from './Carousel';
 import UnitDetail from './UnitDetail';
 import CategoryField from './CategoryField';
 
-export default function UnitsOverlay({ onClose }) {
+export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const [units, setUnits] = useState([]);
   const [groups, setGroups] = useState([]);
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedUnit, setSelectedUnit] = useState(null);
   const inputRef = useRef(null);
 

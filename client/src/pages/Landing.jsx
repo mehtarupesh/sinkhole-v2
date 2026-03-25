@@ -12,6 +12,7 @@ import UnitsOverlay from '../components/UnitsOverlay';
 import PrototypeModal from '../components/PrototypeModal';
 import SettingsModal from '../components/SettingsModal';
 import Carousel from '../components/Carousel';
+import CategoryCloud from '../components/CategoryCloud';
 import UnitDetail from '../components/UnitDetail';
 
 export default function Landing() {
@@ -21,6 +22,7 @@ export default function Landing() {
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [addUnitInitial, setAddUnitInitial]     = useState(null);
   const [showUnitsOverlay, setShowUnitsOverlay] = useState(false);
+  const [unitsOverlayCategory, setUnitsOverlayCategory] = useState('');
   const [showPrototypeModal, setShowPrototypeModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal]   = useState(false);
   const [units, setUnits]             = useState([]);
@@ -160,6 +162,14 @@ export default function Landing() {
   );
   const hasUnits = units.length > 0;
 
+  const recentCarousel = useMemo(() => carousels.find((c) => c.id === 'recent') ?? null, [carousels]);
+  const needsContextCarousel = useMemo(() => carousels.find((c) => c.id === 'needs-context') ?? null, [carousels]);
+
+  const openUnitsOverlayWithCategory = useCallback((categoryId) => {
+    setUnitsOverlayCategory(categoryId);
+    setShowUnitsOverlay(true);
+  }, []);
+
   // ── Unit detail navigation ─────────────────────────────────────────────────
 
   const currentUnit = selectedCtx ? selectedCtx.units[selectedCtx.index] : null;
@@ -225,17 +235,33 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
         <p className="landing__sub">Stash now | Forage later</p>
       </div>
 
-      {carousels.length > 0 && (
+      {recentCarousel && (
         <div className="landing__carousels">
-          {carousels.map((c) => (
-            <Carousel
-              key={c.id}
-              title={c.title}
-              units={c.units}
-              onUnitClick={openUnit}
-              onAddClick={c.id === 'recent' ? () => openAddUnit() : undefined}
-            />
-          ))}
+          <Carousel
+            key="recent"
+            title={recentCarousel.title}
+            units={recentCarousel.units}
+            onUnitClick={openUnit}
+            onAddClick={() => openAddUnit()}
+          />
+        </div>
+      )}
+
+      {storedGroups && storedGroups.length > 0 && (
+        <CategoryCloud
+          storedGroups={storedGroups}
+          onCategoryClick={openUnitsOverlayWithCategory}
+        />
+      )}
+
+      {needsContextCarousel && (
+        <div className="landing__carousels">
+          <Carousel
+            key="needs-context"
+            title={needsContextCarousel.title}
+            units={needsContextCarousel.units}
+            onUnitClick={openUnit}
+          />
         </div>
       )}
 
@@ -323,7 +349,12 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
         </div>
       )}
 
-      {showUnitsOverlay && <UnitsOverlay onClose={() => { setShowUnitsOverlay(false); reloadUnits(); }} />}
+      {showUnitsOverlay && (
+        <UnitsOverlay
+          initialCategory={unitsOverlayCategory}
+          onClose={() => { setShowUnitsOverlay(false); setUnitsOverlayCategory(''); reloadUnits(); }}
+        />
+      )}
       {showPrototypeModal && <PrototypeModal onClose={() => setShowPrototypeModal(false)} />}
       {showSettingsModal && <SettingsModal onClose={() => setShowSettingsModal(false)} />}
     </div>
