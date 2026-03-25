@@ -24,7 +24,7 @@
   position: relative;
   flex-shrink: 0;
   width: 168px;
-  min-height: 140px;
+  height: 210px;
   display: flex;
   flex-direction: column;
   text-align: left;
@@ -80,7 +80,6 @@
 /* ── Image variant ── */
 .bleed-card--image {
   padding: 0;
-  min-height: 160px;
 }
 
 .bleed-card__media {
@@ -259,10 +258,7 @@
 @media (min-width: 768px) {
   .bleed-card {
     width: 192px;
-    min-height: 156px;
-  }
-  .bleed-card--image {
-    min-height: 180px;
+    height: 220px;
   }
   .bleed-card--quoted .bleed-card__media {
     height: 120px;

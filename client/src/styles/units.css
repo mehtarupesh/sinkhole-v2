@@ -214,6 +214,22 @@
   padding: 6px 12px;
 }
 
+.unit-detail__download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  color: rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.unit-detail__download:hover {
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .unit-detail__meta {
   margin: 12px 0 0;
   font-size: 11px;

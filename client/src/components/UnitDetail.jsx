@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { CloseIcon, SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon } from './Icons';
 import { updateUnit } from '../utils/db';
 import NoteField from './NoteField';
@@ -20,22 +20,10 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
-  const fileRef = useRef(null);
-
   const isDirty =
     content !== unit.content ||
     quote !== (unit.quote || '') ||
     fileName !== (unit.fileName || '');
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setFileName(file.name);
-    setMimeType(file.type);
-    const reader = new FileReader();
-    reader.onload = ({ target: { result } }) => setContent(result);
-    reader.readAsDataURL(file);
-  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -79,6 +67,20 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
           >
             {confirmDelete ? 'Confirm?' : <TrashIcon />}
           </button>
+          {unit.type === 'image' && content && (
+            <a
+              href={content}
+              download={fileName || 'file'}
+              className="unit-detail__download"
+              aria-label="Download file"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </a>
+          )}
           <button type="button" className="btn-close" onClick={onBack} aria-label="Close">
             <CloseIcon />
           </button>
@@ -128,20 +130,6 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete }) {
             {content && !mimeType?.startsWith('image/') && (
               <p className="add-unit__file-name">{fileName}</p>
             )}
-            <button
-              type="button"
-              className="add-unit__change-file"
-              onClick={() => fileRef.current?.click()}
-            >
-              Choose Different File
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*,*"
-              style={{ display: 'none' }}
-              onChange={handleFileChange}
-            />
           </div>
         )}
       </div>
