@@ -37,7 +37,7 @@ export default function AddUnitModal({
   // Auto-suggest
   const [suggestState, setSuggestState] = useState('idle'); // 'idle'|'needs-selection'|'loading'|'done'|'error'|'no-key'
   const [shareContent, setShareContent] = useState(false);
-  const [shareNote, setShareNote] = useState(false);
+  // Note is always shared with AI — no user toggle
   const [suggestedTitle, setSuggestedTitle] = useState(null); // new category the LLM proposes
   const [ghostAccepted, setGhostAccepted] = useState(false); // user tapped the ghost chip
   const [editingGhost, setEditingGhost] = useState(false);   // long-press edit mode
@@ -48,6 +48,9 @@ export default function AddUnitModal({
   const copyTimerRef = useRef(null);
   const textareaRef = useRef(null);
   const swipeStart = useRef(null);
+  const autoSaveTimerRef = useRef(null);
+  const fromTranscriptionRef = useRef(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const saving = saveState !== '';
   const hasContent = type === 'image' ? !!content : !!content.trim();
   const hasNote = !!quote.trim();
@@ -156,15 +159,41 @@ export default function AddUnitModal({
     }
   };
 
-  const handleSave = () => performSave(quote);
-  const handleTranscriptionDone = (transcript) => performSave(transcript);
+  const handleSave = () => {
+    cancelAutoSave();
+    performSave(quote);
+  };
+
+  const startAutoSave = (quoteText) => {
+    setAutoSaving(true);
+    autoSaveTimerRef.current = setTimeout(() => {
+      setAutoSaving(false);
+      performSave(quoteText);
+    }, 3000);
+  };
+
+  const cancelAutoSave = () => {
+    clearTimeout(autoSaveTimerRef.current);
+    setAutoSaving(false);
+  };
+
+  const handleTranscriptionDone = (transcript) => {
+    setQuote(transcript);
+    fromTranscriptionRef.current = true;
+    runSuggest(transcript);
+  };
 
   // ── Auto-suggest ──────────────────────────────────────────────────────────
 
   const blinkTimerRef = useRef(null);
 
-  const runSuggest = async () => {
-    if (!shareContent && !shareNote) {
+  // noteOverride: pass the transcript directly when auto-triggering after transcription
+  // (state update from setQuote may not have settled yet)
+  const runSuggest = async (noteOverride) => {
+    const effectiveNote = noteOverride !== undefined ? noteOverride : quote;
+    const willShareNote = !!effectiveNote?.trim();
+
+    if (!shareContent && !willShareNote) {
       setSuggestState('needs-selection');
       clearTimeout(blinkTimerRef.current);
       blinkTimerRef.current = setTimeout(() => setSuggestState('idle'), 2500);
@@ -175,16 +204,12 @@ export default function AddUnitModal({
       const apiKey = await getSetting('gemini_key');
       if (!apiKey) throw new Error('no-key');
 
-      // Build what to share based on user consent
-      let sharedContent = null;
-      if (shareContent && content) {
-        sharedContent = content; // data URL for files, plain text for snippet/password
-      }
+      const sharedContent = shareContent && content ? content : null;
 
       const result = await suggestCategory({
         content: sharedContent,
         mimeType,
-        quote: shareNote ? quote : null,
+        quote: willShareNote ? effectiveNote : null,
         type,
         existingCategories: storedGroups ?? [],
       }, apiKey);
@@ -198,7 +223,12 @@ export default function AddUnitModal({
         setCategoryId(''); // clear any manual selection
       }
       setSuggestState('done');
+      if (fromTranscriptionRef.current) {
+        fromTranscriptionRef.current = false;
+        startAutoSave(effectiveNote);
+      }
     } catch (e) {
+      fromTranscriptionRef.current = false;
       setSuggestState(e.message === 'no-key' ? 'no-key' : 'error');
     }
   };
@@ -451,12 +481,10 @@ export default function AddUnitModal({
         <div className="share-sparkle-wrap">
           <NoteField value={quote} onChange={setQuote} disabled={saving} onTranscriptionDone={handleTranscriptionDone} />
           {hasNote && (
-            <button
-              type="button"
-              className={`share-sparkle share-sparkle--note${shareNote ? ' share-sparkle--on' : ''}${sparkleBlinking ? ' share-sparkle--blink' : ''}`}
-              onClick={() => setShareNote((v) => !v)}
-              aria-label="Include note in AI suggestion"
-              title={shareNote ? 'Note shared with AI' : 'Tap to share note with AI'}
+            <span
+              className={`share-sparkle share-sparkle--note share-sparkle--on${sparkleBlinking ? ' share-sparkle--blink' : ''}`}
+              aria-label="Note always shared with AI"
+              title="Note is always shared with AI"
             />
           )}
         </div>
@@ -531,7 +559,7 @@ export default function AddUnitModal({
 
           {/* Trigger button */}
           {canAutoSuggest && (
-            <button type="button" className="auto-suggest-trigger" onClick={runSuggest}>
+            <button type="button" className="auto-suggest-trigger" onClick={() => runSuggest()}>
               ✦ suggest category
             </button>
           )}
@@ -543,8 +571,8 @@ export default function AddUnitModal({
           </button>
           <button
             type="button"
-            className={`connect-btn add-unit__save-btn${saveState === 'done' ? ' add-unit__save-btn--done' : ''}`}
-            onClick={handleSave}
+            className={`connect-btn add-unit__save-btn${saveState === 'done' ? ' add-unit__save-btn--done' : ''}${autoSaving ? ' add-unit__save-btn--filling' : ''}`}
+            onClick={autoSaving ? cancelAutoSave : handleSave}
             disabled={saving}
           >
             {saveState === 'done' ? 'Saved ✓' : saving ? '…' : 'Save'}

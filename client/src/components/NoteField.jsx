@@ -17,27 +17,22 @@ import { getSetting } from '../utils/db';
 import { transcribeAudio } from '../utils/transcribe';
 
 const MAX_REC_SECS = 60;
-const AUTO_SAVE_SECS = 3;
 const BARS = 30;
 
 export default function NoteField({ value, onChange, disabled = false, onTranscriptionDone }) {
-  const [recState, setRecState] = useState('idle'); // idle | recording | transcribing | pending
-  const [saveCountdown, setSaveCountdown] = useState(AUTO_SAVE_SECS);
+  const [recState, setRecState] = useState('idle'); // idle | recording | transcribing
   const [localError, setLocalError] = useState('');
 
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const elapsedRef = useRef(0);
   const recTimerRef = useRef(null);
-  const saveTimerRef = useRef(null);
-  const pendingTranscriptRef = useRef('');
   const canvasRef = useRef(null);
   const animFrameRef = useRef(null);
   const analyserRef = useRef(null);
 
   useEffect(() => () => {
     clearInterval(recTimerRef.current);
-    clearInterval(saveTimerRef.current);
     cancelAnimationFrame(animFrameRef.current);
   }, []);
 
@@ -105,7 +100,8 @@ export default function NoteField({ value, onChange, disabled = false, onTranscr
           if (!apiKey) throw new Error('No Gemini key — add it in Settings.');
           const transcript = await transcribeAudio(blob, apiKey);
           onChange(transcript);
-          startSaveCountdown(transcript);
+          setRecState('idle');
+          onTranscriptionDone?.(transcript);
         } catch (err) {
           setLocalError(err.message || 'Transcription failed.');
           setRecState('idle');
@@ -133,42 +129,14 @@ export default function NoteField({ value, onChange, disabled = false, onTranscr
     }
   }
 
-  // ── Pending countdown ────────────────────────────────────────────────────────
-
-  function startSaveCountdown(transcript) {
-    pendingTranscriptRef.current = transcript;
-    setSaveCountdown(AUTO_SAVE_SECS);
-    setRecState('pending');
-
-    let left = AUTO_SAVE_SECS;
-    saveTimerRef.current = setInterval(() => {
-      left -= 1;
-      setSaveCountdown(left);
-      if (left <= 0) {
-        clearInterval(saveTimerRef.current);
-        setRecState('idle');
-        onTranscriptionDone?.(pendingTranscriptRef.current);
-      }
-    }, 1000);
-  }
-
-  function cancelSaveCountdown() {
-    if (recState !== 'pending') return;
-    clearInterval(saveTimerRef.current);
-    pendingTranscriptRef.current = '';
-    setRecState('idle');
-  }
-
   // ── Derived state ────────────────────────────────────────────────────────────
 
   const isRec = recState === 'recording';
   const isTranscribing = recState === 'transcribing';
-  const isPending = recState === 'pending';
 
   let hint = 'Tap to speak';
   if (isRec) hint = 'Tap to stop';
   else if (isTranscribing) hint = 'Transcribing…';
-  else if (isPending) hint = `Saving in ${saveCountdown}s · tap to edit`;
 
   return (
     <div className="note-field">
@@ -199,10 +167,9 @@ export default function NoteField({ value, onChange, disabled = false, onTranscr
             'note-field__mic',
             isRec && 'note-field__mic--hidden',
             isTranscribing && 'note-field__mic--transcribing',
-            isPending && 'note-field__mic--pending',
           ].filter(Boolean).join(' ')}
           onClick={startRecording}
-          disabled={disabled || isTranscribing || isPending || isRec}
+          disabled={disabled || isTranscribing || isRec}
           aria-label="Tap to record note"
         >
           {isTranscribing
@@ -213,7 +180,7 @@ export default function NoteField({ value, onChange, disabled = false, onTranscr
       </div>
 
       {/* Hint — fades between states */}
-      <p key={hint} className={`note-field__hint${isPending ? ' note-field__hint--pending' : ''}`}>
+      <p key={hint} className="note-field__hint">
         {hint}
       </p>
 
@@ -222,12 +189,10 @@ export default function NoteField({ value, onChange, disabled = false, onTranscr
         className={[
           'note-field__input',
           value && 'note-field__input--has-value',
-          isPending && 'note-field__input--pending',
         ].filter(Boolean).join(' ')}
         placeholder="or type a note…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onFocus={cancelSaveCountdown}
         disabled={disabled || isRec || isTranscribing}
       />
 
