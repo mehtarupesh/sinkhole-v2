@@ -5,7 +5,7 @@ import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, ShareIcon, MoveFolderIcon, RenameIcon, AiChatIcon } from '../components/Icons';
 import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorization } from '../utils/db';
-import { buildCarousels } from '../utils/carouselGroups';
+import { buildCarousels, withMiscGroup, MISC_ID } from '../utils/carouselGroups';
 import { categorizeUnits } from '../utils/categorize';
 import AddUnitModal from '../components/AddUnitModal';
 import UnitsOverlay from '../components/UnitsOverlay';
@@ -191,16 +191,11 @@ export default function Landing() {
 
   const recentCarousel = useMemo(() => carousels.find((c) => c.id === 'recent') ?? null, [carousels]);
 
-  // Virtual "Misc" group: units not assigned to any real category.
-  // Computed here, never persisted. Appended to displayGroups for CategoryCloud only.
-  const displayGroups = useMemo(() => {
-    if (!storedGroups) return [];
-    const categorizedUids = new Set(storedGroups.flatMap((g) => g.uids));
-    const miscUids = units.filter((u) => u.uid && !categorizedUids.has(u.uid)).map((u) => u.uid);
-    return miscUids.length > 0
-      ? [...storedGroups, { id: 'misc', title: 'Misc', uids: miscUids }]
-      : storedGroups;
-  }, [units, storedGroups]);
+  // displayGroups = storedGroups + virtual Misc group (never persisted).
+  const displayGroups = useMemo(
+    () => storedGroups ? withMiscGroup(units, storedGroups) : [],
+    [units, storedGroups]
+  );
 
   const openUnitsOverlayWithCategory = useCallback((categoryId) => {
     setUnitsOverlayCategory(categoryId);
@@ -377,7 +372,7 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
               label: 'Rename',
               onClick: () => {
                 if (catSel.selected.size !== 1) { setToast('Select exactly 1 category to rename'); return; }
-                if (catSel.selected.has('misc')) { setToast('Misc cannot be renamed'); return; }
+                if (catSel.selected.has(MISC_ID)) { setToast('Misc cannot be renamed'); return; }
                 setToast('Rename — coming soon');
               },
             },

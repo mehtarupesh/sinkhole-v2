@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CloseIcon, SearchIcon, TrashIcon, ShareIcon, MoveFolderIcon } from './Icons';
 import { getAllUnits, deleteUnit, getCategorization } from '../utils/db';
+import { withMiscGroup, MISC_ID } from '../utils/carouselGroups';
 import { CarouselCard } from './Carousel';
 import UnitDetail from './UnitDetail';
 import CategoryField from './CategoryField';
@@ -63,12 +64,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     return map;
   }, [groups]);
 
-  // Inject a virtual "Misc" group for units not assigned to any real category.
-  const allGroups = useMemo(() => {
-    const categorizedUids = new Set(groups.flatMap((g) => g.uids));
-    const miscUids = units.filter((u) => u.uid && !categorizedUids.has(u.uid)).map((u) => u.uid);
-    return miscUids.length > 0 ? [...groups, { id: 'misc', title: 'Misc', uids: miscUids }] : groups;
-  }, [units, groups]);
+  const allGroups = useMemo(() => withMiscGroup(units, groups), [units, groups]);
 
   const q = query.toLowerCase();
   const filtered = units.filter((u) => {
@@ -76,7 +72,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     const cat = uidToCategory[u.uid];
     return (
       (!q || u.quote?.toLowerCase().includes(q) || u.fileName?.toLowerCase().includes(q) || searchableContent?.toLowerCase().includes(q)) &&
-      (!selectedCategory || (selectedCategory === 'misc' ? !cat : cat === selectedCategory))
+      (!selectedCategory || (selectedCategory === MISC_ID ? !cat : cat === selectedCategory))
     );
   });
 

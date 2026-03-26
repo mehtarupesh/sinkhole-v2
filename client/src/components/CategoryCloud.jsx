@@ -5,6 +5,7 @@
  * Long-pressing a bubble enters category selection mode.
  */
 import { useLongPress } from '../hooks/useLongPress';
+import { MISC_ID } from '../utils/carouselGroups';
 
 // Extracted so useLongPress can be called at the top level of each pill component
 function CategoryPill({ g, fontSize, opacity, selected, onClick, onLongPress }) {
@@ -30,7 +31,10 @@ function CategoryPill({ g, fontSize, opacity, selected, onClick, onLongPress }) 
 export default function CategoryCloud({ storedGroups, onCategoryClick, selected, onCategoryLongPress }) {
   if (!storedGroups || storedGroups.length === 0) return null;
 
-  const counts = storedGroups.map((g) => g.uids.length);
+  // Exclude the virtual Misc group from scaling — its count is incidental,
+  // not a signal of importance, and would otherwise dominate the cloud.
+  const realGroups = storedGroups.filter((g) => g.id !== MISC_ID);
+  const counts = realGroups.map((g) => g.uids.length);
   const minCount = Math.min(...counts);
   const maxCount = Math.max(...counts);
   const logMin = Math.log(minCount + 1);
@@ -46,9 +50,10 @@ export default function CategoryCloud({ storedGroups, onCategoryClick, selected,
       <div className="category-cloud-section__line category-cloud-section__line--left" />
       <div className="category-cloud">
         {storedGroups.map((g) => {
-          const t = (Math.log(g.uids.length + 1) - logMin) / range;
+          const ismisc = g.id === MISC_ID;
+          const t = ismisc ? 0 : (Math.log(g.uids.length + 1) - logMin) / range;
           const fontSize = MIN_SIZE + t * (MAX_SIZE - MIN_SIZE);
-          const opacity = 0.45 + t * 0.55;
+          const opacity = ismisc ? 0.45 : 0.45 + t * 0.55;
           return (
             <CategoryPill
               key={g.id}

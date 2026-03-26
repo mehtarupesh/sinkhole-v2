@@ -1,6 +1,27 @@
 export const MAX        = 10; // max units shown per categorized carousel
 export const RECENT_MAX = 15; // max units shown in the "Recent" carousel
 
+// Virtual group for units not assigned to any stored category.
+// Change these two values to rename the Misc pill everywhere.
+export const MISC_ID    = 'misc';
+export const MISC_TITLE = 'Unclassified';
+
+/**
+ * Returns storedGroups with a virtual Misc group appended when there are
+ * units not assigned to any stored category. The Misc group is never persisted.
+ *
+ * @param {object[]} units
+ * @param {{ id:string, title:string, uids:string[] }[]} storedGroups
+ * @returns {{ id:string, title:string, uids:string[] }[]}
+ */
+export function withMiscGroup(units, storedGroups) {
+  const categorizedUids = new Set(storedGroups.flatMap((g) => g.uids));
+  const miscUids = units.filter((u) => u.uid && !categorizedUids.has(u.uid)).map((u) => u.uid);
+  return miscUids.length > 0
+    ? [...storedGroups, { id: MISC_ID, title: MISC_TITLE, uids: miscUids }]
+    : storedGroups;
+}
+
 /**
  * Shared finalizer applied to every categorized carousel group.
  * - Sorts each group newest-first (by createdAt desc)
