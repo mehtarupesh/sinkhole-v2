@@ -57,6 +57,14 @@ function SimpleMarkdown({ text }) {
   return <div className="forage__markdown">{elements}</div>;
 }
 
+// ── Quick prompt suggestions ──────────────────────────────────────────────────
+
+const QUICK_PROMPTS = [
+  'Summarize',
+  'Key points',
+  'Action items',
+];
+
 // ── ForageModal ───────────────────────────────────────────────────────────────
 
 export default function ForageModal({ category, allUnits, onClose, onSaveUnit }) {
@@ -77,15 +85,14 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
     [categoryUnits]
   );
 
-  const handleAsk = useCallback(async () => {
-    if (!question.trim() || loading) return;
+  const runForage = useCallback(async (q) => {
     setLoading(true);
     setResponse('');
     setError('');
     setSaveState('');
     try {
       const apiKey = await getSetting('gemini_key');
-      const stream = await forageUnits({ units: categoryUnits, question, shareContent, apiKey });
+      const stream = await forageUnits({ units: categoryUnits, question: q, shareContent, apiKey });
       let text = '';
       for await (const chunk of stream) {
         text += chunk.text ?? '';
@@ -96,7 +103,18 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
     } finally {
       setLoading(false);
     }
-  }, [question, categoryUnits, shareContent, loading]);
+  }, [categoryUnits, shareContent]);
+
+  const handleAsk = useCallback(() => {
+    if (!question.trim() || loading) return;
+    runForage(question);
+  }, [question, loading, runForage]);
+
+  const handleQuickPrompt = useCallback((prompt) => {
+    if (loading) return;
+    setQuestion(prompt);
+    runForage(prompt);
+  }, [loading, runForage]);
 
   const handleSaveAsUnit = useCallback(async () => {
     if (!response || saveState) return;
@@ -224,6 +242,21 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
             onTranscriptionDone={setQuestion}
             placeholder="e.g. summarize"
           />
+
+          {/* Quick prompt chips — below NoteField so voice input stays primary */}
+          <div className="forage__quick-prompts">
+            {QUICK_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                className={`forage__quick-chip${question === prompt ? ' forage__quick-chip--active' : ''}`}
+                onClick={() => handleQuickPrompt(prompt)}
+                disabled={loading}
+                type="button"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Actions */}

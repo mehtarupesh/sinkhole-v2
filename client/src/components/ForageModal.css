@@ -309,6 +309,45 @@
   color: #e5e5e5;
 }
 
+/* ── Quick prompt chips ── */
+
+.forage__quick-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 4px;
+}
+
+.forage__quick-chip {
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  color: #737373;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.forage__quick-chip:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #a3a3a3;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.forage__quick-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.forage__quick-chip--active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #d4d4d4;
+}
+
 /* ── Ask button ── */
 
 .forage__ask-btn {
