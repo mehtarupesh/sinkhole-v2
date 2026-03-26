@@ -3,8 +3,7 @@ import { ImageTypeIcon, CopyIcon, CheckIcon } from './Icons';
 import ImageLightbox from './ImageLightbox';
 
 /**
- * Renders the type-specific content input (snippet / password / image)
- * and a labeled "Share with AI ✦" toggle row below when content exists.
+ * Renders the type-specific content input (snippet / password / image).
  *
  * Props:
  *   type           'snippet' | 'password' | 'image'
@@ -13,15 +12,11 @@ import ImageLightbox from './ImageLightbox';
  *   mimeType       string
  *   onTextChange   (text: string) => void       — snippet / password
  *   onFileSelected ({ content, fileName, mimeType }) => void  — image
- *   shareContent   bool
- *   onShareToggle  () => void
- *   shareBlinking  bool   — blinks to prompt user to share something
  *   disabled       bool
  */
 export default function ContentField({
   type, content, fileName, mimeType,
   onTextChange, onFileSelected,
-  shareContent, onShareToggle, shareBlinking,
   disabled,
 }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -31,8 +26,6 @@ export default function ContentField({
   const copyTimerRef = useRef(null);
   const fileRef = useRef(null);
   const textareaRef = useRef(null);
-
-  const hasContent = type === 'image' ? !!content : !!content.trim();
 
   // Auto-resize textarea to fit its content
   const resizeTextarea = useCallback(() => {
@@ -62,12 +55,6 @@ export default function ContentField({
       onFileSelected({ content: result, fileName: file.name, mimeType: file.type });
     reader.readAsDataURL(file);
   };
-
-  const shareLabel = type === 'password' && shareContent
-    ? 'Sharing password with AI · sensitive'
-    : shareContent
-    ? 'Sharing with AI'
-    : 'Share with AI';
 
   return (
     <div className="content-field">
@@ -174,23 +161,6 @@ export default function ContentField({
             <ImageLightbox src={content} alt={fileName} onClose={() => setShowLightbox(false)} />
           )}
         </div>
-      )}
-
-      {/* Labeled "Share with AI ✦" toggle — appears below content when content exists */}
-      {hasContent && (
-        <button
-          type="button"
-          className={[
-            'content-field__share-row',
-            shareContent && 'content-field__share-row--on',
-            shareBlinking && 'content-field__share-row--blink',
-          ].filter(Boolean).join(' ')}
-          onClick={onShareToggle}
-          disabled={disabled}
-        >
-          <span className="content-field__share-sparkle">✦</span>
-          <span className="content-field__share-label">{shareLabel}</span>
-        </button>
       )}
 
     </div>

@@ -252,6 +252,32 @@
   overflow: hidden;
 }
 
+/* ── Note-only variant (no content — the note IS the card body) ── */
+.bleed-card--note-only {
+  text-align: left;
+}
+
+.bleed-card__note-main {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #a3a3a3;
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.bleed-card__note-main::before {
+  content: '\201C\2009';
+  color: #555;
+  font-size: 17px;
+  font-style: normal;
+}
+
 /* ── Quote footer — the user's voice ── */
 .bleed-card__footer {
   margin-top: 8px;

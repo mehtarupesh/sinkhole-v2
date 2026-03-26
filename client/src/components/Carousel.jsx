@@ -24,34 +24,44 @@ function relativeDate(date) {
 }
 
 export function CarouselCard({ unit, onClick }) {
-  const isImage = unit.type === 'image' && unit.mimeType?.startsWith('image/');
-  const isFile = unit.type === 'image' && !unit.mimeType?.startsWith('image/');
+  const isImage  = unit.type === 'image' && unit.mimeType?.startsWith('image/');
+  const isFile   = unit.type === 'image' && !unit.mimeType?.startsWith('image/');
   const hasBadge = unit.type === 'snippet';
   const hasQuote = !!unit.quote;
+  // Note-only: no content was saved, but a note exists — note becomes the card body
+  const noteOnly = !unit.content && hasQuote;
 
   return (
     <button
       type="button"
-      className={`bleed-card${isImage ? ' bleed-card--image' : ''}${unit.type === 'password' ? ' bleed-card--pw' : ''}${isFile ? ' bleed-card--file' : ''}${hasQuote ? ' bleed-card--quoted' : ''}`}
+      className={[
+        'bleed-card',
+        isImage  && 'bleed-card--image',
+        unit.type === 'password' && !noteOnly && 'bleed-card--pw',
+        isFile   && 'bleed-card--file',
+        noteOnly ? 'bleed-card--note-only' : hasQuote && 'bleed-card--quoted',
+      ].filter(Boolean).join(' ')}
       onClick={onClick}
       aria-label={`Open unit ${unit.id}`}
     >
-      {hasBadge && <span className="bleed-card__badge"><BadgeIcon /></span>}
+      {/* Badge — hidden for note-only cards */}
+      {!noteOnly && hasBadge && <span className="bleed-card__badge"><BadgeIcon /></span>}
 
-      {isImage && (
+      {/* Regular content — hidden when note is the only thing */}
+      {!noteOnly && isImage && (
         <div className="bleed-card__media">
           <img src={unit.content} alt={unit.fileName} className="bleed-card__img" />
         </div>
       )}
 
-      {unit.type === 'snippet' && (
+      {!noteOnly && unit.type === 'snippet' && (
         <>
           <p className="bleed-card__text"><Linkify>{unit.content}</Linkify></p>
           <LinkPreview text={unit.content} />
         </>
       )}
 
-      {unit.type === 'password' && (
+      {!noteOnly && unit.type === 'password' && (
         <div className="bleed-card__pw">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -61,7 +71,7 @@ export function CarouselCard({ unit, onClick }) {
         </div>
       )}
 
-      {isFile && (
+      {!noteOnly && isFile && (
         <div className="bleed-card__file-body">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -71,10 +81,15 @@ export function CarouselCard({ unit, onClick }) {
         </div>
       )}
 
-      {hasQuote && (
-        <div className="bleed-card__footer">
-          <p className="bleed-card__quote">{unit.quote}</p>
-        </div>
+      {/* Note as body (note-only) vs note as footer (has content) */}
+      {noteOnly ? (
+        <p className="bleed-card__note-main">{unit.quote}</p>
+      ) : (
+        hasQuote && (
+          <div className="bleed-card__footer">
+            <p className="bleed-card__quote">{unit.quote}</p>
+          </div>
+        )
       )}
 
       <span className="bleed-card__date">{relativeDate(unit.createdAt)}</span>

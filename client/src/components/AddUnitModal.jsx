@@ -137,8 +137,8 @@ export default function AddUnitModal({
 
   // ── Save ─────────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    if (!hasContent) {
-      setError(type === 'image' ? 'Please select a file' : 'Content is required');
+    if (!hasContent && !quote.trim()) {
+      setError('Add content or a note');
       return;
     }
     setSaveState('saving');
@@ -207,7 +207,7 @@ export default function AddUnitModal({
           </div>
         )}
 
-        {/* Content input + share toggle */}
+        {/* Content input */}
         <div className="add-unit__body">
           <ContentField
             type={type}
@@ -218,12 +218,30 @@ export default function AddUnitModal({
             onFileSelected={({ content: c, fileName: fn, mimeType: mt }) => {
               setContent(c); setFileName(fn); setMimeType(mt); setError('');
             }}
-            shareContent={suggest.shareContent}
-            onShareToggle={() => suggest.setShareContent((v) => !v)}
-            shareBlinking={suggest.suggestState === 'needs-selection'}
             disabled={saving}
           />
         </div>
+
+        {/* Share toggle — outside the scrollable body so it's always visible */}
+        {hasContent && (
+          <button
+            type="button"
+            className={[
+              'content-field__share-row',
+              suggest.shareContent && 'content-field__share-row--on',
+              suggest.suggestState === 'needs-selection' && 'content-field__share-row--blink',
+            ].filter(Boolean).join(' ')}
+            onClick={() => suggest.setShareContent((v) => !v)}
+            disabled={saving}
+          >
+            <span className="content-field__share-sparkle">✦</span>
+            <span className="content-field__share-label">
+              {type === 'password' && suggest.shareContent
+                ? 'Sharing password with AI · sensitive'
+                : suggest.shareContent ? 'Sharing with AI' : 'Share with AI'}
+            </span>
+          </button>
+        )}
 
         {error && <p className="modal__error">{error}</p>}
 
