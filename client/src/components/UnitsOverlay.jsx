@@ -63,12 +63,20 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     return map;
   }, [groups]);
 
+  // Inject a virtual "Misc" group for units not assigned to any real category.
+  const allGroups = useMemo(() => {
+    const categorizedUids = new Set(groups.flatMap((g) => g.uids));
+    const miscUids = units.filter((u) => u.uid && !categorizedUids.has(u.uid)).map((u) => u.uid);
+    return miscUids.length > 0 ? [...groups, { id: 'misc', title: 'Misc', uids: miscUids }] : groups;
+  }, [units, groups]);
+
   const q = query.toLowerCase();
   const filtered = units.filter((u) => {
     const searchableContent = u.type === 'image' ? null : u.content;
+    const cat = uidToCategory[u.uid];
     return (
       (!q || u.quote?.toLowerCase().includes(q) || u.fileName?.toLowerCase().includes(q) || searchableContent?.toLowerCase().includes(q)) &&
-      (!selectedCategory || uidToCategory[u.uid] === selectedCategory)
+      (!selectedCategory || (selectedCategory === 'misc' ? !cat : cat === selectedCategory))
     );
   });
 
@@ -151,7 +159,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
         </button>
       </div>
 
-      <CategoryField groups={groups} value={selectedCategory} onChange={setSelectedCategory} />
+      <CategoryField groups={allGroups} value={selectedCategory} onChange={setSelectedCategory} />
 
       <div className="search-grid-wrap">
         {filtered.length === 0 ? (

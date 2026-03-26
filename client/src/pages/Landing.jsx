@@ -190,7 +190,17 @@ export default function Landing() {
   const hasUnits = units.length > 0;
 
   const recentCarousel = useMemo(() => carousels.find((c) => c.id === 'recent') ?? null, [carousels]);
-  const needsContextCarousel = useMemo(() => carousels.find((c) => c.id === 'needs-context') ?? null, [carousels]);
+
+  // Virtual "Misc" group: units not assigned to any real category.
+  // Computed here, never persisted. Appended to displayGroups for CategoryCloud only.
+  const displayGroups = useMemo(() => {
+    if (!storedGroups) return [];
+    const categorizedUids = new Set(storedGroups.flatMap((g) => g.uids));
+    const miscUids = units.filter((u) => u.uid && !categorizedUids.has(u.uid)).map((u) => u.uid);
+    return miscUids.length > 0
+      ? [...storedGroups, { id: 'misc', title: 'Misc', uids: miscUids }]
+      : storedGroups;
+  }, [units, storedGroups]);
 
   const openUnitsOverlayWithCategory = useCallback((categoryId) => {
     setUnitsOverlayCategory(categoryId);
@@ -317,35 +327,22 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
         </div>
       )}
 
-      {storedGroups && storedGroups.length > 0 && (
+      {storedGroups && displayGroups.length > 0 && (
         <CategoryCloud
-          storedGroups={storedGroups}
+          storedGroups={displayGroups}
           onCategoryClick={handleCategoryClick}
           selected={catSel.selected}
           onCategoryLongPress={handleCategoryLongPress}
         />
       )}
 
-      {needsContextCarousel && (
-        <div className="landing__carousels">
-          <Carousel
-            key="needs-context"
-            title={needsContextCarousel.title}
-            units={needsContextCarousel.units}
-            onUnitClick={handleCarouselUnitClick}
-            selected={cardSel.selected}
-            onCardLongPress={handleCardLongPress}
-          />
-        </div>
-      )}
-
       {isSelecting ? (
         <SelectionBar
           count={cardSel.isSelecting ? cardSel.selected.size : catSel.selected.size}
-          total={cardSel.isSelecting ? units.length : (storedGroups?.length ?? 0)}
+          total={cardSel.isSelecting ? units.length : displayGroups.length}
           onSelectAll={() => {
             if (cardSel.isSelecting) cardSel.selectAll(units.map((u) => u.id));
-            else catSel.selectAll((storedGroups ?? []).map((g) => g.id));
+            else catSel.selectAll(displayGroups.map((g) => g.id));
           }}
           onClear={clearAllSelection}
           actions={cardSel.isSelecting ? [
@@ -380,6 +377,7 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
               label: 'Rename',
               onClick: () => {
                 if (catSel.selected.size !== 1) { setToast('Select exactly 1 category to rename'); return; }
+                if (catSel.selected.has('misc')) { setToast('Misc cannot be renamed'); return; }
                 setToast('Rename — coming soon');
               },
             },

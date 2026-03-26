@@ -39,19 +39,19 @@ export function buildRecentCarousel(units) {
 
 /**
  * Builds the full carousel list shown on the landing page.
- * "Recent" is always first; "Add Some Context?" is always last.
+ * "Recent" is always first, followed by carousels for each stored group.
+ * Uncategorized units are surfaced via the "Misc" pill in CategoryCloud, not a carousel.
  *
  * When storedGroups is provided (LLM result saved in IndexedDB), those groups
  * are used for the middle carousels. Units not in the vault anymore are silently
- * excluded. Without storedGroups, only Recent and needs-context are shown.
+ * excluded. Without storedGroups, only Recent is shown.
  *
  * @param {object[]} units
  * @param {{ id:string, title:string, uids:string[] }[] | null} storedGroups
  * @returns {{ id:string, title:string, units:object[] }[]}
  */
 export function buildCarousels(units, storedGroups = null) {
-  const recent   = buildRecentCarousel(units);
-  const needsCtx = units.filter((u) => !u.quote);
+  const recent = buildRecentCarousel(units);
 
   if (storedGroups) {
     const byUid = Object.fromEntries(units.map((u) => [u.uid, u]));
@@ -60,16 +60,9 @@ export function buildCarousels(units, storedGroups = null) {
       title: g.title,
       units: g.uids.map((uid) => byUid[uid]).filter(Boolean),
     }));
-    const categorized = finalizeCarousels([
-      ...rawGroups,
-      ...(needsCtx.length > 0 ? [{ id: 'needs-context', title: 'Add Some Context?', units: needsCtx }] : []),
-    ]);
+    const categorized = finalizeCarousels(rawGroups);
     return [...(recent ? [recent] : []), ...categorized];
   }
 
-  // No stored categorization yet — Recent + needs-context only
-  const categorized = finalizeCarousels(
-    needsCtx.length > 0 ? [{ id: 'needs-context', title: 'Add Some Context?', units: needsCtx }] : []
-  );
-  return [...(recent ? [recent] : []), ...categorized];
+  return recent ? [recent] : [];
 }
