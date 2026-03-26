@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon } from './Icons';
 import { addUnit } from '../utils/db';
 import { useSuggest } from '../hooks/useSuggest';
 import ContentField from './ContentField';
 import NoteField from './NoteField';
 import CategorySelector from './CategorySelector';
+import { transcribeAndSuggest } from '../utils/transcribeAndSuggest';
 
 const TYPE_CONFIG = [
   { type: 'snippet',  Icon: SnippetTypeIcon },
@@ -121,19 +122,15 @@ export default function AddUnitModal({
     // null (error) — preserve current selection
   };
 
-  // Called by NoteField after voice transcription completes.
-  // We pass the transcript directly to avoid reading stale `quote` state.
-  const handleTranscriptionDone = (transcript) => {
-    suggest.runSuggest({
-      content, mimeType, note: transcript, type, existingCategories: storedGroups,
-    }).then((result) => {
-      if (result?.type === 'existing') {
-        setCategoryId(result.categoryId);
-      } else if (result?.type === 'new' || result?.type === 'none') {
-        setCategoryId('');
-      }
-    });
-  };
+  // Replaces the two-step transcribe→runSuggest with a single LLM call.
+  // NoteField calls this instead of the default transcribeAudio.
+  const transcribeFn = useCallback(async (blob, apiKey) => {
+    const result = await transcribeAndSuggest(blob, apiKey, { type, existingCategories: storedGroups });
+    const applied = suggest.applyResult(result);
+    if (applied.type === 'existing') setCategoryId(applied.categoryId);
+    else setCategoryId('');
+    return result.transcript;
+  }, [type, storedGroups, suggest]);
 
   // ── Save ─────────────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -251,7 +248,7 @@ export default function AddUnitModal({
             value={quote}
             onChange={setQuote}
             disabled={saving}
-            onTranscriptionDone={handleTranscriptionDone}
+            transcribeFn={transcribeFn}
           />
           {hasNote && (
             <span

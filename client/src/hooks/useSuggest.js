@@ -119,6 +119,22 @@ export function useSuggest() {
     setGhostEditValue('');
   };
 
+  // Apply a pre-fetched result (e.g. from transcribeAndSuggest) without an LLM call
+  const applyResult = ({ categoryId, suggestedTitle }) => {
+    if (categoryId) {
+      setNewCategory(null);
+      setSuggestState('done');
+      return { type: 'existing', categoryId };
+    }
+    if (suggestedTitle) {
+      setNewCategory({ id: slugify(suggestedTitle), title: suggestedTitle });
+      setSuggestState('done');
+      return { type: 'new' };
+    }
+    setSuggestState('done');
+    return { type: 'none' };
+  };
+
   // Full reset — use when switching content type
   const reset = () => {
     setNewCategory(null);
@@ -138,6 +154,7 @@ export function useSuggest() {
     ghostEditValue,
     setGhostEditValue,
     runSuggest,
+    applyResult,
     startAddManual,
     startEditGhost,
     commitGhostEdit,

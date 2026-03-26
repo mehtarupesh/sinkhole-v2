@@ -19,7 +19,7 @@ import { transcribeAudio } from '../utils/transcribe';
 const MAX_REC_SECS = 60;
 const BARS = 30;
 
-export default function NoteField({ value, onChange, disabled = false, onTranscriptionDone }) {
+export default function NoteField({ value, onChange, disabled = false, onTranscriptionDone, transcribeFn }) {
   const [recState, setRecState] = useState('idle'); // idle | recording | transcribing
   const [localError, setLocalError] = useState('');
 
@@ -98,7 +98,7 @@ export default function NoteField({ value, onChange, disabled = false, onTranscr
         try {
           const apiKey = await getSetting('gemini_key');
           if (!apiKey) throw new Error('No Gemini key — add it in Settings.');
-          const transcript = await transcribeAudio(blob, apiKey);
+          const transcript = await (transcribeFn ?? transcribeAudio)(blob, apiKey);
           onChange(transcript);
           setRecState('idle');
           onTranscriptionDone?.(transcript);
