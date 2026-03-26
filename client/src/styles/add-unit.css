@@ -861,6 +861,84 @@
   color: #fb923c;
 }
 
+/* ── ContentField share-with-AI labeled row ── */
+
+.content-field__share-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.content-field__share-row:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.content-field__share-sparkle {
+  font-size: 13px;
+  color: #404040;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.content-field__share-label {
+  font-size: 12px;
+  color: #404040;
+  transition: color 0.15s;
+}
+
+.content-field__share-row:not(:disabled):hover .content-field__share-sparkle,
+.content-field__share-row:not(:disabled):hover .content-field__share-label {
+  color: #737373;
+}
+
+.content-field__share-row--on .content-field__share-sparkle,
+.content-field__share-row--on .content-field__share-label {
+  color: #a3a3a3;
+}
+
+.content-field__share-row--on:not(:disabled):hover .content-field__share-sparkle,
+.content-field__share-row--on:not(:disabled):hover .content-field__share-label {
+  color: #e5e5e5;
+}
+
+@keyframes share-row-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
+
+.content-field__share-row--blink {
+  animation: share-row-blink 0.35s ease 4;
+}
+
+/* ── Ghost chip dismiss button ── */
+
+.auto-suggest-ghost-dismiss {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #525252;
+  font-size: 11px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.auto-suggest-ghost-dismiss:hover {
+  color: #a3a3a3;
+}
+
 /* ── Sparkle share toggle ── */
 
 /* Wrapper for password and NoteField — gives us a relative positioning context */
