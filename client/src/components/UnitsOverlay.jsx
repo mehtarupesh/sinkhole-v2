@@ -165,6 +165,8 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
         {filtered.length === 0 ? (
           <p className="search-empty">{query ? 'No matches' : 'Nothing saved yet'}</p>
         ) : (
+          <>
+          <p className="search-count">{filtered.length} item{filtered.length !== 1 ? 's' : ''}</p>
           <div className="search-grid">
             {filtered.map((unit) => (
               <CarouselCard
@@ -176,6 +178,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
               />
             ))}
           </div>
+          </>
         )}
       </div>
 
