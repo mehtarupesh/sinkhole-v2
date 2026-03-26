@@ -34,5 +34,7 @@ export function useLongPress({ onClick, onLongPress } = {}) {
     onPointerLeave: cancel,
     onPointerCancel: cancel,
     onClick: handleClick,
+    // Suppress the native context menu that browsers fire on long press
+    onContextMenu: useCallback((e) => { if (onLongPress) e.preventDefault(); }, [onLongPress]),
   };
 }

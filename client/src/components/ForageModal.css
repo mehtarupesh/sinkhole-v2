@@ -130,6 +130,23 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.forage__dismiss-btn {
+  padding: 5px 14px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #525252;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.forage__dismiss-btn:hover {
+  color: #a3a3a3;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
 .forage__save-btn {
   display: inline-flex;
   align-items: center;
@@ -210,46 +227,85 @@
   font-weight: 600;
 }
 
-/* ── AI scope description + inline toggle ── */
+/* ── AI content toggle row ── */
 
-.forage__scope-desc {
-  margin: 0 0 14px;
-  font-size: 12px;
-  color: #a3a3a3;
-  line-height: 1.5;
-}
-
-.forage__scope-toggle {
-  display: inline;
-  padding: 0;
-  background: none;
-  border: none;
-  color: #d4d4d4;
-  font-size: 12px;
+.forage__content-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  text-align: left;
   font-family: inherit;
   cursor: pointer;
-  transition: color 0.15s;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-color: rgba(255, 255, 255, 0.12);
+  box-sizing: border-box;
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.forage__scope-toggle:hover:not(:disabled) {
-  color: #a3a3a3;
-  text-decoration-color: rgba(255, 255, 255, 0.3);
+.forage__content-row:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.13);
 }
 
-.forage__scope-toggle:disabled {
-  opacity: 0.4;
+.forage__content-row:disabled {
+  opacity: 0.5;
   cursor: default;
 }
 
-.forage__scope-toggle--on {
-  color: #a3a3a3;
-  text-decoration-color: rgba(255, 255, 255, 0.25);
+.forage__content-row--on {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
-.forage__scope-toggle--on:hover:not(:disabled) {
+.forage__content-row-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.forage__content-row-title {
+  font-size: 13px;
+  color: #a3a3a3;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.forage__content-row--on .forage__content-row-title {
+  color: #e5e5e5;
+}
+
+.forage__content-row-desc {
+  font-size: 11px;
+  color: #525252;
+  line-height: 1.45;
+  transition: color 0.15s;
+}
+
+.forage__content-row--on .forage__content-row-desc {
+  color: #737373;
+}
+
+.forage__content-row-badge {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #525252;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.forage__content-row--on .forage__content-row-badge {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.22);
   color: #e5e5e5;
 }
 

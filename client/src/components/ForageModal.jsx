@@ -7,7 +7,7 @@
  *   onClose     fn                   close handler
  *   onSaveUnit  fn(uid, categoryId)  called after response is saved as a new unit
  */
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { CloseIcon, CheckIcon } from './Icons';
 import { getSetting, addUnit } from '../utils/db';
 import { forageUnits } from '../utils/forage';
@@ -115,6 +115,13 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
     }
   }, [response, question, category, saveState, onSaveUnit]);
 
+  // Auto-dismiss response after save — mirrors AddUnitModal's post-save close delay
+  useEffect(() => {
+    if (saveState !== 'done') return;
+    const id = setTimeout(() => { setResponse(''); setSaveState(''); }, 1500);
+    return () => clearTimeout(id);
+  }, [saveState]);
+
   const canAsk = question.trim().length > 0 && !loading;
 
   return (
@@ -143,19 +150,28 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
             ))}
           </div>
 
-          {/* AI scope — describes what AI receives, with optional content toggle */}
+          {/* AI scope — full-width toggle row so users don't miss it */}
           {hasShareableContent && (
-            <p className="forage__scope-desc">
-              Sending your notes to AI.{' '}
-              <button
-                className={`forage__scope-toggle${shareContent ? ' forage__scope-toggle--on' : ''}`}
-                onClick={() => setShareContent((s) => !s)}
-                type="button"
-                disabled={loading}
-              >
-                {shareContent ? '✦ Content included' : '✦ Also send content?'}
-              </button>
-            </p>
+            <button
+              className={`forage__content-row${shareContent ? ' forage__content-row--on' : ''}`}
+              onClick={() => setShareContent((s) => !s)}
+              type="button"
+              disabled={loading}
+            >
+              <div className="forage__content-row-left">
+                <span className="forage__content-row-title">
+                  ✦ Also send content to AI
+                </span>
+                <span className="forage__content-row-desc">
+                  {shareContent
+                    ? 'AI will read your images and full text.'
+                    : 'By default AI only reads your notes. Enable to also share images and text.'}
+                </span>
+              </div>
+              <span className="forage__content-row-badge">
+                {shareContent ? 'On' : 'Off'}
+              </span>
+            </button>
           )}
 
           {/* Response */}
@@ -175,6 +191,13 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
               {!loading && response && (
                 <div className="forage__response-footer">
                   <button
+                    className="forage__dismiss-btn"
+                    onClick={() => { setResponse(''); setSaveState(''); }}
+                    type="button"
+                  >
+                    Dismiss
+                  </button>
+                  <button
                     className={`forage__save-btn${saveState === 'done' ? ' forage__save-btn--done' : ''}`}
                     onClick={handleSaveAsUnit}
                     disabled={!!saveState}
@@ -184,7 +207,7 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
                       ? <><CheckIcon /> Saved</>
                       : saveState === 'saving'
                         ? 'Saving…'
-                        : 'Save as unit'}
+                        : 'Save'}
                   </button>
                 </div>
               )}
