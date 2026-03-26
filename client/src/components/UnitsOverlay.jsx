@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { CloseIcon, SearchIcon } from './Icons';
+import { CloseIcon, SearchIcon, TrashIcon, ShareIcon, MoveFolderIcon } from './Icons';
 import { getAllUnits, deleteUnit, getCategorization } from '../utils/db';
 import { CarouselCard } from './Carousel';
 import UnitDetail from './UnitDetail';
 import CategoryField from './CategoryField';
+import { useSelection } from '../hooks/useSelection';
+import SelectionBar from './SelectionBar';
 
 export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const [units, setUnits] = useState([]);
@@ -11,8 +13,11 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedUnit, setSelectedUnit] = useState(null);
+  const [toast, setToast] = useState(null);
   const inputRef = useRef(null);
   const swipeStart = useRef(null);
+
+  const { selected, isSelecting, toggle, enterWith, selectAll, clear } = useSelection();
 
   useEffect(() => {
     getAllUnits().then((all) => setUnits(all.slice().reverse()));
@@ -23,14 +28,23 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     if (!initialCategory) inputRef.current?.focus();
   }, []);
 
+  // Toast auto-dismiss
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(id);
+  }, [toast]);
+
   useEffect(() => {
     const handler = (e) => {
       if (e.key !== 'Escape') return;
-      if (selectedUnit) { setSelectedUnit(null); } else { onClose(); }
+      if (isSelecting)    { clear(); return; }
+      if (selectedUnit)   { setSelectedUnit(null); return; }
+      onClose();
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [onClose, selectedUnit]);
+  }, [onClose, selectedUnit, isSelecting, clear]);
 
   const handleDelete = useCallback(async (id) => {
     await deleteUnit(id);
@@ -57,6 +71,25 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
       (!selectedCategory || uidToCategory[u.uid] === selectedCategory)
     );
   });
+
+  // Action stubs — toasts only until real logic is wired
+  const unitActions = [
+    {
+      icon: <TrashIcon />,
+      label: 'Delete',
+      onClick: () => setToast(`Delete ${selected.size} item${selected.size !== 1 ? 's' : ''} — coming soon`),
+    },
+    {
+      icon: <ShareIcon />,
+      label: 'Share',
+      onClick: () => setToast(`Share ${selected.size} item${selected.size !== 1 ? 's' : ''} — coming soon`),
+    },
+    {
+      icon: <MoveFolderIcon />,
+      label: 'Move to Category',
+      onClick: () => setToast('Move to Category — coming soon'),
+    },
+  ];
 
   if (selectedUnit) {
     return (
@@ -92,6 +125,15 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      {toast && (
+        <div className="toast" role="alert">
+          <span>{toast}</span>
+          <button type="button" className="toast__close" onClick={() => setToast(null)} aria-label="Dismiss">
+            <CloseIcon />
+          </button>
+        </div>
+      )}
+
       <div className="search-header">
         <span className="search-header__icon">
           <SearchIcon />
@@ -120,12 +162,24 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
               <CarouselCard
                 key={unit.id}
                 unit={unit}
-                onClick={() => setSelectedUnit(unit)}
+                selected={selected.has(unit.id)}
+                onClick={() => isSelecting ? toggle(unit.id) : setSelectedUnit(unit)}
+                onLongPress={() => enterWith(unit.id)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {isSelecting && (
+        <SelectionBar
+          count={selected.size}
+          total={filtered.length}
+          onSelectAll={() => selectAll(filtered.map((u) => u.id))}
+          onClear={clear}
+          actions={unitActions}
+        />
+      )}
     </div>
   );
 }

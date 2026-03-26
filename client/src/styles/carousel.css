@@ -309,6 +309,29 @@
   color: #555;
 }
 
+/* ── Selection state ── */
+.bleed-card--selected {
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+.bleed-card__check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fafafa;
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
 @media (min-width: 768px) {
   .bleed-card {
     width: 192px;

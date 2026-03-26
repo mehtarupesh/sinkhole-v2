@@ -1,3 +1,5 @@
+import { useLongPress } from '../hooks/useLongPress';
+import { CheckIcon } from './Icons';
 import Linkify from './Linkify';
 import LinkPreview from './LinkPreview';
 
@@ -23,12 +25,13 @@ function relativeDate(date) {
   return `${Math.floor(diff / 365)}y`;
 }
 
-export function CarouselCard({ unit, onClick }) {
+export function CarouselCard({ unit, onClick, selected = false, onLongPress }) {
+  const pressHandlers = useLongPress({ onClick, onLongPress });
+
   const isImage  = unit.type === 'image' && unit.mimeType?.startsWith('image/');
   const isFile   = unit.type === 'image' && !unit.mimeType?.startsWith('image/');
   const hasBadge = unit.type === 'snippet';
   const hasQuote = !!unit.quote;
-  // Note-only: no content was saved, but a note exists — note becomes the card body
   const noteOnly = !unit.content && hasQuote;
 
   return (
@@ -40,10 +43,17 @@ export function CarouselCard({ unit, onClick }) {
         unit.type === 'password' && !noteOnly && 'bleed-card--pw',
         isFile   && 'bleed-card--file',
         noteOnly ? 'bleed-card--note-only' : hasQuote && 'bleed-card--quoted',
+        selected && 'bleed-card--selected',
       ].filter(Boolean).join(' ')}
-      onClick={onClick}
+      {...pressHandlers}
       aria-label={`Open unit ${unit.id}`}
     >
+      {selected && (
+        <span className="bleed-card__check">
+          <CheckIcon size={11} />
+        </span>
+      )}
+
       {/* Badge — hidden for note-only cards */}
       {!noteOnly && hasBadge && <span className="bleed-card__badge"><BadgeIcon /></span>}
 
@@ -81,7 +91,6 @@ export function CarouselCard({ unit, onClick }) {
         </div>
       )}
 
-      {/* Note as body (note-only) vs note as footer (has content) */}
       {noteOnly ? (
         <p className="bleed-card__note-main">{unit.quote}</p>
       ) : (
@@ -97,7 +106,9 @@ export function CarouselCard({ unit, onClick }) {
   );
 }
 
-export default function Carousel({ title, units, onUnitClick, onAddClick }) {
+// selected: Set<id> — which card IDs are currently selected
+// onCardLongPress: (unit) => void — called when a card is long-pressed
+export default function Carousel({ title, units, onUnitClick, onAddClick, selected, onCardLongPress }) {
   if (!units?.length) return null;
   return (
     <div className="carousel">
@@ -111,7 +122,13 @@ export default function Carousel({ title, units, onUnitClick, onAddClick }) {
       </div>
       <div className="carousel__row">
         {units.map((unit, i) => (
-          <CarouselCard key={unit.id} unit={unit} onClick={() => onUnitClick(unit, units, i)} />
+          <CarouselCard
+            key={unit.id}
+            unit={unit}
+            onClick={() => onUnitClick(unit, units, i)}
+            selected={selected?.has(unit.id) ?? false}
+            onLongPress={onCardLongPress ? () => onCardLongPress(unit) : undefined}
+          />
         ))}
       </div>
     </div>

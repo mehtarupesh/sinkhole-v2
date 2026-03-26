@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon } from '../components/Icons';
+import { SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, ShareIcon, MoveFolderIcon, RenameIcon, AiChatIcon } from '../components/Icons';
 import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorization } from '../utils/db';
 import { buildCarousels } from '../utils/carouselGroups';
 import { categorizeUnits } from '../utils/categorize';
@@ -14,6 +14,8 @@ import SettingsModal from '../components/SettingsModal';
 import Carousel from '../components/Carousel';
 import CategoryCloud from '../components/CategoryCloud';
 import UnitDetail from '../components/UnitDetail';
+import SelectionBar from '../components/SelectionBar';
+import { useSelection } from '../hooks/useSelection';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -34,6 +36,11 @@ export default function Landing() {
   const [selectedCtx, setSelectedCtx]   = useState(null);
 
   const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null;
+
+  // ── Selection (cards + categories) ──────────────────────────────────────────
+  const cardSel = useSelection();
+  const catSel  = useSelection();
+  const isSelecting = cardSel.isSelecting || catSel.isSelecting;
 
   // Push unit-detail overlay above the virtual keyboard on iOS
   useEffect(() => {
@@ -202,6 +209,37 @@ export default function Landing() {
 
   const closeDetail = useCallback(() => setSelectedCtx(null), []);
 
+  // ── Selection handlers (defined after openUnit to avoid TDZ) ────────────────
+
+  // Long press on a carousel card: clear category selection, enter card selection
+  const handleCardLongPress = useCallback((unit) => {
+    catSel.clear();
+    cardSel.enterWith(unit.id);
+  }, [cardSel, catSel]);
+
+  // Long press on a category pill: clear card selection, enter category selection
+  const handleCategoryLongPress = useCallback((id) => {
+    cardSel.clear();
+    catSel.enterWith(id);
+  }, [cardSel, catSel]);
+
+  // Tap a card: toggle when selecting, open detail otherwise
+  const handleCarouselUnitClick = useCallback((unit, ctxUnits, i) => {
+    if (cardSel.isSelecting) { cardSel.toggle(unit.id); return; }
+    openUnit(unit, ctxUnits, i);
+  }, [cardSel, openUnit]);
+
+  // Tap a category pill: toggle when selecting, open overlay otherwise
+  const handleCategoryClick = useCallback((id) => {
+    if (catSel.isSelecting) { catSel.toggle(id); return; }
+    openUnitsOverlayWithCategory(id);
+  }, [catSel, openUnitsOverlayWithCategory]);
+
+  const clearAllSelection = useCallback(() => {
+    cardSel.clear();
+    catSel.clear();
+  }, [cardSel, catSel]);
+
   const goPrev = useCallback(() => {
     setSelectedCtx((ctx) => (ctx && ctx.index > 0 ? { ...ctx, index: ctx.index - 1 } : ctx));
   }, []);
@@ -272,7 +310,9 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
             key="recent"
             title={recentCarousel.title}
             units={recentCarousel.units}
-            onUnitClick={openUnit}
+            onUnitClick={handleCarouselUnitClick}
+            selected={cardSel.selected}
+            onCardLongPress={handleCardLongPress}
           />
         </div>
       )}
@@ -280,7 +320,9 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
       {storedGroups && storedGroups.length > 0 && (
         <CategoryCloud
           storedGroups={storedGroups}
-          onCategoryClick={openUnitsOverlayWithCategory}
+          onCategoryClick={handleCategoryClick}
+          selected={catSel.selected}
+          onCategoryLongPress={handleCategoryLongPress}
         />
       )}
 
@@ -290,37 +332,95 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
             key="needs-context"
             title={needsContextCarousel.title}
             units={needsContextCarousel.units}
-            onUnitClick={openUnit}
+            onUnitClick={handleCarouselUnitClick}
+            selected={cardSel.selected}
+            onCardLongPress={handleCardLongPress}
           />
         </div>
       )}
 
-      <div className="landing__actions-wrap">
-        <div className="landing__actions">
-        <button type="button" className="btn-icon" onClick={() => openAddUnit()} title="Add" aria-label="Add">
-            <PlusIcon />
-          </button>
-          <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
-            <ConnectIcon />
-          </button>
-<button type="button" className="btn-icon" onClick={() => setShowUnitsOverlay(true)} title="Saved" aria-label="Saved">
-            <SearchIcon />
-          </button>
-          <button
-            type="button"
-            className={`btn-icon btn-categorize${categorizing ? ' btn-categorize--loading' : ''}`}
-            onClick={handleCategorize}
-            disabled={categorizing || !hasUnits}
-            title="Categorize"
-            aria-label="Categorize"
-          >
-            <OneBIcon />
-          </button>
-          <button type="button" className="btn-icon" onClick={() => setShowSettingsModal(true)} title="Settings" aria-label="Settings">
-            <GearIcon />
-          </button>
+      {isSelecting ? (
+        <SelectionBar
+          count={cardSel.isSelecting ? cardSel.selected.size : catSel.selected.size}
+          total={cardSel.isSelecting ? units.length : (storedGroups?.length ?? 0)}
+          onSelectAll={() => {
+            if (cardSel.isSelecting) cardSel.selectAll(units.map((u) => u.id));
+            else catSel.selectAll((storedGroups ?? []).map((g) => g.id));
+          }}
+          onClear={clearAllSelection}
+          actions={cardSel.isSelecting ? [
+            {
+              icon: <TrashIcon />,
+              label: 'Delete',
+              onClick: () => setToast(`Delete ${cardSel.selected.size} item${cardSel.selected.size !== 1 ? 's' : ''} — coming soon`),
+            },
+            {
+              icon: <ShareIcon />,
+              label: 'Share',
+              onClick: () => setToast(`Share ${cardSel.selected.size} item${cardSel.selected.size !== 1 ? 's' : ''} — coming soon`),
+            },
+            {
+              icon: <MoveFolderIcon />,
+              label: 'Move to Category',
+              onClick: () => setToast('Move to Category — coming soon'),
+            },
+          ] : [
+            {
+              icon: <TrashIcon />,
+              label: 'Delete',
+              onClick: () => setToast(`Delete ${catSel.selected.size} categor${catSel.selected.size !== 1 ? 'ies' : 'y'} — coming soon`),
+            },
+            {
+              icon: <ShareIcon />,
+              label: 'Share',
+              onClick: () => setToast(`Share ${catSel.selected.size} categor${catSel.selected.size !== 1 ? 'ies' : 'y'} — coming soon`),
+            },
+            {
+              icon: <RenameIcon />,
+              label: 'Rename',
+              onClick: () => {
+                if (catSel.selected.size !== 1) { setToast('Select exactly 1 category to rename'); return; }
+                setToast('Rename — coming soon');
+              },
+            },
+            {
+              icon: <AiChatIcon />,
+              label: 'AI Chat',
+              onClick: () => {
+                if (catSel.selected.size !== 1) { setToast('Select exactly 1 category for AI Chat'); return; }
+                setToast('AI Chat — coming soon');
+              },
+            },
+          ]}
+        />
+      ) : (
+        <div className="landing__actions-wrap">
+          <div className="landing__actions">
+            <button type="button" className="btn-icon" onClick={() => openAddUnit()} title="Add" aria-label="Add">
+              <PlusIcon />
+            </button>
+            <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
+              <ConnectIcon />
+            </button>
+            <button type="button" className="btn-icon" onClick={() => setShowUnitsOverlay(true)} title="Saved" aria-label="Saved">
+              <SearchIcon />
+            </button>
+            <button
+              type="button"
+              className={`btn-icon btn-categorize${categorizing ? ' btn-categorize--loading' : ''}`}
+              onClick={handleCategorize}
+              disabled={categorizing || !hasUnits}
+              title="Categorize"
+              aria-label="Categorize"
+            >
+              <OneBIcon />
+            </button>
+            <button type="button" className="btn-icon" onClick={() => setShowSettingsModal(true)} title="Settings" aria-label="Settings">
+              <GearIcon />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {addUnitInitial !== null && (
         <AddUnitModal
