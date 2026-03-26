@@ -8,6 +8,7 @@ import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorizati
 import { buildCarousels, withMiscGroup, MISC_ID } from '../utils/carouselGroups';
 import { categorizeUnits } from '../utils/categorize';
 import AddUnitModal from '../components/AddUnitModal';
+import ForageModal from '../components/ForageModal';
 import UnitsOverlay from '../components/UnitsOverlay';
 import PrototypeModal from '../components/PrototypeModal';
 import SettingsModal from '../components/SettingsModal';
@@ -27,6 +28,7 @@ export default function Landing() {
   const [unitsOverlayCategory, setUnitsOverlayCategory] = useState('');
   const [showPrototypeModal, setShowPrototypeModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal]   = useState(false);
+  const [showForageModal, setShowForageModal]       = useState(false);
   const [units, setUnits]             = useState([]);
   // undefined = still loading from DB, null = loaded but none saved, array = loaded groups
   const [storedGroups, setStoredGroups] = useState(undefined);
@@ -35,7 +37,7 @@ export default function Landing() {
   // selectedCtx: { units: Unit[], index: number } | null
   const [selectedCtx, setSelectedCtx]   = useState(null);
 
-  const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null;
+  const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal;
 
   // ── Selection (cards + categories) ──────────────────────────────────────────
   const cardSel = useSelection();
@@ -196,6 +198,12 @@ export default function Landing() {
     () => storedGroups ? withMiscGroup(units, storedGroups) : [],
     [units, storedGroups]
   );
+
+  const forageCategory = useMemo(() => {
+    if (!showForageModal || catSel.selected.size !== 1) return null;
+    const id = [...catSel.selected][0];
+    return displayGroups.find((g) => g.id === id) ?? null;
+  }, [showForageModal, catSel.selected, displayGroups]);
 
   const openUnitsOverlayWithCategory = useCallback((categoryId) => {
     setUnitsOverlayCategory(categoryId);
@@ -378,10 +386,10 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
             },
             {
               icon: <AiChatIcon />,
-              label: 'AI Chat',
+              label: 'Forage',
               onClick: () => {
-                if (catSel.selected.size !== 1) { setToast('Select exactly 1 category for AI Chat'); return; }
-                setToast('AI Chat — coming soon');
+                if (catSel.selected.size !== 1) { setToast('Select exactly 1 category to Forage'); return; }
+                setShowForageModal(true);
               },
             },
           ]}
@@ -483,6 +491,14 @@ const handleUnitSaved = useCallback((updated, categoryId) => {
       )}
       {showPrototypeModal && <PrototypeModal onClose={() => setShowPrototypeModal(false)} />}
       {showSettingsModal && <SettingsModal onClose={() => setShowSettingsModal(false)} />}
+      {forageCategory && (
+        <ForageModal
+          category={forageCategory}
+          allUnits={units}
+          onClose={() => { setShowForageModal(false); clearAllSelection(); }}
+          onSaveUnit={(uid, catId) => { reloadUnits(); handleCategoryAssign(uid, catId); }}
+        />
+      )}
     </div>
   );
 }
