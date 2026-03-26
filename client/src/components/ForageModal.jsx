@@ -104,8 +104,8 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
     try {
       const { uid } = await addUnit({
         type: 'snippet',
-        content: `Q: ${question}\n\n${response}`,
-        quote: `Forage: ${category.title}`,
+        content: response,
+        quote: question,
       });
       setSaveState('done');
       onSaveUnit?.(uid, category.id);
@@ -222,6 +222,7 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
             onChange={setQuestion}
             disabled={loading}
             onTranscriptionDone={setQuestion}
+            placeholder="e.g. summarize"
           />
         </div>
 

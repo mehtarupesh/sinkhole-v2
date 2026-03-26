@@ -19,7 +19,7 @@ import { transcribeAudio } from '../utils/transcribe';
 const MAX_REC_SECS = 60;
 const BARS = 30;
 
-export default function NoteField({ value, onChange, disabled = false, onTranscriptionDone, transcribeFn }) {
+export default function NoteField({ value, onChange, disabled = false, onTranscriptionDone, transcribeFn, placeholder = 'or type a note…' }) {
   const [recState, setRecState] = useState('idle'); // idle | recording | transcribing
   const [localError, setLocalError] = useState('');
 
@@ -190,7 +190,7 @@ export default function NoteField({ value, onChange, disabled = false, onTranscr
           'note-field__input',
           value && 'note-field__input--has-value',
         ].filter(Boolean).join(' ')}
-        placeholder="or type a note…"
+        placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled || isRec || isTranscribing}
