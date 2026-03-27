@@ -35,8 +35,23 @@
 
 /* Unit strip — uses .carousel__row for the scroll behaviour, just adds bottom spacing */
 .forage__strip {
-  padding-bottom: 6px;
-  margin-bottom: 8px;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+/* Scoped NoteTray overrides — remove the divider border and excess top padding */
+.forage-modal .note-tray {
+  padding-top: 4px;
+  border-top: none;
+}
+
+.forage-modal .note-tray--text-hero {
+  border-top: none;
+}
+
+/* Gap between quick-prompts and the content toggle row */
+.forage-modal .add-unit__body {
+  margin-bottom: 14px;
 }
 
 /* ── Context section ── */
@@ -235,7 +250,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  margin-bottom: 4px;
+  margin-bottom: 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
@@ -254,6 +269,15 @@
 .forage__content-row:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.forage__content-row--idle {
+  opacity: 0.35;
+  transition: opacity 0.25s ease, background 0.15s, border-color 0.15s;
+}
+
+.forage__content-row--idle:hover:not(:disabled) {
+  opacity: 0.6;
 }
 
 .forage__content-row--on {
@@ -335,6 +359,11 @@
   font-style: italic;
   white-space: nowrap;
   user-select: none;
+  transition: color 0.2s;
+}
+
+.forage__quick-prompts--idle .forage__quick-label {
+  color: #525252;
 }
 
 .forage__quick-chip {
@@ -347,7 +376,13 @@
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.forage__quick-prompts--idle .forage__quick-chip {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #a3a3a3;
 }
 
 .forage__quick-chip:hover:not(:disabled) {

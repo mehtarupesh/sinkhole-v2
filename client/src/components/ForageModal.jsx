@@ -195,7 +195,7 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
           />
 
           {/* Quick prompt chips — secondary shortcuts */}
-          <div className="forage__quick-prompts">
+          <div className={`forage__quick-prompts${!question.trim() ? ' forage__quick-prompts--idle' : ''}`}>
             <span className="forage__quick-label">or try</span>
             {QUICK_PROMPTS.map((prompt) => (
               <button
@@ -256,7 +256,7 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
         {/* AI scope toggle — sits above the Forage button to localize the decision */}
         {hasShareableContent && (
           <button
-            className={`forage__content-row${shareContent ? ' forage__content-row--on' : ''}${confirmShare ? ' forage__content-row--pulse' : ''}`}
+            className={`forage__content-row${shareContent ? ' forage__content-row--on' : ''}${confirmShare ? ' forage__content-row--pulse' : ''}${!question.trim() ? ' forage__content-row--idle' : ''}`}
             onClick={() => setShareContent((s) => !s)}
             type="button"
             disabled={loading}

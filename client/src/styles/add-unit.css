@@ -108,43 +108,31 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Recording state — full-width waveform */
+/* Recording state — waveform + label stacked */
 .note-tray__wave-zone {
-  position: relative;
-  height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px 8px;
   border-radius: 14px;
   background: rgba(248, 113, 113, 0.04);
   border: 1px solid rgba(248, 113, 113, 0.22);
   box-shadow: 0 0 24px rgba(248, 113, 113, 0.06);
   cursor: pointer;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .note-tray__waveform {
-  position: absolute;
-  inset: 0;
   width: 100%;
-  height: 100%;
+  height: 44px;
   display: block;
 }
 
 .note-tray__wave-hint {
-  position: relative;
-  z-index: 1;
   margin: 0;
   font-size: 11px;
-  color: rgba(248, 113, 113, 0.5);
+  color: rgba(248, 113, 113, 0.6);
   letter-spacing: 0.04em;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.note-tray__wave-zone:hover .note-tray__wave-hint {
-  opacity: 1;
 }
 
 /* Mic hero state */
@@ -152,19 +140,25 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
   padding-top: 20px;
   padding-bottom: 8px;
   border-top: none;
+}
+
+.note-tray__center-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .note-tray__orb {
   width: 62px;
   height: 62px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #a3a3a3;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  color: #c4c4c4;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -194,8 +188,8 @@
 
 .note-tray__hint {
   margin: 0;
-  font-size: 11px;
-  color: #404040;
+  font-size: 12px;
+  color: #737373;
   letter-spacing: 0.03em;
 }
 
@@ -231,9 +225,9 @@
   border: none;
   padding: 8px;
   cursor: pointer;
-  color: #525252;
+  color: #737373;
   transition: color 0.2s;
-  animation: swipe-nudge 3s ease-in-out infinite;
+  animation: swipe-nudge 1.8s ease-in-out infinite;
 }
 
 .note-tray__swipe-left:hover {
@@ -242,15 +236,15 @@
 }
 
 .note-tray__swipe-label {
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-family: inherit;
 }
 
 @keyframes swipe-nudge {
-  0%, 60%, 100% { transform: translateX(0);    opacity: 0.7; }
-  30%            { transform: translateX(-6px); opacity: 1;   }
+  0%, 60%, 100% { transform: translateX(0);    opacity: 0.85; }
+  30%            { transform: translateX(-6px); opacity: 1;    }
 }
 
 /* Text hero state */
@@ -270,9 +264,9 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  color: #525252;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #737373;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -312,7 +306,7 @@
 }
 
 .note-tray__input::placeholder {
-  color: #333;
+  color: #525252;
 }
 
 .note-tray__input--has-value {

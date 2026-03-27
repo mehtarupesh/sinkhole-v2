@@ -106,6 +106,11 @@ export default function NoteTray({
     frame();
   }, []);
 
+  // Start draw loop only after canvas is mounted (recState → 'recording' triggers re-render first)
+  useEffect(() => {
+    if (recState === 'recording') drawLoop();
+  }, [recState, drawLoop]);
+
   // ── Recording lifecycle ───────────────────────────────────────────────────────
 
   async function startRecording() {
@@ -151,7 +156,6 @@ export default function NoteTray({
       rec.start();
       navigator.vibrate?.(40);
       setRecState('recording');
-      drawLoop();
 
       recTimerRef.current = setInterval(() => {
         elapsedRef.current += 1;
@@ -209,7 +213,7 @@ export default function NoteTray({
             ref={canvasRef}
             className="note-tray__waveform"
             width={600}
-            height={64}
+            height={44}
             aria-hidden="true"
           />
           <p className="note-tray__wave-hint">Tap to stop</p>
@@ -227,7 +231,7 @@ export default function NoteTray({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Three-column stage: swipe hint | orb | share */}
+        {/* Three-column stage: swipe hint | orb + hint | empty */}
         <div className="note-tray__mic-stage">
 
           {/* Left: swipe-left affordance */}
@@ -241,24 +245,25 @@ export default function NoteTray({
             <span className="note-tray__swipe-label">swipe to type</span>
           </button>
 
-          {/* Center: mic orb */}
-          <button
-            type="button"
-            className={`note-tray__orb${isTranscribing ? ' note-tray__orb--busy' : ''}`}
-            onClick={startRecording}
-            disabled={disabled || isTranscribing}
-            aria-label="Tap to record note"
-          >
-            {isTranscribing ? <span className="note-tray__spinner" /> : <MicIcon size={24} />}
-          </button>
+          {/* Center: orb + hint stacked together */}
+          <div className="note-tray__center-col">
+            <button
+              type="button"
+              className={`note-tray__orb${isTranscribing ? ' note-tray__orb--busy' : ''}`}
+              onClick={startRecording}
+              disabled={disabled || isTranscribing}
+              aria-label="Tap to record note"
+            >
+              {isTranscribing ? <span className="note-tray__spinner" /> : <MicIcon size={24} />}
+            </button>
+            <p className="note-tray__hint">
+              {isTranscribing ? 'Transcribing…' : 'Tap to speak'}
+            </p>
+          </div>
 
           {/* Right: empty column — keeps orb visually centered */}
           <div className="note-tray__mic-stage-right" />
         </div>
-
-        <p className="note-tray__hint">
-          {isTranscribing ? 'Transcribing…' : 'Tap to speak'}
-        </p>
 
         {localError && <p className="modal__error" style={{ margin: '4px 0 0', textAlign: 'center' }}>{localError}</p>}
       </div>
