@@ -28,26 +28,26 @@ Selection mode is managed by `useSelection()` which tracks a `Set` of selected I
 `Landing.jsx:358–373` — replaces the default bar when `cardSel.isSelecting`:
 | Button | Action |
 |--------|--------|
-| Trash | Toast "coming soon" |
+| Trash | Delete with export option |
 | Share | Toast "coming soon" |
-| Move to Category | Toast "coming soon" |
+| Move to Category | Moves selected units to a new category |
 
 ### 3. Landing — **category** selection (long-press a category pill)
 `Landing.jsx:374–402` — replaces the default bar when `catSel.isSelecting`:
 | Button | Action |
 |--------|--------|
-| Trash | Toast "coming soon" |
+| Trash | Delete with export option |
 | Share | Toast "coming soon" |
-| Rename | Toast "coming soon" (validates: exactly 1 selected, not Misc) |
+| Rename | Rename selected category |
 | Forage (AiChatIcon) | Opens ForageModal (validates: exactly 1 selected) |
 
 ### 4. UnitsOverlay — **unit** selection (long-press a card in the search grid)
 `UnitsOverlay.jsx:103–119` — appears at the bottom of the overlay:
 | Button | Action |
 |--------|--------|
-| Trash | Toast "coming soon" |
+| Trash | Delete with export option |
 | Share | Toast "coming soon" |
-| Move to Category | Toast "coming soon" |
+| Move to Category | Moves selected units to a new category |
 
 ---
 

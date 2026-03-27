@@ -10,6 +10,7 @@ import { categorizeUnits } from '../utils/categorize';
 import AddUnitModal from '../components/AddUnitModal';
 import MoveToCategoryModal from '../components/MoveToCategoryModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import RenameCategoryModal from '../components/RenameCategoryModal';
 import ForageModal from '../components/ForageModal';
 import UnitsOverlay from '../components/UnitsOverlay';
 import PrototypeModal from '../components/PrototypeModal';
@@ -39,6 +40,7 @@ export default function Landing() {
   // selectedCtx: { units: Unit[], index: number } | null
   const [selectedCtx, setSelectedCtx]   = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null); // { title, units, onConfirm }
+  const [pendingRename, setPendingRename] = useState(null); // { id, currentTitle } | null
 
   const [moveCtx, setMoveCtx] = useState(null); // { units: Unit[] } | null
 
@@ -89,6 +91,17 @@ export default function Landing() {
       return updated;
     });
   }, []);
+
+  const handleCategoryRename = useCallback((id, newTitle) => {
+    setStoredGroups((prev) => {
+      if (!prev) return prev;
+      const updated = prev.map((g) => (g.id === id ? { ...g, title: newTitle } : g));
+      setCategorization(updated);
+      return updated;
+    });
+    catSel.clear();
+    setPendingRename(null);
+  }, [catSel]);
 
   const handleBulkMove = useCallback((categoryId, newCategory) => {
     if (!moveCtx) return;
@@ -460,7 +473,9 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
               onClick: () => {
                 if (catSel.selected.size !== 1) { setToast('Select exactly 1 category to rename'); return; }
                 if (catSel.selected.has(MISC_ID)) { setToast('Misc cannot be renamed'); return; }
-                setToast('Rename — coming soon');
+                const id = [...catSel.selected][0];
+                const group = storedGroups?.find((g) => g.id === id);
+                if (group) setPendingRename({ id, currentTitle: group.title });
               },
             },
             {
@@ -574,6 +589,13 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
           exportUnits={pendingDelete.units}
           onConfirm={pendingDelete.onConfirm}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+      {pendingRename && (
+        <RenameCategoryModal
+          currentTitle={pendingRename.currentTitle}
+          onConfirm={(newTitle) => handleCategoryRename(pendingRename.id, newTitle)}
+          onCancel={() => setPendingRename(null)}
         />
       )}
       {showPrototypeModal && <PrototypeModal onClose={() => setShowPrototypeModal(false)} />}
