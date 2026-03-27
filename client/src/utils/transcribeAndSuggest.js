@@ -67,7 +67,6 @@ ${categorySection}`;
     model: 'gemini-2.5-flash',
     contents: [{ role: 'user', parts }],
     config: {
-      tools: [{ urlContext: {} }, { googleSearch: {} }],
       responseMimeType: 'application/json',
       responseJsonSchema: RESPONSE_SCHEMA,
       thinkingConfig: { thinkingBudget: 0 },
