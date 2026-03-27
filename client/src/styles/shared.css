@@ -10,6 +10,20 @@
   padding: 24px;
 }
 
+/* Bottom sheet overlay — anchors to bottom on mobile */
+.overlay--sheet {
+  align-items: flex-end;
+  padding: 0;
+}
+
+/* On desktop/non-touch: center like a regular modal */
+@media (hover: hover) and (pointer: fine) {
+  .overlay--sheet {
+    align-items: center;
+    padding: 24px;
+  }
+}
+
 .modal {
   width: 100%;
   max-width: 320px;

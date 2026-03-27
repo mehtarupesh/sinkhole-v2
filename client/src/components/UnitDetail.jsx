@@ -3,7 +3,7 @@ import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon } from './Icons
 import { updateUnit } from '../utils/db';
 import { useSuggest } from '../hooks/useSuggest';
 import ContentField from './ContentField';
-import NoteField from './NoteField';
+import NoteTray from './NoteTray';
 import CategorySelector from './CategorySelector';
 import { transcribeAndSuggest } from '../utils/transcribeAndSuggest';
 
@@ -120,6 +120,8 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
 
   return (
     <div className="unit-detail-modal" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+
+      {/* Header */}
       <div className="modal__header">
         <div className="add-unit__type-row">
           <span className="add-unit__type-icon add-unit__type-icon--active">
@@ -153,7 +155,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
         </div>
       </div>
 
-      {/* Content input */}
+      {/* Content — takes up available vertical space */}
       <div className="add-unit__body">
         <ContentField
           type={unit.type}
@@ -168,56 +170,31 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
         />
       </div>
 
-      {/* Share toggle */}
-      {hasContent && (
-        <button
-          type="button"
-          className={[
-            'content-field__share-row',
-            suggest.shareContent && 'content-field__share-row--on',
-            suggest.suggestState === 'needs-selection' && 'content-field__share-row--blink',
-          ].filter(Boolean).join(' ')}
-          onClick={() => suggest.setShareContent((v) => !v)}
-          disabled={saving}
-        >
-          <span className="content-field__share-sparkle">✦</span>
-          <span className="content-field__share-label">
-            {unit.type === 'password' && suggest.shareContent
-              ? 'Sharing password with AI · sensitive'
-              : suggest.shareContent ? 'Sharing with AI' : 'Share with AI'}
-          </span>
-        </button>
-      )}
-
       {error && <p className="modal__error">{error}</p>}
 
-      {/* Voice note + always-on AI indicator */}
-      <div className="share-sparkle-wrap">
-        <NoteField
-          value={quote}
-          onChange={setQuote}
-          disabled={saving}
-          transcribeFn={transcribeFn}
-        />
-        {hasNote && (
-          <span
-            className="share-sparkle share-sparkle--note share-sparkle--on"
-            aria-label="Note always shared with AI"
-            title="Note is always shared with AI"
-          />
-        )}
-      </div>
-
-      {/* Category chips + ghost chip + suggest trigger */}
-      <CategorySelector
-        groups={storedGroups}
-        categoryId={categoryId}
-        onCategoryChange={setCategoryId}
-        suggest={suggest}
-        onSuggest={handleSuggest}
-        canSuggest={canAutoSuggest}
+      {/* Note tray */}
+      <NoteTray
+        value={quote}
+        onChange={setQuote}
         disabled={saving}
+        transcribeFn={transcribeFn}
+        shareContent={suggest.shareContent}
+        onShareToggle={() => suggest.setShareContent((v) => !v)}
+        hasContent={hasContent}
       />
+
+      {/* Category chips — horizontal scroll */}
+      <div className="sheet__categories" style={{ padding: '0' }}>
+        <CategorySelector
+          groups={storedGroups}
+          categoryId={categoryId}
+          onCategoryChange={setCategoryId}
+          suggest={suggest}
+          onSuggest={handleSuggest}
+          canSuggest={canAutoSuggest}
+          disabled={saving}
+        />
+      </div>
 
       <div className="add-unit__actions">
         <button

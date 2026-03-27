@@ -1,0 +1,338 @@
+/**
+ * NoteTray — unified note input with two modes:
+ *
+ * mic-hero (touch devices, default):
+ *   Large breathing mic orb + "Tap to speak" + "← type instead"
+ *   Swipe left → text-hero
+ *
+ * text-hero (desktop default, or after swipe):
+ *   [small mic btn] [textarea] [✦ share toggle]
+ *   Quick starter chips below when empty
+ *   Swipe right (when empty) → mic-hero
+ *
+ * recording (any mode):
+ *   Full-width waveform strip — tap to stop
+ *
+ * transcribing:
+ *   Collapses to text-hero with spinner in mic btn, disabled input
+ *   Note populates once done
+ */
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { getSetting } from '../utils/db';
+import { transcribeAudio } from '../utils/transcribe';
+
+const MAX_REC_SECS = 60;
+const BARS = 28;
+const QUICK_STARTERS = ['Remember', 'Action', 'Key point', 'Why'];
+
+function isTouchDevice() {
+  return typeof window !== 'undefined' &&
+    window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+}
+
+export default function NoteTray({
+  value,
+  onChange,
+  disabled = false,
+  transcribeFn,
+  shareContent,
+  onShareToggle,
+  hasContent = false,
+}) {
+  const [mode, setMode] = useState(() => isTouchDevice() ? 'mic-hero' : 'text-hero');
+  const [recState, setRecState] = useState('idle'); // idle | recording | transcribing
+  const [localError, setLocalError] = useState('');
+
+  const recorderRef   = useRef(null);
+  const chunksRef     = useRef([]);
+  const elapsedRef    = useRef(0);
+  const recTimerRef   = useRef(null);
+  const canvasRef     = useRef(null);
+  const animFrameRef  = useRef(null);
+  const analyserRef   = useRef(null);
+  const textareaRef   = useRef(null);
+  const swipeStartX   = useRef(null);
+  const shouldFocus   = useRef(false);
+
+  useEffect(() => () => {
+    clearInterval(recTimerRef.current);
+    cancelAnimationFrame(animFrameRef.current);
+  }, []);
+
+  // Focus textarea when switching to text-hero manually
+  useEffect(() => {
+    if (mode === 'text-hero' && shouldFocus.current) {
+      shouldFocus.current = false;
+      setTimeout(() => textareaRef.current?.focus(), 60);
+    }
+  }, [mode]);
+
+  // ── Waveform ─────────────────────────────────────────────────────────────────
+
+  const drawLoop = useCallback(() => {
+    const canvas  = canvasRef.current;
+    const analyser = analyserRef.current;
+    if (!canvas || !analyser) return;
+    const ctx  = canvas.getContext('2d');
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+    function frame() {
+      animFrameRef.current = requestAnimationFrame(frame);
+      analyser.getByteFrequencyData(data);
+      const { width: w, height: h } = canvas;
+      ctx.clearRect(0, 0, w, h);
+      const step = Math.floor(data.length / BARS);
+      const barW = (w / BARS) * 0.5;
+      const gapW = (w / BARS) * 0.5;
+      for (let i = 0; i < BARS; i++) {
+        const v  = data[i * step] / 255;
+        const bh = Math.max(4, v * h * 0.85);
+        const x  = i * (barW + gapW) + gapW / 2;
+        const y  = (h - bh) / 2;
+        ctx.fillStyle = `rgba(248, 113, 113, ${0.3 + v * 0.7})`;
+        ctx.beginPath();
+        ctx.roundRect(x, y, barW, bh, 2);
+        ctx.fill();
+      }
+    }
+    frame();
+  }, []);
+
+  // ── Recording lifecycle ───────────────────────────────────────────────────────
+
+  async function startRecording() {
+    if (disabled || recState !== 'idle') return;
+    setLocalError('');
+    elapsedRef.current = 0;
+
+    try {
+      const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioCtx = new AudioContext();
+      const src      = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 128;
+      src.connect(analyser);
+      analyserRef.current = analyser;
+
+      chunksRef.current = [];
+      const rec = new MediaRecorder(stream);
+      recorderRef.current = rec;
+
+      rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        cancelAnimationFrame(animFrameRef.current);
+        clearInterval(recTimerRef.current);
+
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        // Switch to text-hero so user sees the result land
+        setMode('text-hero');
+        setRecState('transcribing');
+        try {
+          const apiKey    = await getSetting('gemini_key');
+          if (!apiKey) throw new Error('No Gemini key — add it in Settings.');
+          const transcript = await (transcribeFn ?? transcribeAudio)(blob, apiKey);
+          onChange(transcript);
+          setRecState('idle');
+        } catch (err) {
+          setLocalError(err.message || 'Transcription failed.');
+          setRecState('idle');
+        }
+      };
+
+      rec.start();
+      navigator.vibrate?.(40);
+      setRecState('recording');
+      drawLoop();
+
+      recTimerRef.current = setInterval(() => {
+        elapsedRef.current += 1;
+        if (elapsedRef.current >= MAX_REC_SECS) recorderRef.current?.stop();
+      }, 1000);
+    } catch {
+      setLocalError('Microphone access denied.');
+    }
+  }
+
+  function stopRecording() {
+    if (recorderRef.current?.state === 'recording') {
+      navigator.vibrate?.(40);
+      recorderRef.current.stop();
+    }
+  }
+
+  // ── Mode switching ────────────────────────────────────────────────────────────
+
+  function switchToTextMode() {
+    shouldFocus.current = true;
+    setMode('text-hero');
+  }
+
+  // ── Swipe handling ────────────────────────────────────────────────────────────
+
+  const handleTouchStart = (e) => {
+    swipeStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (swipeStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    swipeStartX.current = null;
+    if (mode === 'mic-hero' && dx < -50) switchToTextMode();
+    if (mode === 'text-hero' && dx > 50 && !value.trim()) setMode('mic-hero');
+  };
+
+  // ── Derived ───────────────────────────────────────────────────────────────────
+
+  const isRec          = recState === 'recording';
+  const isTranscribing = recState === 'transcribing';
+
+  // ── Render: recording (waveform takeover) ────────────────────────────────────
+
+  if (isRec) {
+    return (
+      <div className="note-tray">
+        <div
+          className="note-tray__wave-zone"
+          onClick={stopRecording}
+          role="button"
+          aria-label="Tap to stop recording"
+        >
+          <canvas
+            ref={canvasRef}
+            className="note-tray__waveform"
+            width={600}
+            height={64}
+            aria-hidden="true"
+          />
+          <p className="note-tray__wave-hint">Tap to stop</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render: mic-hero ─────────────────────────────────────────────────────────
+
+  if (mode === 'mic-hero') {
+    return (
+      <div
+        className="note-tray note-tray--mic-hero"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <button
+          type="button"
+          className={`note-tray__orb${isTranscribing ? ' note-tray__orb--busy' : ''}`}
+          onClick={startRecording}
+          disabled={disabled || isTranscribing}
+          aria-label="Tap to record note"
+        >
+          {isTranscribing ? <span className="note-tray__spinner" /> : <MicIcon size={24} />}
+        </button>
+
+        <p className="note-tray__hint">
+          {isTranscribing ? 'Transcribing…' : 'Tap to speak'}
+        </p>
+
+        {hasContent && (
+          <button
+            type="button"
+            className={`note-tray__share-pill${shareContent ? ' note-tray__share-pill--on' : ''}`}
+            onClick={onShareToggle}
+            disabled={disabled}
+          >
+            <span className="note-tray__sparkle">✦</span>
+            <span>{shareContent ? 'Sharing with AI' : 'Share with AI'}</span>
+          </button>
+        )}
+
+        <button
+          type="button"
+          className="note-tray__type-hint"
+          onClick={switchToTextMode}
+        >
+          ← type instead
+        </button>
+
+        {localError && <p className="modal__error" style={{ margin: '4px 0 0', textAlign: 'center' }}>{localError}</p>}
+      </div>
+    );
+  }
+
+  // ── Render: text-hero ────────────────────────────────────────────────────────
+
+  return (
+    <div
+      className="note-tray note-tray--text-hero"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div className="note-tray__row">
+        <button
+          type="button"
+          className={`note-tray__mic-btn${isTranscribing ? ' note-tray__mic-btn--busy' : ''}`}
+          onClick={startRecording}
+          disabled={disabled || isTranscribing}
+          aria-label="Tap to record"
+        >
+          {isTranscribing
+            ? <span className="note-tray__spinner note-tray__spinner--sm" />
+            : <MicIcon size={15} />}
+        </button>
+
+        <textarea
+          ref={textareaRef}
+          className={`note-tray__input${value ? ' note-tray__input--has-value' : ''}`}
+          placeholder="add a note…"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled || isTranscribing}
+          rows={1}
+        />
+
+        {hasContent && (
+          <button
+            type="button"
+            className="note-tray__share-btn"
+            onClick={onShareToggle}
+            disabled={disabled}
+            title={shareContent ? 'Sharing content with AI' : 'Share content with AI'}
+          >
+            <span className={`note-tray__sparkle${shareContent ? ' note-tray__sparkle--on' : ''}`}>✦</span>
+          </button>
+        )}
+      </div>
+
+      {!value && !isTranscribing && (
+        <div className="note-tray__chips">
+          {QUICK_STARTERS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className="note-tray__quick-chip"
+              onClick={() => {
+                onChange(s + ': ');
+                textareaRef.current?.focus();
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {localError && <p className="modal__error" style={{ margin: '4px 0 0' }}>{localError}</p>}
+    </div>
+  );
+}
+
+function MicIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="9" y="2" width="6" height="11" rx="3" />
+      <path d="M5 10a7 7 0 0 0 14 0" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+      <line x1="8" y1="22" x2="16" y2="22" />
+    </svg>
+  );
+}

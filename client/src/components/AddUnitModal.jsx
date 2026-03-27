@@ -3,7 +3,7 @@ import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon } from './Icons';
 import { addUnit } from '../utils/db';
 import { useSuggest } from '../hooks/useSuggest';
 import ContentField from './ContentField';
-import NoteField from './NoteField';
+import NoteTray from './NoteTray';
 import CategorySelector from './CategorySelector';
 import { transcribeAndSuggest } from '../utils/transcribeAndSuggest';
 
@@ -109,7 +109,6 @@ export default function AddUnitModal({
 
   // ── AI suggest helpers ────────────────────────────────────────────────────
 
-  // Called when user taps "✦ suggest category"
   const handleSuggest = async () => {
     const result = await suggest.runSuggest({
       content, mimeType, note: quote, type, existingCategories: storedGroups,
@@ -119,11 +118,8 @@ export default function AddUnitModal({
     } else if (result?.type === 'new' || result?.type === 'none') {
       setCategoryId('');
     }
-    // null (error) — preserve current selection
   };
 
-  // Replaces the two-step transcribe→runSuggest with a single LLM call.
-  // NoteField calls this instead of the default transcribeAudio.
   const transcribeFn = useCallback(async (blob, apiKey) => {
     const result = await transcribeAndSuggest(blob, apiKey, {
       type,
@@ -146,9 +142,9 @@ export default function AddUnitModal({
     setSaveState('saving');
     try {
       const unit = { type, content };
-      if (fileName)    unit.fileName = fileName;
-      if (mimeType)    unit.mimeType = mimeType;
-      if (quote.trim()) unit.quote   = quote.trim();
+      if (fileName)     unit.fileName = fileName;
+      if (mimeType)     unit.mimeType = mimeType;
+      if (quote.trim()) unit.quote    = quote.trim();
 
       const { uid } = await addUnit(unit);
       navigator.vibrate?.(40);
@@ -168,16 +164,21 @@ export default function AddUnitModal({
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
-      className="overlay"
-      style={keyboardOffset > 0 ? { paddingBottom: keyboardOffset + 24 } : undefined}
+      className="overlay overlay--sheet"
+      style={keyboardOffset > 0 ? { paddingBottom: keyboardOffset } : undefined}
       onClick={onClose}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
     >
-      <div className="modal add-unit-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="add-unit-sheet"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Drag handle (mobile only) */}
+        <div className="sheet__handle" />
 
         {/* Type picker */}
-        <div className="modal__header">
+        <div className="sheet__type-row">
           <div className="add-unit__type-row">
             {TYPE_CONFIG.map(({ type: t, Icon }) => (
               <button
@@ -196,7 +197,7 @@ export default function AddUnitModal({
 
         {/* Type-switch confirmation banner */}
         {pendingType && (
-          <div className="add-unit__type-confirm">
+          <div className="add-unit__type-confirm" style={{ margin: '8px 20px 0' }}>
             <span>Switch type? Content will be lost.</span>
             <div className="add-unit__type-confirm-actions">
               <button type="button" className="add-unit__type-confirm-yes" onClick={confirmTypeSwitch}>
@@ -209,8 +210,8 @@ export default function AddUnitModal({
           </div>
         )}
 
-        {/* Content input */}
-        <div className="add-unit__body">
+        {/* Content — scrollable */}
+        <div className="sheet__content">
           <ContentField
             type={type}
             content={content}
@@ -224,59 +225,34 @@ export default function AddUnitModal({
           />
         </div>
 
-        {/* Share toggle — outside the scrollable body so it's always visible */}
-        {hasContent && (
-          <button
-            type="button"
-            className={[
-              'content-field__share-row',
-              suggest.shareContent && 'content-field__share-row--on',
-              suggest.suggestState === 'needs-selection' && 'content-field__share-row--blink',
-            ].filter(Boolean).join(' ')}
-            onClick={() => suggest.setShareContent((v) => !v)}
-            disabled={saving}
-          >
-            <span className="content-field__share-sparkle">✦</span>
-            <span className="content-field__share-label">
-              {type === 'password' && suggest.shareContent
-                ? 'Sharing password with AI · sensitive'
-                : suggest.shareContent ? 'Sharing with AI' : 'Share with AI'}
-            </span>
-          </button>
-        )}
+        {error && <p className="modal__error" style={{ margin: '6px 20px 0' }}>{error}</p>}
 
-        {error && <p className="modal__error">{error}</p>}
-
-        {/* Voice note + always-on AI indicator */}
-        <div className="share-sparkle-wrap">
-          <NoteField
-            value={quote}
-            onChange={setQuote}
-            disabled={saving}
-            transcribeFn={transcribeFn}
-          />
-          {hasNote && (
-            <span
-              className="share-sparkle share-sparkle--note share-sparkle--on"
-              aria-label="Note always shared with AI"
-              title="Note is always shared with AI"
-            />
-          )}
-        </div>
-
-        {/* Category chips + ghost chip + suggest trigger */}
-        <CategorySelector
-          groups={storedGroups}
-          categoryId={categoryId}
-          onCategoryChange={setCategoryId}
-          suggest={suggest}
-          onSuggest={handleSuggest}
-          canSuggest={canAutoSuggest}
+        {/* Note tray — mic hero on mobile, text-hero on desktop */}
+        <NoteTray
+          value={quote}
+          onChange={setQuote}
           disabled={saving}
+          transcribeFn={transcribeFn}
+          shareContent={suggest.shareContent}
+          onShareToggle={() => suggest.setShareContent((v) => !v)}
+          hasContent={hasContent}
         />
 
+        {/* Category chips — horizontal scroll */}
+        <div className="sheet__categories">
+          <CategorySelector
+            groups={storedGroups}
+            categoryId={categoryId}
+            onCategoryChange={setCategoryId}
+            suggest={suggest}
+            onSuggest={handleSuggest}
+            canSuggest={canAutoSuggest}
+            disabled={saving}
+          />
+        </div>
+
         {/* Actions */}
-        <div className="add-unit__actions">
+        <div className="sheet__actions">
           <button
             type="button"
             className="add-unit__cancel-btn"

@@ -1,10 +1,400 @@
-/* ── Add Unit Modal ── */
+/* ── Add Unit Modal (legacy, kept for any remaining references) ── */
 .add-unit-modal {
   max-width: 480px;
   max-height: 85vh;
-  max-height: 85dvh; /* shrinks when keyboard opens on Android */
+  max-height: 85dvh;
   display: flex;
   flex-direction: column;
+}
+
+/* ── Bottom Sheet ── */
+.add-unit-sheet {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 92dvh;
+  overflow: hidden;
+  animation: sheetIn 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes sheetIn {
+  from { transform: translateY(100%); opacity: 0.6; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* On desktop: look like a regular centered modal */
+@media (hover: hover) and (pointer: fine) {
+  .add-unit-sheet {
+    max-width: 480px;
+    border-radius: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    max-height: 85dvh;
+    animation: none;
+  }
+}
+
+.sheet__handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sheet__handle { display: none; }
+}
+
+.sheet__type-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 0;
+  flex-shrink: 0;
+}
+
+/* Content area — scrolls internally, fills available space */
+.sheet__content {
+  flex: 1 1 auto;
+  min-height: 60px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding: 12px 20px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Category area — horizontal chip scroll */
+.sheet__categories {
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+
+.sheet__categories .auto-suggest-chips-row {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 8px;
+}
+
+.sheet__categories .auto-suggest-chips-row::-webkit-scrollbar { display: none; }
+
+.sheet__categories .category-field__chips {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.sheet__categories .category-field__chips::-webkit-scrollbar { display: none; }
+
+/* Actions row inside sheet */
+.sheet__actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 20px 20px;
+  flex-shrink: 0;
+}
+
+/* ── Note Tray ── */
+.note-tray {
+  flex-shrink: 0;
+  padding: 8px 20px 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Recording state — full-width waveform */
+.note-tray__wave-zone {
+  position: relative;
+  height: 64px;
+  border-radius: 14px;
+  background: rgba(248, 113, 113, 0.04);
+  border: 1px solid rgba(248, 113, 113, 0.22);
+  box-shadow: 0 0 24px rgba(248, 113, 113, 0.06);
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.note-tray__waveform {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.note-tray__wave-hint {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 11px;
+  color: rgba(248, 113, 113, 0.5);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.note-tray__wave-zone:hover .note-tray__wave-hint {
+  opacity: 1;
+}
+
+/* Mic hero state */
+.note-tray--mic-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 20px;
+  padding-bottom: 8px;
+  border-top: none;
+}
+
+.note-tray__orb {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #a3a3a3;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  animation: mic-breathe 2.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.note-tray__orb:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #d4d4d4;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.note-tray__orb:not(:disabled):active {
+  transform: scale(0.91);
+  animation: none;
+}
+
+.note-tray__orb--busy {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.07);
+  color: #404040;
+  animation: none;
+}
+
+.note-tray__hint {
+  margin: 0;
+  font-size: 11px;
+  color: #404040;
+  letter-spacing: 0.03em;
+}
+
+/* "Share with AI" pill in mic-hero mode */
+.note-tray__share-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  color: #404040;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.note-tray__share-pill:not(:disabled):hover {
+  color: #737373;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.note-tray__share-pill--on {
+  color: #a3a3a3;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.note-tray__share-pill--on:not(:disabled):hover {
+  color: #e5e5e5;
+}
+
+/* "← type instead" hint */
+.note-tray__type-hint {
+  background: none;
+  border: none;
+  color: #2e2e2e;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.note-tray__type-hint:hover {
+  color: #525252;
+}
+
+/* Text hero state */
+.note-tray--text-hero {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.note-tray__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* Small mic button in text-hero row */
+.note-tray__mic-btn {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #525252;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.note-tray__mic-btn:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #a3a3a3;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.note-tray__mic-btn--busy {
+  color: #333;
+  border-color: rgba(255, 255, 255, 0.06);
+  animation: none;
+}
+
+/* Growing textarea */
+.note-tray__input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #e5e5e5;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  field-sizing: content;
+  min-height: 30px;
+  max-height: 100px;
+  line-height: 1.55;
+  padding: 5px 0;
+  overflow-y: auto;
+}
+
+.note-tray__input::placeholder {
+  color: #333;
+}
+
+.note-tray__input--has-value {
+  color: #a3a3a3;
+  font-style: italic;
+}
+
+.note-tray__input--has-value:focus {
+  color: #e5e5e5;
+  font-style: normal;
+}
+
+/* ✦ share button in text-hero row */
+.note-tray__share-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  margin-top: 4px;
+  line-height: 1;
+}
+
+.note-tray__sparkle {
+  font-size: 14px;
+  color: #2e2e2e;
+  display: block;
+  transition: color 0.15s;
+  user-select: none;
+}
+
+.note-tray__share-btn:not(:disabled):hover .note-tray__sparkle {
+  color: #525252;
+}
+
+.note-tray__sparkle--on {
+  color: #a3a3a3;
+}
+
+.note-tray__share-btn:not(:disabled):hover .note-tray__sparkle--on {
+  color: #e5e5e5;
+}
+
+/* Quick starter chips */
+.note-tray__chips {
+  display: flex;
+  gap: 6px;
+  padding: 8px 0 2px 40px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.note-tray__chips::-webkit-scrollbar { display: none; }
+
+.note-tray__quick-chip {
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  color: #404040;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.note-tray__quick-chip:hover {
+  color: #a3a3a3;
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Spinner (reused in both sizes) */
+.note-tray__spinner {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-top-color: #525252;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.note-tray__spinner--sm {
+  width: 13px;
+  height: 13px;
+  border-width: 1.5px;
 }
 
 .add-unit__type-row {
