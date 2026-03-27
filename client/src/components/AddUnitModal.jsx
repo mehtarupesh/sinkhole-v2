@@ -17,7 +17,7 @@ export default function AddUnitModal({
   onClose,
   onSaved,
   storedGroups = [],
-  initialType     = 'snippet',
+  initialType     = 'image',
   initialContent  = '',
   initialFileName = '',
   initialMimeType = '',

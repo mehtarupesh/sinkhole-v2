@@ -346,7 +346,7 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
         />
       )}
 
-      {isSelecting ? (
+      {isSelecting && !isAnyModalOpen ? (
         <SelectionBar
           count={cardSel.isSelecting ? cardSel.selected.size : catSel.selected.size}
           total={cardSel.isSelecting ? units.length : displayGroups.length}

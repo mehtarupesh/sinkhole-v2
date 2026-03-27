@@ -168,30 +168,6 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
             ))}
           </div>
 
-          {/* AI scope — full-width toggle row so users don't miss it */}
-          {hasShareableContent && (
-            <button
-              className={`forage__content-row${shareContent ? ' forage__content-row--on' : ''}`}
-              onClick={() => setShareContent((s) => !s)}
-              type="button"
-              disabled={loading}
-            >
-              <div className="forage__content-row-left">
-                <span className="forage__content-row-title">
-                  ✦ Also send content to AI
-                </span>
-                <span className="forage__content-row-desc">
-                  {shareContent
-                    ? 'AI will read your images and full text.'
-                    : 'By default AI only reads your notes. Enable to also share images and text.'}
-                </span>
-              </div>
-              <span className="forage__content-row-badge">
-                {shareContent ? 'On' : 'Off'}
-              </span>
-            </button>
-          )}
-
           {/* Response */}
           {(response || (loading && !response)) && (
             <div className="forage__response">
@@ -258,6 +234,30 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
             ))}
           </div>
         </div>
+
+        {/* AI scope toggle — sits above the Forage button to localize the decision */}
+        {hasShareableContent && (
+          <button
+            className={`forage__content-row${shareContent ? ' forage__content-row--on' : ''}`}
+            onClick={() => setShareContent((s) => !s)}
+            type="button"
+            disabled={loading}
+          >
+            <div className="forage__content-row-left">
+              <span className="forage__content-row-title">
+                ✦ Also send content to AI
+              </span>
+              <span className="forage__content-row-desc">
+                {shareContent
+                  ? 'AI will read your images and full text.'
+                  : 'By default AI only reads your notes. Enable to also share images and text.'}
+              </span>
+            </div>
+            <span className="forage__content-row-badge">
+              {shareContent ? 'On' : 'Off'}
+            </span>
+          </button>
+        )}
 
         {/* Actions */}
         <div className="add-unit__actions">
