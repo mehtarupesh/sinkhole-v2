@@ -4,6 +4,7 @@ import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { getAllUnits, deleteUnit, getCategorization, setCategorization } from '../utils/db';
 import MoveToCategoryModal from './MoveToCategoryModal';
 import { withMiscGroup, MISC_ID } from '../utils/carouselGroups';
+import { groupByTime } from '../utils/timeGroups';
 import { CarouselCard } from './Carousel';
 import UnitDetail from './UnitDetail';
 import CategoryField from './CategoryField';
@@ -94,14 +95,48 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const allGroups = useMemo(() => withMiscGroup(units, groups), [units, groups]);
 
   const q = query.toLowerCase();
-  const filtered = units.filter((u) => {
-    const searchableContent = u.type === 'image' ? null : u.content;
-    const cat = uidToCategory[u.uid];
-    return (
-      (!q || u.quote?.toLowerCase().includes(q) || u.fileName?.toLowerCase().includes(q) || searchableContent?.toLowerCase().includes(q)) &&
-      (!selectedCategory || (selectedCategory === MISC_ID ? !cat : cat === selectedCategory))
-    );
-  });
+
+  // Units matching only the text query — used to compute which category chips to show
+  const filteredByQuery = useMemo(() => {
+    if (!q) return units;
+    return units.filter((u) => {
+      const searchableContent = u.type === 'image' ? null : u.content;
+      return (
+        u.quote?.toLowerCase().includes(q) ||
+        u.fileName?.toLowerCase().includes(q) ||
+        searchableContent?.toLowerCase().includes(q)
+      );
+    });
+  }, [units, q]);
+
+  // Further narrow by selected category
+  const filtered = useMemo(() => {
+    if (!selectedCategory) return filteredByQuery;
+    return filteredByQuery.filter((u) => {
+      const cat = uidToCategory[u.uid];
+      return selectedCategory === MISC_ID ? !cat : cat === selectedCategory;
+    });
+  }, [filteredByQuery, selectedCategory, uidToCategory]);
+
+  // Category IDs present in query results — null when no query (show all)
+  const activeGroupIds = useMemo(() => {
+    if (!q) return null;
+    const ids = new Set();
+    for (const u of filteredByQuery) ids.add(uidToCategory[u.uid] ?? MISC_ID);
+    return ids;
+  }, [filteredByQuery, q, uidToCategory]);
+
+  const visibleGroups = useMemo(() => {
+    if (!activeGroupIds) return allGroups;
+    return allGroups.filter((g) => activeGroupIds.has(g.id));
+  }, [allGroups, activeGroupIds]);
+
+  // Clear selected category if it has no results for the current query
+  useEffect(() => {
+    if (activeGroupIds && selectedCategory && !activeGroupIds.has(selectedCategory)) {
+      setSelectedCategory('');
+    }
+  }, [activeGroupIds, selectedCategory]);
 
   const handleBulkMove = useCallback((categoryId, newCategory) => {
     if (!moveCtx) return;
@@ -214,7 +249,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
         </button>
       </div>
 
-      <CategoryField groups={allGroups} value={selectedCategory} onChange={setSelectedCategory} />
+      <CategoryField groups={visibleGroups} value={selectedCategory} onChange={setSelectedCategory} />
 
       <div className="search-grid-wrap">
         {filtered.length === 0 ? (
@@ -222,17 +257,25 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
         ) : (
           <>
           <p className="search-count">{filtered.length} item{filtered.length !== 1 ? 's' : ''}</p>
-          <div className="search-grid">
-            {filtered.map((unit, i) => (
-              <CarouselCard
-                key={unit.id}
-                unit={unit}
-                selected={selected.has(unit.id)}
-                onClick={() => isSelecting ? toggle(unit.id) : setSelectedCtx({ units: filtered, index: i })}
-                onLongPress={() => enterWith(unit.id)}
-              />
-            ))}
-          </div>
+          {(q ? [{ label: null, units: filtered }] : groupByTime(filtered)).map(({ label, units: groupUnits }) => (
+            <div key={label ?? '_all'} className="search-time-group">
+              {label && <h3 className="search-time-label">{label}</h3>}
+              <div className="search-grid">
+                {groupUnits.map((unit) => {
+                  const i = filtered.indexOf(unit);
+                  return (
+                    <CarouselCard
+                      key={unit.id}
+                      unit={unit}
+                      selected={selected.has(unit.id)}
+                      onClick={() => isSelecting ? toggle(unit.id) : setSelectedCtx({ units: filtered, index: i })}
+                      onLongPress={() => enterWith(unit.id)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
           </>
         )}
       </div>
