@@ -8,6 +8,7 @@ import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorizati
 import { buildCarousels, withMiscGroup, MISC_ID } from '../utils/carouselGroups';
 import { categorizeUnits } from '../utils/categorize';
 import AddUnitModal from '../components/AddUnitModal';
+import MoveToCategoryModal from '../components/MoveToCategoryModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import ForageModal from '../components/ForageModal';
 import UnitsOverlay from '../components/UnitsOverlay';
@@ -39,7 +40,9 @@ export default function Landing() {
   const [selectedCtx, setSelectedCtx]   = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null); // { title, units, onConfirm }
 
-  const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal;
+  const [moveCtx, setMoveCtx] = useState(null); // { units: Unit[] } | null
+
+  const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal || moveCtx !== null;
 
   // ── Selection (cards + categories) ──────────────────────────────────────────
   const cardSel = useSelection();
@@ -86,6 +89,24 @@ export default function Landing() {
       return updated;
     });
   }, []);
+
+  const handleBulkMove = useCallback((categoryId) => {
+    if (!moveCtx) return;
+    const movedUids = new Set(moveCtx.units.map((u) => u.uid).filter(Boolean));
+    setStoredGroups((prev) => {
+      if (!prev) return prev;
+      const next = prev.map((g) => ({
+        ...g,
+        uids: g.id === categoryId
+          ? [...g.uids.filter((uid) => !movedUids.has(uid)), ...movedUids]
+          : g.uids.filter((uid) => !movedUids.has(uid)),
+      }));
+      setCategorization(next);
+      return next;
+    });
+    cardSel.clear();
+    setMoveCtx(null);
+  }, [moveCtx, cardSel]);
 
   // ── Categorize ──────────────────────────────────────────────────────────────
 
@@ -395,7 +416,7 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
             {
               icon: <MoveFolderIcon />,
               label: 'Move to Category',
-              onClick: () => setToast('Move to Category — coming soon'),
+              onClick: () => setMoveCtx({ units: units.filter((u) => cardSel.selected.has(u.id)) }),
             },
           ] : [
             {
@@ -554,6 +575,15 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
       )}
       {showPrototypeModal && <PrototypeModal onClose={() => setShowPrototypeModal(false)} />}
       {showSettingsModal && <SettingsModal onClose={() => setShowSettingsModal(false)} />}
+      {moveCtx && (
+        <MoveToCategoryModal
+          count={moveCtx.units.length}
+          groups={storedGroups ?? []}
+          onMove={handleBulkMove}
+          onClose={() => setMoveCtx(null)}
+        />
+      )}
+
       {forageCategory && (
         <ForageModal
           category={forageCategory}

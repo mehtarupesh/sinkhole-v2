@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CloseIcon, SearchIcon, TrashIcon, ShareIcon, MoveFolderIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { getAllUnits, deleteUnit, getCategorization, setCategorization } from '../utils/db';
+import MoveToCategoryModal from './MoveToCategoryModal';
 import { withMiscGroup, MISC_ID } from '../utils/carouselGroups';
 import { CarouselCard } from './Carousel';
 import UnitDetail from './UnitDetail';
@@ -21,6 +22,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const swipeStart = useRef(null);
 
   const { selected, isSelecting, toggle, enterWith, selectAll, clear } = useSelection();
+  const [moveCtx, setMoveCtx] = useState(null); // { units: Unit[] } | null
 
   useEffect(() => {
     getAllUnits().then((all) => setUnits(all.slice().reverse()));
@@ -101,6 +103,23 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     );
   });
 
+  const handleBulkMove = useCallback((categoryId) => {
+    if (!moveCtx) return;
+    const movedUids = new Set(moveCtx.units.map((u) => u.uid).filter(Boolean));
+    setGroups((prev) => {
+      const next = prev.map((g) => ({
+        ...g,
+        uids: g.id === categoryId
+          ? [...g.uids.filter((uid) => !movedUids.has(uid)), ...movedUids]
+          : g.uids.filter((uid) => !movedUids.has(uid)),
+      }));
+      setCategorization(next);
+      return next;
+    });
+    clear();
+    setMoveCtx(null);
+  }, [moveCtx, clear]);
+
   const unitActions = [
     {
       icon: <TrashIcon />,
@@ -139,7 +158,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     {
       icon: <MoveFolderIcon />,
       label: 'Move to Category',
-      onClick: () => setToast('Move to Category — coming soon'),
+      onClick: () => setMoveCtx({ units: filtered.filter((u) => selected.has(u.id)) }),
     },
   ];
 
@@ -273,6 +292,14 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
           </div>
         </div>
       </div>
+    )}
+    {moveCtx && (
+      <MoveToCategoryModal
+        count={moveCtx.units.length}
+        groups={groups}
+        onMove={handleBulkMove}
+        onClose={() => setMoveCtx(null)}
+      />
     )}
     </>
   );
