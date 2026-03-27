@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon, CopyIcon, CheckIcon } from './Icons';
+import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon } from './Icons';
 import { updateUnit } from '../utils/db';
+import { useSuggest } from '../hooks/useSuggest';
+import ContentField from './ContentField';
 import NoteField from './NoteField';
-import CategoryField from './CategoryField';
-import ImageLightbox from './ImageLightbox';
+import CategorySelector from './CategorySelector';
+import { transcribeAndSuggest } from '../utils/transcribeAndSuggest';
 
 const TYPE_ICONS = {
   snippet: SnippetTypeIcon,
@@ -16,20 +18,24 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   const [fileName, setFileName] = useState(unit.fileName || '');
   const [mimeType, setMimeType] = useState(unit.mimeType || '');
   const [quote, setQuote] = useState(unit.quote || '');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showLightbox, setShowLightbox] = useState(false);
   const [saveState, setSaveState] = useState(''); // '' | 'saving' | 'done'
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
-  const [copied, setCopied] = useState(false);
-  const textareaRef = useRef(null);
   const swipeStart = useRef(null);
   const saving = saveState !== '';
   const initialCategoryId = useRef(
     storedGroups?.find((g) => g.uids?.includes(unit.uid))?.id ?? ''
   ).current;
   const [categoryId, setCategoryId] = useState(initialCategoryId);
-  const copyTimerRef = useRef(null);
+
+  // ── AI suggest ───────────────────────────────────────────────────────────────
+  const suggest = useSuggest();
+
+  // ── Derived ──────────────────────────────────────────────────────────────────
+  const hasContent = unit.type === 'image' ? !!content : !!content.trim();
+  const hasNote = !!quote.trim();
+  const canAutoSuggest =
+    !saving && (hasContent || hasNote) && suggest.suggestState !== 'loading';
 
   // Close on Escape (desktop)
   useEffect(() => {
@@ -38,33 +44,37 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
     return () => window.removeEventListener('keydown', onKey);
   }, [onBack]);
 
-  const resizeTextarea = useCallback(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${el.scrollHeight}px`;
-  }, []);
-
-  useEffect(() => { resizeTextarea(); }, [content, resizeTextarea]);
-
   const isDirty =
     content !== unit.content ||
     quote !== (unit.quote || '') ||
     fileName !== (unit.fileName || '') ||
-    categoryId !== initialCategoryId;
+    categoryId !== initialCategoryId ||
+    !!suggest.newCategory;
 
-  const handleCopy = async () => {
-    if (!content) return;
-    try {
-      await navigator.clipboard.writeText(content);
-      clearTimeout(copyTimerRef.current);
-      setCopied(true);
-      copyTimerRef.current = setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // clipboard unavailable
-    }
+  // ── AI suggest helpers ────────────────────────────────────────────────────────
+
+  const handleSuggest = async () => {
+    const result = await suggest.runSuggest({
+      content, mimeType, note: quote, type: unit.type, existingCategories: storedGroups,
+    });
+    if (result?.type === 'existing') setCategoryId(result.categoryId);
+    else if (result?.type === 'new' || result?.type === 'none') setCategoryId('');
   };
 
+  const transcribeFn = useCallback(async (blob, apiKey) => {
+    const result = await transcribeAndSuggest(blob, apiKey, {
+      type: unit.type,
+      existingCategories: storedGroups,
+      content: suggest.shareContent && unit.type !== 'password' ? content : null,
+      mimeType: suggest.shareContent && unit.type === 'image' ? mimeType : null,
+    });
+    const applied = suggest.applyResult(result);
+    if (applied.type === 'existing') setCategoryId(applied.categoryId);
+    else setCategoryId('');
+    return result.transcript;
+  }, [unit.type, storedGroups, suggest, content, mimeType]);
+
+  // ── Save ──────────────────────────────────────────────────────────────────────
   const performSave = async (quoteText) => {
     setSaveState('saving');
     try {
@@ -77,7 +87,10 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
       const updated = await updateUnit(unit.id, changes);
       navigator.vibrate?.(40);
       setSaveState('done');
-      setTimeout(() => onSaved(updated, categoryId || null), 500);
+      const resolvedCategoryId = suggest.newCategory
+        ? suggest.newCategory.id
+        : (categoryId || null);
+      setTimeout(() => onSaved(updated, resolvedCategoryId, suggest.newCategory), 500);
     } catch {
       setError('Failed to save.');
       setSaveState('');
@@ -85,7 +98,6 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   };
 
   const handleSave = () => performSave(quote);
-  const handleTranscriptionDone = (transcript) => performSave(transcript);
 
   const handleDelete = async () => {
     if (!confirmDelete) { setConfirmDelete(true); return; }
@@ -141,82 +153,71 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
         </div>
       </div>
 
+      {/* Content input */}
       <div className="add-unit__body">
-        {unit.type === 'snippet' && (
-          <div className="add-unit__content-wrap">
-            <textarea
-              ref={textareaRef}
-              className={`add-unit__textarea${content ? ' add-unit__textarea--has-value' : ''}`}
-              value={content}
-              onChange={(e) => { setContent(e.target.value); setError(''); }}
-            />
-            <button
-              type="button"
-              className={`add-unit__copy-btn${copied ? ' add-unit__copy-btn--copied' : ''}`}
-              onClick={handleCopy}
-              aria-label="Copy to clipboard"
-            >
-              {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
-            </button>
-          </div>
-        )}
-
-        {unit.type === 'password' && (
-          <div className="add-unit__password-wrap">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              className="add-unit__password-input"
-              value={content}
-              onChange={(e) => { setContent(e.target.value); setError(''); }}
-            />
-            <div className="add-unit__password-btns">
-              <button
-                type="button"
-                className={`add-unit__copy-btn${copied ? ' add-unit__copy-btn--copied' : ''}`}
-                onClick={handleCopy}
-                aria-label="Copy to clipboard"
-              >
-                {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
-              </button>
-              <button
-                type="button"
-                className="add-unit__password-toggle"
-                onClick={() => setShowPassword((v) => !v)}
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {unit.type === 'image' && (
-          <div className="add-unit__file-area">
-            {content && mimeType?.startsWith('image/') && (
-              <button
-                type="button"
-                className="add-unit__preview-btn"
-                onClick={() => setShowLightbox(true)}
-                aria-label="View full image"
-              >
-                <img src={content} alt={fileName} className="add-unit__preview" />
-              </button>
-            )}
-            {content && !mimeType?.startsWith('image/') && (
-              <p className="add-unit__file-name">{fileName}</p>
-            )}
-          </div>
-        )}
+        <ContentField
+          type={unit.type}
+          content={content}
+          fileName={fileName}
+          mimeType={mimeType}
+          onTextChange={(text) => { setContent(text); setError(''); }}
+          onFileSelected={({ content: c, fileName: fn, mimeType: mt }) => {
+            setContent(c); setFileName(fn); setMimeType(mt); setError('');
+          }}
+          disabled={saving}
+        />
       </div>
+
+      {/* Share toggle */}
+      {hasContent && (
+        <button
+          type="button"
+          className={[
+            'content-field__share-row',
+            suggest.shareContent && 'content-field__share-row--on',
+            suggest.suggestState === 'needs-selection' && 'content-field__share-row--blink',
+          ].filter(Boolean).join(' ')}
+          onClick={() => suggest.setShareContent((v) => !v)}
+          disabled={saving}
+        >
+          <span className="content-field__share-sparkle">✦</span>
+          <span className="content-field__share-label">
+            {unit.type === 'password' && suggest.shareContent
+              ? 'Sharing password with AI · sensitive'
+              : suggest.shareContent ? 'Sharing with AI' : 'Share with AI'}
+          </span>
+        </button>
+      )}
 
       {error && <p className="modal__error">{error}</p>}
 
-      {showLightbox && content && mimeType?.startsWith('image/') && (
-        <ImageLightbox src={content} alt={fileName} onClose={() => setShowLightbox(false)} />
-      )}
+      {/* Voice note + always-on AI indicator */}
+      <div className="share-sparkle-wrap">
+        <NoteField
+          value={quote}
+          onChange={setQuote}
+          disabled={saving}
+          transcribeFn={transcribeFn}
+        />
+        {hasNote && (
+          <span
+            className="share-sparkle share-sparkle--note share-sparkle--on"
+            aria-label="Note always shared with AI"
+            title="Note is always shared with AI"
+          />
+        )}
+      </div>
 
-      <NoteField value={quote} onChange={setQuote} disabled={saving} onTranscriptionDone={handleTranscriptionDone} />
-
-      <CategoryField groups={storedGroups} value={categoryId} onChange={setCategoryId} disabled={saving} />
+      {/* Category chips + ghost chip + suggest trigger */}
+      <CategorySelector
+        groups={storedGroups}
+        categoryId={categoryId}
+        onCategoryChange={setCategoryId}
+        suggest={suggest}
+        onSuggest={handleSuggest}
+        canSuggest={canAutoSuggest}
+        disabled={saving}
+      />
 
       <div className="add-unit__actions">
         <button

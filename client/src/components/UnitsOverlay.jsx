@@ -63,11 +63,12 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     setSelectedCtx(null);
   }, []);
 
-  const handleSaved = useCallback((updated, categoryId) => {
+  const handleSaved = useCallback((updated, categoryId, newCategory) => {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
     if (updated.uid) {
       setGroups((prev) => {
-        const next = prev.map((g) => ({
+        const base = newCategory ? [...prev, { ...newCategory, uids: [] }] : prev;
+        const next = base.map((g) => ({
           ...g,
           uids: g.id === categoryId
             ? [...g.uids.filter((u) => u !== updated.uid), updated.uid]

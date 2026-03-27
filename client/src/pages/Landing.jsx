@@ -273,8 +273,15 @@ export default function Landing() {
     return () => document.removeEventListener('keydown', handler);
   }, [selectedCtx, closeDetail, goPrev, goNext]);
 
-const handleUnitSaved = useCallback((updated, categoryId) => {
+const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+    if (newCategory) {
+      setStoredGroups((prev) => {
+        const groups = [...(prev ?? []), { ...newCategory, uids: [] }];
+        setCategorization(groups);
+        return groups;
+      });
+    }
     if (updated.uid) handleCategoryAssign(updated.uid, categoryId);
     setSelectedCtx(null);
   }, [handleCategoryAssign]);
