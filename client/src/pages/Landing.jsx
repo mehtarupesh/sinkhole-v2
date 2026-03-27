@@ -8,6 +8,7 @@ import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorizati
 import { buildCarousels, withMiscGroup, MISC_ID } from '../utils/carouselGroups';
 import { categorizeUnits } from '../utils/categorize';
 import AddUnitModal from '../components/AddUnitModal';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import ForageModal from '../components/ForageModal';
 import UnitsOverlay from '../components/UnitsOverlay';
 import PrototypeModal from '../components/PrototypeModal';
@@ -36,6 +37,7 @@ export default function Landing() {
   const [toast, setToast]               = useState(null);
   // selectedCtx: { units: Unit[], index: number } | null
   const [selectedCtx, setSelectedCtx]   = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null); // { title, units, onConfirm }
 
   const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal;
 
@@ -359,7 +361,31 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
             {
               icon: <TrashIcon />,
               label: 'Delete',
-              onClick: () => setToast(`Delete ${cardSel.selected.size} item${cardSel.selected.size !== 1 ? 's' : ''} — coming soon`),
+              onClick: () => {
+                const toDelete = units.filter((u) => cardSel.selected.has(u.id));
+                const n = toDelete.length;
+                setPendingDelete({
+                  title: `Delete ${n} item${n !== 1 ? 's' : ''}?`,
+                  units: toDelete,
+                  onConfirm: async () => {
+                    for (const u of toDelete) await deleteUnit(u.id);
+                    const deletedUids = new Set(toDelete.map((u) => u.uid).filter(Boolean));
+                    setUnits((prev) => prev.filter((u) => !cardSel.selected.has(u.id)));
+                    if (deletedUids.size > 0) {
+                      setStoredGroups((prev) => {
+                        if (!prev) return prev;
+                        const cleaned = prev
+                          .map((g) => ({ ...g, uids: g.uids.filter((uid) => !deletedUids.has(uid)) }))
+                          .filter((g) => g.uids.length > 0);
+                        setCategorization(cleaned);
+                        return cleaned;
+                      });
+                    }
+                    cardSel.clear();
+                    setPendingDelete(null);
+                  },
+                });
+              },
             },
             {
               icon: <ShareIcon />,
@@ -375,7 +401,29 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
             {
               icon: <TrashIcon />,
               label: 'Delete',
-              onClick: () => setToast(`Delete ${catSel.selected.size} categor${catSel.selected.size !== 1 ? 'ies' : 'y'} — coming soon`),
+              onClick: () => {
+                const selCats = displayGroups.filter((g) => catSel.selected.has(g.id));
+                const selUids = new Set(selCats.flatMap((g) => g.uids));
+                const toDelete = units.filter((u) => u.uid && selUids.has(u.uid));
+                const nc = catSel.selected.size;
+                const nu = toDelete.length;
+                setPendingDelete({
+                  title: `Delete ${nc} categor${nc !== 1 ? 'ies' : 'y'} and ${nu} item${nu !== 1 ? 's' : ''}?`,
+                  units: toDelete,
+                  onConfirm: async () => {
+                    for (const u of toDelete) await deleteUnit(u.id);
+                    setUnits((prev) => prev.filter((u) => !(u.uid && selUids.has(u.uid))));
+                    setStoredGroups((prev) => {
+                      if (!prev) return prev;
+                      const cleaned = prev.filter((g) => !catSel.selected.has(g.id));
+                      setCategorization(cleaned);
+                      return cleaned;
+                    });
+                    catSel.clear();
+                    setPendingDelete(null);
+                  },
+                });
+              },
             },
             {
               icon: <ShareIcon />,
@@ -494,6 +542,14 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
         <UnitsOverlay
           initialCategory={unitsOverlayCategory}
           onClose={() => { setShowUnitsOverlay(false); setUnitsOverlayCategory(''); reloadUnits(); }}
+        />
+      )}
+      {pendingDelete && (
+        <ConfirmDeleteModal
+          title={pendingDelete.title}
+          exportUnits={pendingDelete.units}
+          onConfirm={pendingDelete.onConfirm}
+          onCancel={() => setPendingDelete(null)}
         />
       )}
       {showPrototypeModal && <PrototypeModal onClose={() => setShowPrototypeModal(false)} />}

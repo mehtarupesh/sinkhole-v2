@@ -364,6 +364,35 @@
   cursor: default;
 }
 
+.btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* ── Confirm Delete Modal ── */
+.confirm-delete__export-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.confirm-delete__footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.confirm-delete__footer .btn-primary {
+  flex: 1;
+  justify-content: center;
+}
+
 /* ── Toast ── */
 .toast {
   position: fixed;

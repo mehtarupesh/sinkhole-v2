@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CloseIcon, SearchIcon, TrashIcon, ShareIcon, MoveFolderIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { getAllUnits, deleteUnit, getCategorization, setCategorization } from '../utils/db';
 import { withMiscGroup, MISC_ID } from '../utils/carouselGroups';
 import { CarouselCard } from './Carousel';
@@ -15,6 +16,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedCtx, setSelectedCtx] = useState(null); // { units, index }
   const [toast, setToast] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null); // { title, units, onConfirm }
   const inputRef = useRef(null);
   const swipeStart = useRef(null);
 
@@ -99,12 +101,35 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     );
   });
 
-  // Action stubs — toasts only until real logic is wired
   const unitActions = [
     {
       icon: <TrashIcon />,
       label: 'Delete',
-      onClick: () => setToast(`Delete ${selected.size} item${selected.size !== 1 ? 's' : ''} — coming soon`),
+      onClick: () => {
+        const toDelete = units.filter((u) => selected.has(u.id));
+        const n = toDelete.length;
+        setPendingDelete({
+          title: `Delete ${n} item${n !== 1 ? 's' : ''}?`,
+          units: toDelete,
+          onConfirm: async () => {
+            for (const u of toDelete) await deleteUnit(u.id);
+            const deletedIds = new Set(toDelete.map((u) => u.id));
+            const deletedUids = new Set(toDelete.map((u) => u.uid).filter(Boolean));
+            setUnits((prev) => prev.filter((u) => !deletedIds.has(u.id)));
+            if (deletedUids.size > 0) {
+              setGroups((prev) => {
+                const cleaned = prev
+                  .map((g) => ({ ...g, uids: g.uids.filter((uid) => !deletedUids.has(uid)) }))
+                  .filter((g) => g.uids.length > 0);
+                setCategorization(cleaned);
+                return cleaned;
+              });
+            }
+            clear();
+            setPendingDelete(null);
+          },
+        });
+      },
     },
     {
       icon: <ShareIcon />,
@@ -200,6 +225,15 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
         />
       )}
     </div>
+
+    {pendingDelete && (
+      <ConfirmDeleteModal
+        title={pendingDelete.title}
+        exportUnits={pendingDelete.units}
+        onConfirm={pendingDelete.onConfirm}
+        onCancel={() => setPendingDelete(null)}
+      />
+    )}
 
     {selectedCtx && currentUnit && (
       <div className="overlay units-overlay" onClick={() => setSelectedCtx(null)}>
