@@ -184,7 +184,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
       />
 
       {/* Category chips — horizontal scroll */}
-      <div className="sheet__categories" style={{ padding: '0' }}>
+      <div className="sheet__categories" style={{ padding: '8px 0 0' }}>
         <CategorySelector
           groups={storedGroups}
           categoryId={categoryId}
