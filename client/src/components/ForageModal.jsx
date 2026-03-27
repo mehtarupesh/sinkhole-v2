@@ -7,7 +7,7 @@
  *   onClose     fn                   close handler
  *   onSaveUnit  fn(uid, categoryId)  called after response is saved as a new unit
  */
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { CloseIcon, CheckIcon } from './Icons';
 import { getSetting, addUnit } from '../utils/db';
 import { forageUnits } from '../utils/forage';
@@ -74,6 +74,7 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
   const [saveState, setSaveState]     = useState(''); // '' | 'saving' | 'done'
+  const bodyRef = useRef(null);
 
   const categoryUnits = useMemo(
     () => allUnits.filter((u) => category.uids.includes(u.uid)),
@@ -113,8 +114,7 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
   const handleQuickPrompt = useCallback((prompt) => {
     if (loading) return;
     setQuestion(prompt);
-    runForage(prompt);
-  }, [loading, runForage]);
+  }, [loading]);
 
   const handleSaveAsUnit = useCallback(async () => {
     if (!response || saveState) return;
@@ -132,6 +132,13 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
       setSaveState('');
     }
   }, [response, question, category, saveState, onSaveUnit]);
+
+  // Scroll body to bottom whenever content changes
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [response, loading, error]);
 
   // Auto-dismiss response after save — mirrors AddUnitModal's post-save close delay
   useEffect(() => {
@@ -159,7 +166,7 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
         </div>
 
         {/* Scrollable body */}
-        <div className="add-unit__body">
+        <div className="add-unit__body" ref={bodyRef}>
 
           {/* Unit strip — reuses CarouselCard for full visual consistency */}
           <div className="carousel__row forage__strip">
@@ -168,7 +175,32 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
             ))}
           </div>
 
-          {/* Response */}
+          {/* Question input — primary: voice + text */}
+          <NoteField
+            value={question}
+            onChange={setQuestion}
+            disabled={loading}
+            onTranscriptionDone={setQuestion}
+            placeholder="Ask something specific…"
+          />
+
+          {/* Quick prompt chips — secondary shortcuts */}
+          <div className="forage__quick-prompts">
+            <span className="forage__quick-label">or try</span>
+            {QUICK_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                className={`forage__quick-chip${question === prompt ? ' forage__quick-chip--active' : ''}`}
+                onClick={() => handleQuickPrompt(prompt)}
+                disabled={loading}
+                type="button"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+
+          {/* Response — appears after the user has committed to a question */}
           {(response || (loading && !response)) && (
             <div className="forage__response">
               {loading && !response ? (
@@ -209,30 +241,6 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
           )}
 
           {error && <p className="modal__error">{error}</p>}
-
-          {/* Question input — reuses NoteField for voice + text */}
-          <NoteField
-            value={question}
-            onChange={setQuestion}
-            disabled={loading}
-            onTranscriptionDone={setQuestion}
-            placeholder="e.g. summarize"
-          />
-
-          {/* Quick prompt chips — below NoteField so voice input stays primary */}
-          <div className="forage__quick-prompts">
-            {QUICK_PROMPTS.map((prompt) => (
-              <button
-                key={prompt}
-                className={`forage__quick-chip${question === prompt ? ' forage__quick-chip--active' : ''}`}
-                onClick={() => handleQuickPrompt(prompt)}
-                disabled={loading}
-                type="button"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* AI scope toggle — sits above the Forage button to localize the decision */}

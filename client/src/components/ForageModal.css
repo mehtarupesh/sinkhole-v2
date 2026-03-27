@@ -314,8 +314,17 @@
 .forage__quick-prompts {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
   padding-bottom: 4px;
+}
+
+.forage__quick-label {
+  font-size: 11px;
+  color: #404040;
+  font-style: italic;
+  white-space: nowrap;
+  user-select: none;
 }
 
 .forage__quick-chip {
