@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 
 const SYSTEM_PROMPT = `You are helping a user forage through their personal stash of saved information in an app called 1Burrow.
 The user saves snippets, images, links, and notes with short context notes.
-Answer the user's question based only on the provided items.
+Answer the user's question using the provided items. If any item contains a URL, fetch and read it to give a complete answer.
 Be concise and specific. Use simple markdown: **bold** for key info, bullet lists for multiple items, ## for section headers only when needed.
 If you cannot answer from the provided items, say so briefly.`;
 
@@ -70,6 +70,7 @@ export async function forageUnits({ units, question, shareContent, apiKey }) {
     model: 'gemini-3-flash-preview',
     contents: [{ role: 'user', parts }],
     config: {
+      tools: [{ urlContext: {} }, { googleSearch: {} }],
       systemInstruction: SYSTEM_PROMPT,
       thinkingConfig: { thinkingLevel: 'MINIMAL' },
     },

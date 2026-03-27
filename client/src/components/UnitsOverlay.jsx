@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { CloseIcon, SearchIcon, TrashIcon, ShareIcon, MoveFolderIcon } from './Icons';
-import { getAllUnits, deleteUnit, getCategorization } from '../utils/db';
+import { CloseIcon, SearchIcon, TrashIcon, ShareIcon, MoveFolderIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { getAllUnits, deleteUnit, getCategorization, setCategorization } from '../utils/db';
 import { withMiscGroup, MISC_ID } from '../utils/carouselGroups';
 import { CarouselCard } from './Carousel';
 import UnitDetail from './UnitDetail';
@@ -13,7 +13,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const [groups, setGroups] = useState([]);
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [selectedUnit, setSelectedUnit] = useState(null);
+  const [selectedCtx, setSelectedCtx] = useState(null); // { units, index }
   const [toast, setToast] = useState(null);
   const inputRef = useRef(null);
   const swipeStart = useRef(null);
@@ -40,22 +40,44 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     const handler = (e) => {
       if (e.key !== 'Escape') return;
       if (isSelecting)    { clear(); return; }
-      if (selectedUnit)   { setSelectedUnit(null); return; }
+      if (selectedCtx)    { setSelectedCtx(null); return; }
       onClose();
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [onClose, selectedUnit, isSelecting, clear]);
+  }, [onClose, selectedCtx, isSelecting, clear]);
+
+  useEffect(() => {
+    if (!selectedCtx) return;
+    const handler = (e) => {
+      if (e.key === 'ArrowLeft')  setSelectedCtx((c) => c && c.index > 0 ? { ...c, index: c.index - 1 } : c);
+      if (e.key === 'ArrowRight') setSelectedCtx((c) => c && c.index < c.units.length - 1 ? { ...c, index: c.index + 1 } : c);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [selectedCtx]);
 
   const handleDelete = useCallback(async (id) => {
     await deleteUnit(id);
     setUnits((prev) => prev.filter((u) => u.id !== id));
-    setSelectedUnit(null);
+    setSelectedCtx(null);
   }, []);
 
-  const handleSaved = useCallback((updated) => {
+  const handleSaved = useCallback((updated, categoryId) => {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-    setSelectedUnit(null);
+    if (updated.uid) {
+      setGroups((prev) => {
+        const next = prev.map((g) => ({
+          ...g,
+          uids: g.id === categoryId
+            ? [...g.uids.filter((u) => u !== updated.uid), updated.uid]
+            : g.uids.filter((u) => u !== updated.uid),
+        }));
+        setCategorization(next);
+        return next;
+      });
+    }
+    setSelectedCtx(null);
   }, []);
 
   const uidToCategory = useMemo(() => {
@@ -95,21 +117,9 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     },
   ];
 
-  if (selectedUnit) {
-    return (
-      <div className="search-overlay">
-        <div className="search-detail-wrap">
-          <UnitDetail
-            unit={selectedUnit}
-            onBack={() => setSelectedUnit(null)}
-            onSaved={handleSaved}
-            onDelete={handleDelete}
-            storedGroups={groups}
-          />
-        </div>
-      </div>
-    );
-  }
+  const currentUnit = selectedCtx ? selectedCtx.units[selectedCtx.index] : null;
+  const hasPrev = selectedCtx ? selectedCtx.index > 0 : false;
+  const hasNext = selectedCtx ? selectedCtx.index < selectedCtx.units.length - 1 : false;
 
   const handleTouchStart = (e) => {
     swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -124,6 +134,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   };
 
   return (
+    <>
     <div
       className="search-overlay"
       onTouchStart={handleTouchStart}
@@ -164,12 +175,12 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
           <>
           <p className="search-count">{filtered.length} item{filtered.length !== 1 ? 's' : ''}</p>
           <div className="search-grid">
-            {filtered.map((unit) => (
+            {filtered.map((unit, i) => (
               <CarouselCard
                 key={unit.id}
                 unit={unit}
                 selected={selected.has(unit.id)}
-                onClick={() => isSelecting ? toggle(unit.id) : setSelectedUnit(unit)}
+                onClick={() => isSelecting ? toggle(unit.id) : setSelectedCtx({ units: filtered, index: i })}
                 onLongPress={() => enterWith(unit.id)}
               />
             ))}
@@ -188,5 +199,46 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
         />
       )}
     </div>
+
+    {selectedCtx && currentUnit && (
+      <div className="overlay units-overlay" onClick={() => setSelectedCtx(null)}>
+        <div className="unit-detail-wrap" onClick={(e) => e.stopPropagation()}>
+          <div className="units-panel">
+            <UnitDetail
+              key={currentUnit.id}
+              unit={currentUnit}
+              onBack={() => setSelectedCtx(null)}
+              onSaved={handleSaved}
+              onDelete={handleDelete}
+              storedGroups={groups}
+            />
+          </div>
+          <div className="unit-detail-nav" data-testid="unit-detail-nav">
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={() => setSelectedCtx((c) => c && c.index > 0 ? { ...c, index: c.index - 1 } : c)}
+              disabled={!hasPrev}
+              aria-label="Previous"
+            >
+              <ChevronLeftIcon />
+            </button>
+            <span className="unit-detail-nav__count">
+              {selectedCtx.index + 1} / {selectedCtx.units.length}
+            </span>
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={() => setSelectedCtx((c) => c && c.index < c.units.length - 1 ? { ...c, index: c.index + 1 } : c)}
+              disabled={!hasNext}
+              aria-label="Next"
+            >
+              <ChevronRightIcon />
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
