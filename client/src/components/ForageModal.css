@@ -315,8 +315,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding-bottom: 4px;
+  padding: 0 0 4px;
 }
 
 .forage__quick-label {

@@ -11,7 +11,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { CloseIcon, CheckIcon } from './Icons';
 import { getSetting, addUnit } from '../utils/db';
 import { forageUnits } from '../utils/forage';
-import NoteField from './NoteField';
+import NoteTray from './NoteTray';
 import { CarouselCard } from './Carousel';
 import './ForageModal.css';
 
@@ -176,11 +176,10 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
           </div>
 
           {/* Question input — primary: voice + text */}
-          <NoteField
+          <NoteTray
             value={question}
             onChange={setQuestion}
             disabled={loading}
-            onTranscriptionDone={setQuestion}
             placeholder="Ask something specific…"
           />
 
