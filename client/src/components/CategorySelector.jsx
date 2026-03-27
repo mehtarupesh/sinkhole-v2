@@ -130,7 +130,7 @@ export default function CategorySelector({
       {/* Status line */}
       {suggestState === 'needs-selection' && (
         <p className="auto-suggest-status auto-suggest-status--warn">
-          Share content or add a note first
+          Please speak or type a note first
         </p>
       )}
       {suggestState === 'loading' && (

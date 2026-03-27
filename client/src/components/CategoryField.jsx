@@ -1,3 +1,5 @@
+import { useRef, useEffect } from 'react';
+
 /**
  * CategoryField — horizontal chip row for category selection (controlled)
  *
@@ -8,10 +10,25 @@
  *   disabled bool
  */
 export default function CategoryField({ groups, value, onChange, disabled = false }) {
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (!value || !scrollRef.current) return;
+    const container = scrollRef.current;
+    const chip = container.querySelector('.category-field__chip--active');
+    if (!chip) return;
+    const containerRect = container.getBoundingClientRect();
+    const chipRect = chip.getBoundingClientRect();
+    const chipScrollLeft = container.scrollLeft + chipRect.left - containerRect.left;
+    const chipCenter = chipScrollLeft + chipRect.width / 2;
+    const containerCenter = containerRect.width / 2;
+    container.scrollTo({ left: chipCenter - containerCenter, behavior: 'smooth' });
+  }, [value]);
+
   if (!groups?.length) return null;
   return (
     <div className="category-field">
-      <div className="category-field__chips">
+      <div className="category-field__chips" ref={scrollRef}>
         {groups.map((g) => (
           <button
             key={g.id}
