@@ -69,11 +69,12 @@ const QUICK_PROMPTS = [
 
 export default function ForageModal({ category, allUnits, onClose, onSaveUnit }) {
   const [question, setQuestion]       = useState('');
-  const [shareContent, setShareContent] = useState(false);
+  const [shareContent, setShareContent] = useState(true);
   const [response, setResponse]       = useState('');
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
   const [saveState, setSaveState]     = useState(''); // '' | 'saving' | 'done'
+  const [confirmShare, setConfirmShare] = useState(false);
   const bodyRef = useRef(null);
 
   const categoryUnits = useMemo(
@@ -108,8 +109,18 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
 
   const handleAsk = useCallback(() => {
     if (!question.trim() || loading) return;
+    if (shareContent && !confirmShare) {
+      setConfirmShare(true);
+      return;
+    }
+    setConfirmShare(false);
     runForage(question);
-  }, [question, loading, runForage]);
+  }, [question, loading, shareContent, confirmShare, runForage]);
+
+  // Reset confirm state whenever question or toggle changes
+  useEffect(() => {
+    setConfirmShare(false);
+  }, [question, shareContent]);
 
   const handleQuickPrompt = useCallback((prompt) => {
     if (loading) return;
@@ -245,7 +256,7 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
         {/* AI scope toggle — sits above the Forage button to localize the decision */}
         {hasShareableContent && (
           <button
-            className={`forage__content-row${shareContent ? ' forage__content-row--on' : ''}`}
+            className={`forage__content-row${shareContent ? ' forage__content-row--on' : ''}${confirmShare ? ' forage__content-row--pulse' : ''}`}
             onClick={() => setShareContent((s) => !s)}
             type="button"
             disabled={loading}
@@ -276,12 +287,13 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
             Close
           </button>
           <button
-            className={`add-unit__cancel-btn add-unit__cancel-btn--primary forage__ask-btn${!canAsk ? ' forage__ask-btn--disabled' : ''}`}
+            className={`add-unit__cancel-btn add-unit__cancel-btn--primary forage__ask-btn${!canAsk ? ' forage__ask-btn--disabled' : ''}${confirmShare ? ' forage__ask-btn--confirm' : ''}`}
             onClick={handleAsk}
+            onBlur={() => setConfirmShare(false)}
             disabled={!canAsk}
             type="button"
           >
-            {loading ? 'Foraging…' : 'Forage ✦'}
+            {loading ? 'Foraging…' : confirmShare ? 'Share & Forage ✦' : 'Forage ✦'}
           </button>
         </div>
 
