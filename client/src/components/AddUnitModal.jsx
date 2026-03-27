@@ -125,7 +125,12 @@ export default function AddUnitModal({
   // Replaces the two-step transcribe→runSuggest with a single LLM call.
   // NoteField calls this instead of the default transcribeAudio.
   const transcribeFn = useCallback(async (blob, apiKey) => {
-    const result = await transcribeAndSuggest(blob, apiKey, { type, existingCategories: storedGroups });
+    const result = await transcribeAndSuggest(blob, apiKey, {
+      type,
+      existingCategories: storedGroups,
+      content: suggest.shareContent && type !== 'password' ? content : null,
+      mimeType: suggest.shareContent && type === 'image' ? mimeType : null,
+    });
     const applied = suggest.applyResult(result);
     if (applied.type === 'existing') setCategoryId(applied.categoryId);
     else setCategoryId('');

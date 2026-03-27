@@ -72,6 +72,7 @@ ${styleHint}If suggesting a new title, keep it 2-3 words, concise, in the user's
     model: 'gemini-2.5-flash',
     contents: [{ role: 'user', parts }],
     config: {
+      tools: [{ urlContext: {} }],
       responseMimeType: 'application/json',
       responseJsonSchema: RESPONSE_SCHEMA,
       thinkingConfig: { thinkingBudget: 0 },
