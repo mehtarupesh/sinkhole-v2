@@ -103,16 +103,19 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     );
   });
 
-  const handleBulkMove = useCallback((categoryId) => {
+  const handleBulkMove = useCallback((categoryId, newCategory) => {
     if (!moveCtx) return;
     const movedUids = new Set(moveCtx.units.map((u) => u.uid).filter(Boolean));
     setGroups((prev) => {
-      const next = prev.map((g) => ({
+      const base = newCategory ? [...prev, { ...newCategory, uids: [] }] : prev;
+      const next = base.map((g) => ({
         ...g,
-        uids: g.id === categoryId
-          ? [...g.uids.filter((uid) => !movedUids.has(uid)), ...movedUids]
-          : g.uids.filter((uid) => !movedUids.has(uid)),
-      }));
+        uids: categoryId === MISC_ID
+          ? g.uids.filter((uid) => !movedUids.has(uid))
+          : g.id === categoryId
+            ? [...g.uids.filter((uid) => !movedUids.has(uid)), ...movedUids]
+            : g.uids.filter((uid) => !movedUids.has(uid)),
+      })).filter((g) => g.uids.length > 0);
       setCategorization(next);
       return next;
     });
