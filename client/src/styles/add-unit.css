@@ -199,51 +199,58 @@
   letter-spacing: 0.03em;
 }
 
-/* "Share with AI" pill in mic-hero mode */
-.note-tray__share-pill {
-  display: inline-flex;
+
+/* Three-column stage: [swipe hint] [orb] [share] */
+.note-tray__mic-stage {
+  display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 12px;
-  background: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  color: #404040;
-  font-size: 11px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
 }
 
-.note-tray__share-pill:not(:disabled):hover {
-  color: #737373;
-  border-color: rgba(255, 255, 255, 0.15);
+/* Each side column matches width so orb stays visually centered */
+.note-tray__swipe-left,
+.note-tray__mic-stage-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
 
-.note-tray__share-pill--on {
-  color: #a3a3a3;
-  border-color: rgba(255, 255, 255, 0.18);
+.note-tray__mic-stage-right {
+  justify-content: flex-end;
 }
 
-.note-tray__share-pill--on:not(:disabled):hover {
-  color: #e5e5e5;
-}
-
-/* "← type instead" hint */
-.note-tray__type-hint {
+/* Swipe-left affordance */
+.note-tray__swipe-left {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
   background: none;
   border: none;
-  color: #2e2e2e;
-  font-size: 11px;
-  font-family: inherit;
+  padding: 8px;
   cursor: pointer;
-  padding: 4px;
-  transition: color 0.15s;
-  letter-spacing: 0.02em;
+  color: #525252;
+  transition: color 0.2s;
+  animation: swipe-nudge 3s ease-in-out infinite;
 }
 
-.note-tray__type-hint:hover {
-  color: #525252;
+.note-tray__swipe-left:hover {
+  color: #a3a3a3;
+  animation: none;
+}
+
+.note-tray__swipe-label {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: inherit;
+}
+
+@keyframes swipe-nudge {
+  0%, 60%, 100% { transform: translateX(0);    opacity: 0.7; }
+  30%            { transform: translateX(-6px); opacity: 1;   }
 }
 
 /* Text hero state */
@@ -349,36 +356,6 @@
   color: #e5e5e5;
 }
 
-/* Quick starter chips */
-.note-tray__chips {
-  display: flex;
-  gap: 6px;
-  padding: 8px 0 2px 40px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.note-tray__chips::-webkit-scrollbar { display: none; }
-
-.note-tray__quick-chip {
-  padding: 3px 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 16px;
-  color: #404040;
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-
-.note-tray__quick-chip:hover {
-  color: #a3a3a3;
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.06);
-}
 
 /* Spinner (reused in both sizes) */
 .note-tray__spinner {

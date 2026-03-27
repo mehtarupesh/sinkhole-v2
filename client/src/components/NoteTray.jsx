@@ -23,10 +23,9 @@ import { transcribeAudio } from '../utils/transcribe';
 
 const MAX_REC_SECS = 60;
 const BARS = 28;
-const QUICK_STARTERS = ['Remember', 'Action', 'Key point', 'Why'];
 
 function isTouchDevice() {
-  return typeof window !== 'undefined' &&
+  return true; //typeof window !== 'undefined' &&
     window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 }
 
@@ -179,7 +178,6 @@ export default function NoteTray({
     const dx = e.changedTouches[0].clientX - swipeStartX.current;
     swipeStartX.current = null;
     if (mode === 'mic-hero' && dx < -50) switchToTextMode();
-    if (mode === 'text-hero' && dx > 50 && !value.trim()) setMode('mic-hero');
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────────
@@ -220,39 +218,38 @@ export default function NoteTray({
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <button
-          type="button"
-          className={`note-tray__orb${isTranscribing ? ' note-tray__orb--busy' : ''}`}
-          onClick={startRecording}
-          disabled={disabled || isTranscribing}
-          aria-label="Tap to record note"
-        >
-          {isTranscribing ? <span className="note-tray__spinner" /> : <MicIcon size={24} />}
-        </button>
+        {/* Three-column stage: swipe hint | orb | share */}
+        <div className="note-tray__mic-stage">
+
+          {/* Left: swipe-left affordance */}
+          <button
+            type="button"
+            className="note-tray__swipe-left"
+            onClick={switchToTextMode}
+            aria-label="Tap or swipe left to type a note"
+          >
+            <SwipeLeftIcon />
+            <span className="note-tray__swipe-label">swipe to type</span>
+          </button>
+
+          {/* Center: mic orb */}
+          <button
+            type="button"
+            className={`note-tray__orb${isTranscribing ? ' note-tray__orb--busy' : ''}`}
+            onClick={startRecording}
+            disabled={disabled || isTranscribing}
+            aria-label="Tap to record note"
+          >
+            {isTranscribing ? <span className="note-tray__spinner" /> : <MicIcon size={24} />}
+          </button>
+
+          {/* Right: empty column — keeps orb visually centered */}
+          <div className="note-tray__mic-stage-right" />
+        </div>
 
         <p className="note-tray__hint">
           {isTranscribing ? 'Transcribing…' : 'Tap to speak'}
         </p>
-
-        {hasContent && (
-          <button
-            type="button"
-            className={`note-tray__share-pill${shareContent ? ' note-tray__share-pill--on' : ''}`}
-            onClick={onShareToggle}
-            disabled={disabled}
-          >
-            <span className="note-tray__sparkle">✦</span>
-            <span>{shareContent ? 'Sharing with AI' : 'Share with AI'}</span>
-          </button>
-        )}
-
-        <button
-          type="button"
-          className="note-tray__type-hint"
-          onClick={switchToTextMode}
-        >
-          ← type instead
-        </button>
 
         {localError && <p className="modal__error" style={{ margin: '4px 0 0', textAlign: 'center' }}>{localError}</p>}
       </div>
@@ -290,6 +287,7 @@ export default function NoteTray({
           rows={1}
         />
 
+        {/* share-content toggle — disabled for now
         {hasContent && (
           <button
             type="button"
@@ -301,25 +299,8 @@ export default function NoteTray({
             <span className={`note-tray__sparkle${shareContent ? ' note-tray__sparkle--on' : ''}`}>✦</span>
           </button>
         )}
+        */}
       </div>
-
-      {!value && !isTranscribing && (
-        <div className="note-tray__chips">
-          {QUICK_STARTERS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              className="note-tray__quick-chip"
-              onClick={() => {
-                onChange(s + ': ');
-                textareaRef.current?.focus();
-              }}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
 
       {localError && <p className="modal__error" style={{ margin: '4px 0 0' }}>{localError}</p>}
     </div>
@@ -333,6 +314,15 @@ function MicIcon({ size = 20 }) {
       <path d="M5 10a7 7 0 0 0 14 0" />
       <line x1="12" y1="19" x2="12" y2="22" />
       <line x1="8" y1="22" x2="16" y2="22" />
+    </svg>
+  );
+}
+
+function SwipeLeftIcon() {
+  return (
+    <svg width="28" height="18" viewBox="0 0 28 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="16 15 10 9 16 3" />
+      <polyline points="24 15 18 9 24 3" />
     </svg>
   );
 }
