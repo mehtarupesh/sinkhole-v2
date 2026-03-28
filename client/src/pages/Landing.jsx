@@ -6,6 +6,7 @@ import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, ShareIcon, MoveFolderIcon, RenameIcon, AiChatIcon } from '../components/Icons';
 import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorization } from '../utils/db';
 import { buildCarousels, withMiscGroup, MISC_ID } from '../utils/carouselGroups';
+import { shareUnits, shareCategories } from '../utils/share';
 import { categorizeUnits } from '../utils/categorize';
 import AddUnitModal from '../components/AddUnitModal';
 import MoveToCategoryModal from '../components/MoveToCategoryModal';
@@ -292,6 +293,37 @@ export default function Landing() {
     catSel.clear();
   }, [cardSel, catSel]);
 
+  const handleShareCards = useCallback(async () => {
+    const toShare = units.filter((u) => cardSel.selected.has(u.id));
+    const uidToCategoryName = Object.fromEntries(
+      displayGroups.flatMap((g) => g.uids.map((uid) => [uid, g.title]))
+    );
+    try {
+      const result = await shareUnits(toShare, uidToCategoryName);
+      if (result.copied) setToast('Copied to clipboard');
+      if (result.downloaded) {
+        const unit = toShare[0];
+        const parts = [unit.quote, uidToCategoryName[unit.uid]].filter(Boolean);
+        setToast(parts.length ? parts.join(' · ') : 'Downloaded');
+      }
+      cardSel.clear();
+    } catch (e) {
+      if (e?.name !== 'AbortError') setToast('Share failed');
+    }
+  }, [units, cardSel, displayGroups]);
+
+  const handleShareCategories = useCallback(async () => {
+    const selectedGroups = displayGroups.filter((g) => catSel.selected.has(g.id));
+    const unitsByUid = Object.fromEntries(units.map((u) => [u.uid, u]));
+    try {
+      const result = await shareCategories(selectedGroups, unitsByUid);
+      if (result.copied) setToast('Copied to clipboard');
+      catSel.clear();
+    } catch (e) {
+      if (e?.name !== 'AbortError') setToast('Share failed');
+    }
+  }, [displayGroups, catSel, units]);
+
   const goPrev = useCallback(() => {
     setSelectedCtx((ctx) => (ctx && ctx.index > 0 ? { ...ctx, index: ctx.index - 1 } : ctx));
   }, []);
@@ -427,7 +459,7 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
             {
               icon: <ShareIcon />,
               label: 'Share',
-              onClick: () => setToast(`Share ${cardSel.selected.size} item${cardSel.selected.size !== 1 ? 's' : ''} — coming soon`),
+              onClick: handleShareCards,
             },
             {
               icon: <MoveFolderIcon />,
@@ -465,7 +497,7 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
             {
               icon: <ShareIcon />,
               label: 'Share',
-              onClick: () => setToast(`Share ${catSel.selected.size} categor${catSel.selected.size !== 1 ? 'ies' : 'y'} — coming soon`),
+              onClick: handleShareCategories,
             },
             {
               icon: <RenameIcon />,
