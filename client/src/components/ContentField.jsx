@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ImageTypeIcon, CopyIcon, CheckIcon } from './Icons';
+import { ImageTypeIcon, CameraIcon, CopyIcon, CheckIcon } from './Icons';
 import ImageLightbox from './ImageLightbox';
 
 /**
@@ -25,6 +25,7 @@ export default function ContentField({
 
   const copyTimerRef = useRef(null);
   const fileRef = useRef(null);
+  const cameraRef = useRef(null);
   const textareaRef = useRef(null);
 
   // Auto-resize textarea to fit its content
@@ -119,14 +120,24 @@ export default function ContentField({
       {type === 'image' && (
         <div className="add-unit__file-area">
           {!content && (
-            <button
-              type="button"
-              className="add-unit__drop-zone"
-              onClick={() => fileRef.current?.click()}
-            >
-              <ImageTypeIcon />
-              <span>Choose a file</span>
-            </button>
+            <div className="add-unit__upload-row">
+              <button
+                type="button"
+                className="add-unit__upload-option"
+                onClick={() => cameraRef.current?.click()}
+              >
+                <CameraIcon />
+                <span>Take photo</span>
+              </button>
+              <button
+                type="button"
+                className="add-unit__upload-option"
+                onClick={() => fileRef.current?.click()}
+              >
+                <ImageTypeIcon />
+                <span>Choose file</span>
+              </button>
+            </div>
           )}
           {content && mimeType?.startsWith('image/') && (
             <button
@@ -142,18 +153,35 @@ export default function ContentField({
             <p className="add-unit__file-name">{fileName}</p>
           )}
           {content && (
-            <button
-              type="button"
-              className="add-unit__change-file"
-              onClick={() => fileRef.current?.click()}
-            >
-              Choose Different File
-            </button>
+            <div className="add-unit__reupload-row">
+              <button
+                type="button"
+                className="add-unit__change-file"
+                onClick={() => fileRef.current?.click()}
+              >
+                Choose Different File
+              </button>
+              <button
+                type="button"
+                className="add-unit__change-file"
+                onClick={() => cameraRef.current?.click()}
+              >
+                Retake photo
+              </button>
+            </div>
           )}
           <input
             ref={fileRef}
             type="file"
             accept="image/*,*"
+            style={{ display: 'none' }}
+            onChange={handleFileInputChange}
+          />
+          <input
+            ref={cameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
             style={{ display: 'none' }}
             onChange={handleFileInputChange}
           />

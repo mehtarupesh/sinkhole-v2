@@ -570,14 +570,20 @@
   object-fit: contain;
 }
 
-.add-unit__drop-zone {
+.add-unit__upload-row {
   width: 100%;
-  min-height: 200px;
+  display: flex;
+  gap: 10px;
+}
+
+.add-unit__upload-option {
+  flex: 1;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   border: 1px dashed rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.02);
@@ -587,9 +593,14 @@
   transition: border-color 0.15s, color 0.15s;
 }
 
-.add-unit__drop-zone:hover {
+.add-unit__upload-option:hover {
   border-color: rgba(255, 255, 255, 0.2);
   color: #737373;
+}
+
+.add-unit__reupload-row {
+  display: flex;
+  gap: 8px;
 }
 
 .add-unit__change-file {

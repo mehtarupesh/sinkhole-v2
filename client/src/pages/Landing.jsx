@@ -500,7 +500,7 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
             <button type="button" className="btn-icon" onClick={() => setShowUnitsOverlay(true)} title="Saved" aria-label="Saved">
               <SearchIcon />
             </button>
-            <button
+            {/* <button
               type="button"
               className={`btn-icon btn-categorize${categorizing ? ' btn-categorize--loading' : ''}`}
               onClick={handleCategorize}
@@ -509,7 +509,7 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
               aria-label="Categorize"
             >
               <OneBIcon />
-            </button>
+            </button> */}
             <button type="button" className="btn-icon" onClick={() => setShowSettingsModal(true)} title="Settings" aria-label="Settings">
               <GearIcon />
             </button>
