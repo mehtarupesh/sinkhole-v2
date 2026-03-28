@@ -22,11 +22,14 @@ export default function ContentField({
   const [showPassword, setShowPassword] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   const copyTimerRef = useRef(null);
   const fileRef = useRef(null);
   const cameraRef = useRef(null);
   const textareaRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   // Auto-resize textarea to fit its content
   const resizeTextarea = useCallback(() => {
@@ -37,6 +40,49 @@ export default function ContentField({
   }, []);
 
   useEffect(() => { resizeTextarea(); }, [content, resizeTextarea]);
+
+  // Start camera stream when showCamera becomes true
+  useEffect(() => {
+    if (!showCamera) return;
+    let active = true;
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+      .then((stream) => {
+        if (!active) { stream.getTracks().forEach(t => t.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      })
+      .catch(() => {
+        // Permission denied or unavailable — fall back to file input
+        if (active) {
+          setShowCamera(false);
+          cameraRef.current?.click();
+        }
+      });
+    return () => {
+      active = false;
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    };
+  }, [showCamera]);
+
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setShowCamera(false);
+  }, []);
+
+  const handleCapture = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    stopCamera();
+    onFileSelected({ content: dataUrl, fileName: 'photo.jpg', mimeType: 'image/jpeg' });
+  }, [stopCamera, onFileSelected]);
 
   const handleCopy = async () => {
     if (!content) return;
@@ -124,7 +170,7 @@ export default function ContentField({
               <button
                 type="button"
                 className="add-unit__upload-option"
-                onClick={() => cameraRef.current?.click()}
+                onClick={() => setShowCamera(true)}
               >
                 <CameraIcon />
                 <span>Take photo</span>
@@ -188,6 +234,33 @@ export default function ContentField({
           {showLightbox && content && mimeType?.startsWith('image/') && (
             <ImageLightbox src={content} alt={fileName} onClose={() => setShowLightbox(false)} />
           )}
+        </div>
+      )}
+
+      {showCamera && (
+        <div className="camera-overlay">
+          <video
+            ref={videoRef}
+            className="camera-overlay__video"
+            autoPlay
+            playsInline
+            muted
+          />
+          <div className="camera-overlay__controls">
+            <button
+              type="button"
+              className="camera-overlay__cancel"
+              onClick={stopCamera}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="camera-overlay__shutter"
+              onClick={handleCapture}
+              aria-label="Take photo"
+            />
+          </div>
         </div>
       )}
 
