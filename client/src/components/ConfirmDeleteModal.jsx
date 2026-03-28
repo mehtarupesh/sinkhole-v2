@@ -1,8 +1,11 @@
 import { CloseIcon } from './Icons';
+import { getCategorization } from '../utils/db';
 
-function downloadBackup(units) {
+async function downloadBackup(units) {
+  const categorization = await getCategorization();
+  const settings = categorization ? [{ key: 'categorization', value: categorization }] : [];
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
-  const data = { version: 3, exportedAt: Date.now(), units };
+  const data = { version: 3, exportedAt: Date.now(), units, settings };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

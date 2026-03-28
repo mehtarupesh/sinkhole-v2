@@ -124,13 +124,38 @@ export async function setCategorization(groups) {
   return setSetting('categorization', groups);
 }
 
+/**
+ * Merges categorization groups from an external source (import/export file) into the
+ * local categorization. Only UIDs that currently exist in the DB are included.
+ * Groups are matched by title; new groups are created if no match is found.
+ */
+export async function mergeCategorization(importedGroups) {
+  if (!importedGroups?.length) return;
+  const [existing, allUnits] = await Promise.all([getCategorization(), getAllUnits()]);
+  const knownUids = new Set(allUnits.map((u) => u.uid).filter(Boolean));
+  const groups = existing ?? [];
+  for (const importedGroup of importedGroups) {
+    const validUids = (importedGroup.uids ?? []).filter((uid) => knownUids.has(uid));
+    if (!validUids.length) continue;
+    const local = groups.find((g) => g.title === importedGroup.title);
+    if (local) {
+      for (const uid of validUids) {
+        if (!local.uids.includes(uid)) local.uids.push(uid);
+      }
+    } else {
+      groups.push({ id: generateUid(), title: importedGroup.title, uids: validUids });
+    }
+  }
+  await setCategorization(groups);
+}
+
 export async function dumpDB() {
   const [units, settings] = await Promise.all([getAllUnits(), getAllSettings()]);
   return { version: DB_VERSION, exportedAt: Date.now(), units, settings };
 }
 
 /**
- * Merge units received from a peer into the local store.
+ * Merge units received from a peer or import file into the local store.
  * Deduplicates by `uid` — units without a uid or whose uid already exists are skipped.
  * The peer's local `id` is stripped so IndexedDB assigns a new local one.
  * Original `createdAt` is preserved (unlike addUnit which stamps Date.now()).

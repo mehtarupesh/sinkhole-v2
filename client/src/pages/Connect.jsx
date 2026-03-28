@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { usePeer } from '../hooks/usePeer';
-import { useSync } from '../hooks/useSync';
 import { useVaultSync } from '../hooks/useVaultSync';
 import { getJoinUrl } from '../utils/getJoinUrl';
 import { getStableHostId, isValidPeerId } from '../utils/stableHostId';
 import { CloseIcon } from '../components/Icons';
+
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 /**
  * Dedicated page for P2P connection and vault sync.
@@ -35,13 +36,15 @@ export default function Connect() {
   }, [hostId]);
 
   const conn = connections[0] ?? null;
-  const [mirrorState, pushMirror] = useSync(conn, { content: '' });
-  const { status: syncStatus, log: syncLog } = getVaultState(conn);
-  const logRef = useRef(null);
+  const { status: syncStatus, added: syncAdded } = getVaultState(conn);
 
+  // On mobile, go straight to scan (user is the scanner, not the host showing QR).
+  // Skip redirect if arriving back from scan with ?peerId= already set.
   useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [syncLog]);
+    if (isMobile && !searchParams.get('peerId')) {
+      navigate('/scan', { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Start peer and prepare QR on mount; stop on unmount.
   useEffect(() => {
@@ -65,14 +68,29 @@ export default function Connect() {
     const hostId = urlPeerId?.trim();
     if (!hostId || !isValidPeerId(hostId)) return;
     setSearchParams({}, { replace: true });
-    if (connections.length === 0) connect(hostId);
+    if (connections.length === 0) { isInitiatorRef.current = true; connect(hostId); }
   }, [urlPeerId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-sync once when connection opens — only the joiner initiates.
+  const isConnected = !!conn?.open;
+  const autoSyncedRef = useRef(false);
+  const isInitiatorRef = useRef(false);
+  useEffect(() => {
+    if (!isConnected || !conn) {
+      autoSyncedRef.current = false;
+      return;
+    }
+    if (autoSyncedRef.current || !isInitiatorRef.current) return;
+    autoSyncedRef.current = true;
+    syncVault(conn);
+  }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const connectToHost = useCallback(() => {
     const hostId = hostIdInput.trim();
     if (!hostId || connections.length > 0) return;
     setConnectError('');
     setConnecting(true);
+    isInitiatorRef.current = true;
     connect(hostId, {
       onOpen: () => {
         setConnecting(false);
@@ -85,7 +103,6 @@ export default function Connect() {
     });
   }, [hostIdInput, connect, connections.length]);
 
-  const isConnected = !!conn?.open;
   const peerLabel = conn?.peer
     ? conn.peer.length > 22 ? `${conn.peer.slice(0, 22)}…` : conn.peer
     : 'Peer';
@@ -116,34 +133,21 @@ export default function Connect() {
               </button>
             </div>
 
-            <label className="mirror__label">Type here — it syncs to the other device</label>
-            <textarea
-              className="mirror__textarea"
-              value={mirrorState?.content ?? ''}
-              onChange={(e) => pushMirror({ ...mirrorState, content: e.target.value })}
-              placeholder="Type here…"
-            />
-
-            <div className="mirror-sync">
-              <button
-                type="button"
-                className="mirror-sync__btn"
-                onClick={() => syncVault(conn)}
-                disabled={syncStatus === 'syncing'}
-              >
-                Sync
-              </button>
-              {syncLog.length > 0 && (
-                <div className="sync-log" ref={logRef}>
-                  {syncLog.map((entry, i) => (
-                    <div key={i} className="sync-log__entry">
-                      <span className="sync-log__ts">
-                        {new Date(entry.ts).toLocaleTimeString()}
-                      </span>
-                      <span className="sync-log__text">{entry.text}</span>
-                    </div>
-                  ))}
-                </div>
+            <div className="sync-status">
+              {syncStatus === 'syncing' && (
+                <span className="sync-status__text sync-status__text--syncing">Syncing…</span>
+              )}
+              {syncStatus === 'done' && (
+                <span className="sync-status__text sync-status__text--done">
+                  {syncAdded > 0
+                    ? `Synced · ${syncAdded} new item${syncAdded !== 1 ? 's' : ''}`
+                    : 'Already up to date'}
+                </span>
+              )}
+              {syncStatus === 'error' && (
+                <span className="sync-status__text sync-status__text--error">
+                  Sync failed — try reconnecting
+                </span>
               )}
             </div>
           </>

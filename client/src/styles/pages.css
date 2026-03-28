@@ -205,3 +205,32 @@
   color: #737373;
   border-color: rgba(255, 255, 255, 0.14);
 }
+
+/* ── Sync status (replaces verbose sync log) ── */
+.sync-status {
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  min-height: 20px;
+}
+
+.sync-status__text {
+  font-size: 13px;
+}
+
+.sync-status__text--syncing {
+  color: #737373;
+  animation: syncPulse 1.2s ease-in-out infinite;
+}
+
+.sync-status__text--done {
+  color: #22c55e;
+}
+
+.sync-status__text--error {
+  color: #f87171;
+}
+
+@keyframes syncPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}

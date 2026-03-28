@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { CloseIcon } from './Icons';
-import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, mergeUnits } from '../utils/db';
+import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, mergeUnits, mergeCategorization } from '../utils/db';
 
 const TYPE_LABELS = { snippet: 'text', password: 'pw', image: 'img' };
 
@@ -99,7 +99,10 @@ export default function SettingsModal({ onClose }) {
       const existing = await getAllUnits();
       const knownUids = new Set(existing.map((u) => u.uid).filter(Boolean));
       const newUnits = incoming.filter((u) => u.uid && !knownUids.has(u.uid));
-      setPreview({ newUnits, skipped: incoming.length - newUnits.length });
+      const categorizationGroups = Array.isArray(data.settings)
+        ? (data.settings.find((s) => s.key === 'categorization')?.value ?? null)
+        : null;
+      setPreview({ newUnits, skipped: incoming.length - newUnits.length, categorizationGroups });
     } catch {
       setImportStatus('Invalid file.');
     }
@@ -111,6 +114,7 @@ export default function SettingsModal({ onClose }) {
     setImporting(true);
     try {
       const added = await mergeUnits(preview.newUnits);
+      await mergeCategorization(preview.categorizationGroups);
       setImportStatus(`Imported ${added} item${added !== 1 ? 's' : ''}.`);
       setPreview(null);
     } catch {

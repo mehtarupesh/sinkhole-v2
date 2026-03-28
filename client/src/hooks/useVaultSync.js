@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getAllUnits, mergeUnits } from '../utils/db';
+import { getAllUnits, getCategorization, mergeUnits, mergeCategorization } from '../utils/db';
 
 const VAULT_CHANNEL = 'sinkhole-vault-sync';
 
@@ -12,8 +12,8 @@ function shortId(peer) {
  *
  * Protocol (3 messages, no infinite loops):
  *   Initiator → Responder:  { phase: 'offer',    uids: string[] }
- *   Responder → Initiator:  { phase: 'transfer', units: Unit[], want: string[] }
- *   Initiator → Responder:  { phase: 'transfer', units: Unit[] }   ← no want, no reply
+ *   Responder → Initiator:  { phase: 'transfer', units: Unit[], want: string[], categorization }
+ *   Initiator → Responder:  { phase: 'transfer', units: Unit[], categorization }  ← no want, no reply
  *
  * @param {object[]} connections - All open PeerJS DataConnections.
  * @returns {{ sync(conn): void, getState(conn): { status, added, log } }}
@@ -48,23 +48,25 @@ export function useVaultSync(connections) {
           if (msg?.type !== VAULT_CHANNEL) return;
 
           if (msg.phase === 'offer') {
-            setStates(prev => ({ ...prev, [conn.peer]: { ...(prev[conn.peer] ?? { status: 'idle', added: 0 }), log: [] } }));
-            const localUnits = await getAllUnits();
+            setStates(prev => ({ ...prev, [conn.peer]: { ...(prev[conn.peer] ?? { status: 'idle', added: 0 }), status: 'syncing', log: [] } }));
+            const [localUnits, categorization] = await Promise.all([getAllUnits(), getCategorization()]);
             const peerHas = new Set(msg.uids);
             const toSend = localUnits.filter((u) => u.uid && !peerHas.has(u.uid));
             const myUids = new Set(localUnits.map((u) => u.uid).filter(Boolean));
             const want = msg.uids.filter((uid) => !myUids.has(uid));
             appendLog(conn.peer, `← offer from ${sp}: ${msg.uids.length} items · sending ${toSend.length} new, want ${want.length}`);
-            if (conn.open) conn.send({ type: VAULT_CHANNEL, phase: 'transfer', units: toSend, want });
+            if (conn.open) conn.send({ type: VAULT_CHANNEL, phase: 'transfer', units: toSend, want, categorization });
+            if (want.length === 0) setPeerState(conn.peer, { status: 'done', added: 0 });
 
           } else if (msg.phase === 'transfer') {
             const n = await mergeUnits(msg.units ?? []);
+            await mergeCategorization(msg.categorization);
             if (msg.want?.length > 0 && conn.open) {
-              const localUnits = await getAllUnits();
+              const [localUnits, categorization] = await Promise.all([getAllUnits(), getCategorization()]);
               const wantSet = new Set(msg.want);
               const toSend = localUnits.filter((u) => wantSet.has(u.uid));
               appendLog(conn.peer, `← transfer from ${sp}: ${msg.units.length} items (merged ${n}) · sending ${toSend.length} back`);
-              conn.send({ type: VAULT_CHANNEL, phase: 'transfer', units: toSend });
+              conn.send({ type: VAULT_CHANNEL, phase: 'transfer', units: toSend, categorization });
             } else {
               appendLog(conn.peer, `← transfer from ${sp}: ${msg.units.length} items (merged ${n}) · done`);
             }
