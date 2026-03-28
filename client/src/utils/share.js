@@ -29,7 +29,7 @@ function unitText(unit, categoryName) {
 
   const meta = [
     unit.quote   && `> ${unit.quote}`,
-    categoryName && `[${categoryName}]`,
+    categoryName && `#${categoryName}`,
   ].filter(Boolean).join('\n');
 
   if (!meta) return content;
@@ -50,43 +50,52 @@ function categoryItemText(unit) {
   return unit.quote ? `${line}\n  > ${unit.quote}` : line;
 }
 
+async function buildImageFiles(imageUnits) {
+  return Promise.all(
+    imageUnits.map(async (u) => {
+      const res  = await fetch(u.content);
+      const blob = await res.blob();
+      return new File([blob], u.fileName || 'image', { type: u.mimeType || blob.type });
+    })
+  );
+}
+
 export async function shareUnits(units, uidToCategoryName = {}) {
   if (!units.length) return {};
 
   const catName = (unit) => uidToCategoryName[unit.uid] || '';
 
-  // Single image: try Web Share with file + metadata text, fall back to download
-  if (units.length === 1 && units[0].type === 'image' && units[0].content) {
-    const unit = units[0];
-    const metaParts = [
-      unit.quote    && `> ${unit.quote}`,
-      catName(unit) && `[${catName(unit)}]`,
-    ].filter(Boolean);
-    const metaText = metaParts.join('\n') || undefined;
+  // One or more images (all images selected): try file share, fall back to download
+  const imageUnits = units.filter((u) => u.type === 'image' && u.content);
+  if (imageUnits.length === units.length && imageUnits.length > 0) {
+    // Build combined note/category text from all images
+    const metaText = imageUnits
+      .map((u) => [u.quote && `> ${u.quote}`, catName(u) && `#${catName(u)}`].filter(Boolean).join('\n'))
+      .filter(Boolean)
+      .join('\n\n---\n\n') || undefined;
 
     if (navigator.share && navigator.canShare) {
       try {
-        const res  = await fetch(unit.content);
-        const blob = await res.blob();
-        const file = new File([blob], unit.fileName || 'image', {
-          type: unit.mimeType || blob.type,
-        });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], text: metaText });
+        const files = await buildImageFiles(imageUnits);
+        if (navigator.canShare({ files })) {
+          await navigator.share({ files, text: metaText });
           return {};
         }
       } catch {
-        // fall through to download
+        // fall through to download (single image only)
       }
     }
-    const a = document.createElement('a');
-    a.href = unit.content;
-    a.download = unit.fileName || 'image';
-    a.click();
+    // Desktop fallback: trigger download for each image
+    for (const u of imageUnits) {
+      const a = document.createElement('a');
+      a.href = u.content;
+      a.download = u.fileName || 'image';
+      a.click();
+    }
     return { downloaded: true };
   }
 
-  // All other types (snippets, passwords masked, multi-select mix)
+  // Mixed or non-image types: text share (images represented by filename)
   const text = units
     .map((u) => unitText(u, catName(u)))
     .filter(Boolean)
@@ -112,7 +121,7 @@ export async function shareCategories(groups, unitsByUid) {
         .map(categoryItemText)
         .filter(Boolean);
       if (!items.length) return '';
-      return `[${g.title}]\n${items.join('\n')}`;
+      return `#${g.title}\n${items.join('\n')}`;
     })
     .filter(Boolean);
 
