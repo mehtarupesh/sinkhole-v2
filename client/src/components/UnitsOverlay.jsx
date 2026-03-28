@@ -4,7 +4,6 @@ import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { getAllUnits, deleteUnit, getCategorization, setCategorization } from '../utils/db';
 import MoveToCategoryModal from './MoveToCategoryModal';
 import { withMiscGroup, MISC_ID } from '../utils/carouselGroups';
-import { shareUnits } from '../utils/share';
 import { groupByTime } from '../utils/timeGroups';
 import { CarouselCard } from './Carousel';
 import UnitDetail from './UnitDetail';
@@ -159,25 +158,6 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     setMoveCtx(null);
   }, [moveCtx, clear]);
 
-  const handleShareSelected = useCallback(async () => {
-    const toShare = units.filter((u) => selected.has(u.id));
-    const uidToCategoryName = Object.fromEntries(
-      allGroups.flatMap((g) => g.uids.map((uid) => [uid, g.title]))
-    );
-    try {
-      const result = await shareUnits(toShare, uidToCategoryName);
-      if (result.copied) setToast('Copied to clipboard');
-      if (result.downloaded) {
-        const unit = toShare[0];
-        const parts = [unit.quote, uidToCategoryName[unit.uid]].filter(Boolean);
-        setToast(parts.length ? parts.join(' · ') : 'Downloaded');
-      }
-      clear();
-    } catch (e) {
-      if (e?.name !== 'AbortError') setToast('Share failed');
-    }
-  }, [units, selected, allGroups, clear]);
-
   const unitActions = [
     {
       icon: <TrashIcon />,
@@ -211,7 +191,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     {
       icon: <ShareIcon />,
       label: 'Share',
-      onClick: handleShareSelected,
+      onClick: () => setToast(`Share ${selected.size} item${selected.size !== 1 ? 's' : ''} — coming soon`),
     },
     {
       icon: <MoveFolderIcon />,
