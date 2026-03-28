@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, ShareIcon, MoveFolderIcon, RenameIcon, AiChatIcon } from '../components/Icons';
+import { SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, AiChatIcon } from '../components/Icons';
 import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorization } from '../utils/db';
 import { buildCarousels, withMiscGroup, MISC_ID } from '../utils/carouselGroups';
 import { categorizeUnits } from '../utils/categorize';
@@ -425,11 +425,6 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
               },
             },
             {
-              icon: <ShareIcon />,
-              label: 'Share',
-              onClick: () => setToast(`Share ${cardSel.selected.size} item${cardSel.selected.size !== 1 ? 's' : ''} — coming soon`),
-            },
-            {
               icon: <MoveFolderIcon />,
               label: 'Move to Category',
               onClick: () => setMoveCtx({ units: units.filter((u) => cardSel.selected.has(u.id)) }),
@@ -461,11 +456,6 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
                   },
                 });
               },
-            },
-            {
-              icon: <ShareIcon />,
-              label: 'Share',
-              onClick: () => setToast(`Share ${catSel.selected.size} categor${catSel.selected.size !== 1 ? 'ies' : 'y'} — coming soon`),
             },
             {
               icon: <RenameIcon />,

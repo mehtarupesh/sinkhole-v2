@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { CloseIcon, SearchIcon, TrashIcon, ShareIcon, MoveFolderIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { CloseIcon, SearchIcon, TrashIcon, MoveFolderIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { getAllUnits, deleteUnit, getCategorization, setCategorization } from '../utils/db';
 import MoveToCategoryModal from './MoveToCategoryModal';
@@ -187,11 +187,6 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
           },
         });
       },
-    },
-    {
-      icon: <ShareIcon />,
-      label: 'Share',
-      onClick: () => setToast(`Share ${selected.size} item${selected.size !== 1 ? 's' : ''} — coming soon`),
     },
     {
       icon: <MoveFolderIcon />,
