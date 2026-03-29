@@ -7,19 +7,39 @@ export const MISC_ID    = 'misc';
 export const MISC_TITLE = 'Unclassified';
 
 /**
- * Returns storedGroups with a virtual Misc group appended when there are
- * units not assigned to any stored category. The Misc group is never persisted.
+ * Returns display groups — stored categories with computed uids, plus a virtual
+ * Misc group for units with no categoryId or an unknown categoryId.
+ * The Misc group is never persisted.
  *
  * @param {object[]} units
- * @param {{ id:string, title:string, uids:string[] }[]} storedGroups
+ * @param {{ id:string, title:string }[]} storedGroups
  * @returns {{ id:string, title:string, uids:string[] }[]}
  */
 export function withMiscGroup(units, storedGroups) {
-  const categorizedUids = new Set(storedGroups.flatMap((g) => g.uids));
-  const miscUids = units.filter((u) => u.uid && !categorizedUids.has(u.uid)).map((u) => u.uid);
-  return miscUids.length > 0
-    ? [...storedGroups, { id: MISC_ID, title: MISC_TITLE, uids: miscUids }]
-    : storedGroups;
+  const knownIds = new Set(storedGroups.map((g) => g.id));
+
+  // Build uid lists per category in one pass
+  const uidsByCategory = {};
+  const miscUids = [];
+  for (const u of units) {
+    if (!u.uid) continue;
+    if (u.categoryId && knownIds.has(u.categoryId)) {
+      (uidsByCategory[u.categoryId] ??= []).push(u.uid);
+    } else {
+      miscUids.push(u.uid);
+    }
+  }
+
+  const displayGroups = storedGroups.map((g) => ({
+    ...g,
+    uids: uidsByCategory[g.id] ?? [],
+  }));
+
+  if (miscUids.length > 0) {
+    displayGroups.push({ id: MISC_ID, title: MISC_TITLE, uids: miscUids });
+  }
+
+  return displayGroups;
 }
 
 /**
@@ -60,27 +80,33 @@ export function buildRecentCarousel(units) {
 
 /**
  * Builds the full carousel list shown on the landing page.
- * "Recent" is always first, followed by carousels for each stored group.
- * Uncategorized units are surfaced via the "Misc" pill in CategoryCloud, not a carousel.
- *
- * When storedGroups is provided (LLM result saved in IndexedDB), those groups
- * are used for the middle carousels. Units not in the vault anymore are silently
- * excluded. Without storedGroups, only Recent is shown.
+ * "Recent" is always first, followed by carousels for each stored category.
+ * Units not in any category are surfaced via the "Misc" pill in CategoryCloud.
  *
  * @param {object[]} units
- * @param {{ id:string, title:string, uids:string[] }[] | null} storedGroups
+ * @param {{ id:string, title:string }[] | null} storedGroups
  * @returns {{ id:string, title:string, units:object[] }[]}
  */
 export function buildCarousels(units, storedGroups = null) {
   const recent = buildRecentCarousel(units);
 
   if (storedGroups) {
-    const byUid = Object.fromEntries(units.map((u) => [u.uid, u]));
+    const knownIds = new Set(storedGroups.map((g) => g.id));
+
+    // Bucket units by categoryId in one pass
+    const unitsByCategory = {};
+    for (const u of units) {
+      if (u.categoryId && knownIds.has(u.categoryId)) {
+        (unitsByCategory[u.categoryId] ??= []).push(u);
+      }
+    }
+
     const rawGroups = storedGroups.map((g) => ({
       id:    g.id,
       title: g.title,
-      units: g.uids.map((uid) => byUid[uid]).filter(Boolean),
+      units: unitsByCategory[g.id] ?? [],
     }));
+
     const categorized = finalizeCarousels(rawGroups);
     return [...(recent ? [recent] : []), ...categorized];
   }

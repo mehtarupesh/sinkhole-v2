@@ -141,19 +141,19 @@ export default function AddUnitModal({
     }
     setSaveState('saving');
     try {
-      const unit = { type, content };
+      const resolvedCategoryId = suggest.newCategory
+        ? suggest.newCategory.id
+        : (categoryId || null);
+      const unit = { type, content, categoryId: resolvedCategoryId };
       if (fileName)     unit.fileName = fileName;
       if (mimeType)     unit.mimeType = mimeType;
       if (quote.trim()) unit.quote    = quote.trim();
 
-      const { uid } = await addUnit(unit);
+      await addUnit(unit);
       navigator.vibrate?.(40);
       setSaveState('done');
 
-      const resolvedCategoryId = suggest.newCategory
-        ? suggest.newCategory.id
-        : (categoryId || null);
-      onSaved?.(uid, resolvedCategoryId, suggest.newCategory);
+      onSaved?.(suggest.newCategory ?? null);
       setTimeout(onClose, 500);
     } catch {
       setError('Failed to save. Please try again.');

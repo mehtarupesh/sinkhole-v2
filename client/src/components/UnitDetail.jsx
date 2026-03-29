@@ -23,9 +23,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   const [error, setError] = useState('');
   const swipeStart = useRef(null);
   const saving = saveState !== '';
-  const initialCategoryId = useRef(
-    storedGroups?.find((g) => g.uids?.includes(unit.uid))?.id ?? ''
-  ).current;
+  const initialCategoryId = useRef(unit.categoryId ?? '').current;
   const [categoryId, setCategoryId] = useState(initialCategoryId);
 
   // ── AI suggest ───────────────────────────────────────────────────────────────
@@ -78,7 +76,10 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   const performSave = async (quoteText) => {
     setSaveState('saving');
     try {
-      const changes = { content, fileName, mimeType };
+      const resolvedCategoryId = suggest.newCategory
+        ? suggest.newCategory.id
+        : (categoryId || null);
+      const changes = { content, fileName, mimeType, categoryId: resolvedCategoryId };
       if (quoteText?.trim()) {
         changes.quote = quoteText.trim();
       } else {
@@ -87,10 +88,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
       const updated = await updateUnit(unit.id, changes);
       navigator.vibrate?.(40);
       setSaveState('done');
-      const resolvedCategoryId = suggest.newCategory
-        ? suggest.newCategory.id
-        : (categoryId || null);
-      setTimeout(() => onSaved(updated, resolvedCategoryId, suggest.newCategory), 500);
+      setTimeout(() => onSaved(updated, suggest.newCategory ?? null), 500);
     } catch {
       setError('Failed to save.');
       setSaveState('');

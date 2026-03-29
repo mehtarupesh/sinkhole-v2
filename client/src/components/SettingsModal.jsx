@@ -113,8 +113,8 @@ export default function SettingsModal({ onClose }) {
     if (!preview) return;
     setImporting(true);
     try {
-      const added = await mergeUnits(preview.newUnits);
-      await mergeCategorization(preview.categorizationGroups);
+      const idRemap = await mergeCategorization(preview.categorizationGroups);
+      const { added } = await mergeUnits(preview.newUnits, idRemap);
       setImportStatus(`Imported ${added} item${added !== 1 ? 's' : ''}.`);
       setPreview(null);
     } catch {

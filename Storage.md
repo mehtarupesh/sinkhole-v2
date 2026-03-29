@@ -23,25 +23,27 @@ Two separate IndexedDB databases:
 | `content` | Text, password string, or base64 data URL |
 | `fileName`, `mimeType` | For file/image types |
 | `quote` | User note/annotation |
+| `categoryId` | ID of the category this unit belongs to — `null` / absent means uncategorized (Misc) |
 | `createdAt` | `Date.now()` at insert |
 | `updatedAt` | `Date.now()` at last edit (only present after an edit) |
 
-**Created — `addUnit()`** — stamps `uid` + `createdAt`, returns `{ id, uid }`:
-- UX: AddUnitModal "Save" button (`AddUnitModal.jsx:149`)
-- UX: ForageModal saving an AI response as a new unit (`ForageModal.jsx:134`)
-- UX: `mergeUnits()` for P2P sync and file import (preserves original `createdAt` rather than stamping now)
+**Created — `addUnit()`** — stamps `uid` + `createdAt` + `categoryId`, returns `{ id, uid }`:
+- UX: AddUnitModal "Save" button (`AddUnitModal.jsx`) — resolves `categoryId` from AI suggestion or user selection before calling `addUnit`
+- UX: ForageModal saving an AI response as a new unit (`ForageModal.jsx`)
+- UX: `mergeUnits()` for P2P sync and file import (preserves original `createdAt` and `categoryId` from the source device)
 
 **Read — `getAllUnits()`** — returns all units in insertion order:
-- Landing mount (initial load)
+- Landing mount (initial load, after migrations)
 - UnitsOverlay mount (reverses array for newest-first display)
 - `useVaultSync` before initiating a sync offer
 
 **Updated — `updateUnit(id, changes)`** — merges changes, stamps `updatedAt`:
-- UX: UnitDetail "Save" button (`UnitDetail.jsx:87`)
+- UX: UnitDetail "Save" button — includes `categoryId` change atomically with content changes
+- UX: Bulk move to category — `updateUnit({ categoryId })` per unit
 
 **Deleted — `deleteUnit(id)`**:
 - UX: Delete button in UnitDetail, accessible from both Landing and UnitsOverlay
-- Side effect: Landing's `handleUnitDelete` also removes the unit's `uid` from all category groups and calls `setCategorization` to persist the cleanup — empty groups are dropped
+- No category cleanup needed — category membership is derived from `unit.categoryId`, so it disappears with the unit
 
 ---
 
@@ -49,31 +51,33 @@ Two separate IndexedDB databases:
 
 Stored as a single JSON blob in the `settings` store under key `categorization`:
 ```
-[{ id: string, title: string, uids: string[] }]
+[{ id: string, title: string }]
 ```
 
-`uids` references unit `uid`s (not IDB `id`s), so the mapping survives export/import and P2P sync. The **Misc group is virtual** — never persisted, always computed fresh from units whose `uid` isn't in any stored group.
+Category membership is derived from units: a unit belongs to a category when `unit.categoryId === category.id`. Units with no `categoryId`, or a `categoryId` that doesn't match any stored category, appear in the virtual **Misc group** — never persisted, always computed fresh.
 
 **Created / fully replaced — `setCategorization(groups)`** — always a full overwrite, single slot:
-- UX: Categorize button (OneBIcon) → `runCategorize()` calls Gemini, receives groups, calls `setCategorization` (`Landing.jsx:104`)
-- Auto-triggered on first load when no stored groups exist AND there are units (`Landing.jsx:138–140`)
 
 **Read — `getCategorization()`**:
-- Landing mount: stale uids (deleted units) are cleaned out before use; if anything was cleaned, `setCategorization` is called to persist the tidied version
+- Landing mount: loaded after migrations complete
 - UnitsOverlay mount: loaded for category-filter UI
 
-**Unit moved between categories — `handleCategoryAssign(uid, categoryId)`** in Landing:
-- Moves a uid into the target group, removes it from all others, fire-and-forget `setCategorization`
-- UX: Saving from AddUnitModal with a category chosen
+**Unit moved between categories — `updateUnit(id, { categoryId })`**:
+- One IDB write, atomic with the unit
 - UX: Saving from UnitDetail with a category change
-- UX: Saving a Forage AI response with a category
+- UX: Bulk move via MoveToCategoryModal (one `updateUnit` per unit)
+- Moving to Misc sets `categoryId: null`
 
 **New category added inline:**
-- AddUnitModal and UnitDetail can return a `newCategory: { id, title }` object when the AI suggests a category name that doesn't already exist
-- Landing creates the group with empty `uids` first, then assigns the unit into it — results in one `setCategorization` call
+- AddUnitModal and UnitDetail resolve the new category id before saving the unit — `categoryId` is stamped on the unit atomically
+- Landing / UnitsOverlay add `{ id, title }` to stored groups and call `setCategorization` (one settings write)
 
-**Cleaned on unit delete:**
-- `handleUnitDelete` removes the deleted uid from all groups, drops now-empty groups, and calls `setCategorization`
+**Category renamed:**
+- `setCategorization` with updated title — no unit writes needed
+
+**Category deleted:**
+- Units in the deleted category are also deleted (`deleteUnit` per unit)
+- Category entry removed from `setCategorization`
 
 ---
 
@@ -84,9 +88,21 @@ All in the `settings` store as `{ key, value }` rows:
 | Key | Value | UX trigger |
 |-----|-------|------------|
 | `gemini_key` | API key string | Settings modal — "Save key" / "Remove key" buttons |
-| `categorization` | `[{ id, title, uids }]` | See above |
+| `categorization` | `[{ id, title }]` | See above |
+| `data_migration_version` | integer | Written by migration runner after each completed migration |
 
 `getSetting('gemini_key')` is called before every AI operation (categorize, suggest, forage, note AI). If absent, the operation fails with a toast directing the user to Settings.
+
+---
+
+## Data migrations
+
+Migrations run once on app load (before units/categories are read) via `runMigrations()` in `migrations.js`.
+
+The runner reads `data_migration_version` from settings (defaults to -1 if absent) and runs all pending migrations in order, saving the version after each. Safe to interrupt — a crash resumes from the last completed step.
+
+**Migration 0** — `migration_0_categoriesToUnitField`:
+Converts from old schema (`categorization` stored as `[{ id, title, uids[] }]`) to new schema (`unit.categoryId`). Stamps `categoryId` onto each unit based on the old uid arrays, then strips `uids` from the stored categories.
 
 ---
 
@@ -106,8 +122,8 @@ All in the `settings` store as `{ key, value }` rows:
 { "version": 3, "exportedAt": <timestamp>, "units": [...], "settings": [...] }
 ```
 
-- **Export** (Settings → "Export"): triggers a browser file download of the full JSON
-- **Import** (Settings → "Import"): file picker → preview screen shows new-vs-already-exist count → "Import N" calls `mergeUnits()` which deduplicates by `uid` and preserves original `createdAt`. Categories are **not** exported or imported separately — they live in `settings` as part of the dump but are not re-applied automatically
+- **Export** (Settings → "Export"): triggers a browser file download of the full JSON. Units include `categoryId`; settings include `categorization` as `[{ id, title }]`.
+- **Import** (Settings → "Import"): file picker → preview screen shows new-vs-already-exist count → "Import N" calls `mergeCategorization()` first (returns `idRemap`), then `mergeUnits(newUnits, idRemap)` — new units inserted, existing units updated if the file version is newer (last-write-wins).
 
 ---
 
@@ -115,8 +131,25 @@ All in the `settings` store as `{ key, value }` rows:
 
 `useVaultSync` (Connect page) runs a 3-message diffing protocol over PeerJS DataConnections:
 
-1. **Initiator → Responder** `offer`: sends all local `uid`s
-2. **Responder → Initiator** `transfer`: sends units the initiator lacks, plus a `want` list of uids the responder needs
-3. **Initiator → Responder** `transfer`: sends back the wanted units
+1. **Initiator → Responder** `offer`: `{ units: [{ uid, ts }] }` — sends uid + effective timestamp (`updatedAt ?? createdAt`) for every local unit
+2. **Responder → Initiator** `transfer`: `{ units, want, categorization }` — sends units the initiator is missing or has a stale version of; `want` lists uids where the initiator's version is newer
+3. **Initiator → Responder** `transfer`: `{ units, categorization }` — sends back the wanted units; no further reply
 
-All merges use `mergeUnits()` — deduplicates by `uid`, strips the peer's local `id` so IDB assigns a new local one, preserves original `createdAt`. **Categories are not synced** — only raw units cross the wire.
+**Diff logic (responder):**
+- `toSend` = local units the peer doesn't have OR where local `ts` > peer `ts`
+- `want` = peer units we don't have OR where peer `ts` > local `ts`
+
+Both sides converge to the latest version of every unit after a single exchange.
+
+**`mergeUnits(incoming, idRemap)`** — for each incoming unit:
+- Unknown `uid` → insert (strips peer's local `id`, IDB assigns a new one)
+- Known `uid` → overwrite only if `incomingTs > localTs` (last-write-wins on `updatedAt ?? createdAt ?? 0`)
+- Returns `{ added, updated }`
+
+**`mergeCategorization(importedGroups)`** — merges `[{ id, title }]` metadata:
+- Match by title (case-insensitive) — title is the cross-device identity; id is a local FK
+- Same title, different id → remap peer's id to local id (returned as `idRemap`)
+- Unknown title → add as new category
+- `idRemap` is passed to `mergeUnits` so incoming units land under the correct local `categoryId`
+
+Units carry `categoryId` across the wire. Both devices converge to the same units, same category titles, and correct category assignments after a sync.

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CloseIcon, SearchIcon, TrashIcon, MoveFolderIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
-import { getAllUnits, deleteUnit, getCategorization, setCategorization } from '../utils/db';
+import { getAllUnits, updateUnit, deleteUnit, getCategorization, setCategorization } from '../utils/db';
 import MoveToCategoryModal from './MoveToCategoryModal';
 import { withMiscGroup, MISC_ID } from '../utils/carouselGroups';
 import { groupByTime } from '../utils/timeGroups';
@@ -66,31 +66,20 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     await deleteUnit(id);
     setUnits((prev) => prev.filter((u) => u.id !== id));
     setSelectedCtx(null);
-  }, []);
+  }, [units]);
 
-  const handleSaved = useCallback((updated, categoryId, newCategory) => {
+
+  const handleSaved = useCallback((updated, newCategory) => {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-    if (updated.uid) {
+    if (newCategory) {
       setGroups((prev) => {
-        const base = newCategory ? [...prev, { ...newCategory, uids: [] }] : prev;
-        const next = base.map((g) => ({
-          ...g,
-          uids: g.id === categoryId
-            ? [...g.uids.filter((u) => u !== updated.uid), updated.uid]
-            : g.uids.filter((u) => u !== updated.uid),
-        }));
+        const next = [...prev, { id: newCategory.id, title: newCategory.title }];
         setCategorization(next);
         return next;
       });
     }
     setSelectedCtx(null);
   }, []);
-
-  const uidToCategory = useMemo(() => {
-    const map = {};
-    groups.forEach((g) => g.uids.forEach((uid) => { map[uid] = g.id; }));
-    return map;
-  }, [groups]);
 
   const allGroups = useMemo(() => withMiscGroup(units, groups), [units, groups]);
 
@@ -112,19 +101,23 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   // Further narrow by selected category
   const filtered = useMemo(() => {
     if (!selectedCategory) return filteredByQuery;
+    const knownIds = new Set(groups.map((g) => g.id));
     return filteredByQuery.filter((u) => {
-      const cat = uidToCategory[u.uid];
-      return selectedCategory === MISC_ID ? !cat : cat === selectedCategory;
+      const inMisc = !u.categoryId || !knownIds.has(u.categoryId);
+      return selectedCategory === MISC_ID ? inMisc : u.categoryId === selectedCategory;
     });
-  }, [filteredByQuery, selectedCategory, uidToCategory]);
+  }, [filteredByQuery, selectedCategory, groups]);
 
   // Category IDs present in query results — null when no query (show all)
   const activeGroupIds = useMemo(() => {
     if (!q) return null;
+    const knownIds = new Set(groups.map((g) => g.id));
     const ids = new Set();
-    for (const u of filteredByQuery) ids.add(uidToCategory[u.uid] ?? MISC_ID);
+    for (const u of filteredByQuery) {
+      ids.add((u.categoryId && knownIds.has(u.categoryId)) ? u.categoryId : MISC_ID);
+    }
     return ids;
-  }, [filteredByQuery, q, uidToCategory]);
+  }, [filteredByQuery, q, groups]);
 
   const visibleGroups = useMemo(() => {
     if (!activeGroupIds) return allGroups;
@@ -138,22 +131,23 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     }
   }, [activeGroupIds, selectedCategory]);
 
-  const handleBulkMove = useCallback((categoryId, newCategory) => {
+  const handleBulkMove = useCallback(async (categoryId, newCategory) => {
     if (!moveCtx) return;
-    const movedUids = new Set(moveCtx.units.map((u) => u.uid).filter(Boolean));
-    setGroups((prev) => {
-      const base = newCategory ? [...prev, { ...newCategory, uids: [] }] : prev;
-      const next = base.map((g) => ({
-        ...g,
-        uids: categoryId === MISC_ID
-          ? g.uids.filter((uid) => !movedUids.has(uid))
-          : g.id === categoryId
-            ? [...g.uids.filter((uid) => !movedUids.has(uid)), ...movedUids]
-            : g.uids.filter((uid) => !movedUids.has(uid)),
-      })).filter((g) => g.uids.length > 0);
-      setCategorization(next);
-      return next;
-    });
+    const resolvedCategoryId = categoryId === MISC_ID ? null : categoryId;
+    for (const u of moveCtx.units) {
+      await updateUnit(u.id, { categoryId: resolvedCategoryId });
+    }
+    setUnits((prev) => prev.map((u) => {
+      const moved = moveCtx.units.find((m) => m.id === u.id);
+      return moved ? { ...u, categoryId: resolvedCategoryId } : u;
+    }));
+    if (newCategory) {
+      setGroups((prev) => {
+        const next = [...prev, { id: newCategory.id, title: newCategory.title }];
+        setCategorization(next);
+        return next;
+      });
+    }
     clear();
     setMoveCtx(null);
   }, [moveCtx, clear]);
@@ -169,19 +163,11 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
           title: `Delete ${n} item${n !== 1 ? 's' : ''}?`,
           units: toDelete,
           onConfirm: async () => {
-            for (const u of toDelete) await deleteUnit(u.id);
             const deletedIds = new Set(toDelete.map((u) => u.id));
-            const deletedUids = new Set(toDelete.map((u) => u.uid).filter(Boolean));
-            setUnits((prev) => prev.filter((u) => !deletedIds.has(u.id)));
-            if (deletedUids.size > 0) {
-              setGroups((prev) => {
-                const cleaned = prev
-                  .map((g) => ({ ...g, uids: g.uids.filter((uid) => !deletedUids.has(uid)) }))
-                  .filter((g) => g.uids.length > 0);
-                setCategorization(cleaned);
-                return cleaned;
-              });
+            for (const u of toDelete) {
+              await deleteUnit(u.id);
             }
+            setUnits((prev) => prev.filter((u) => !deletedIds.has(u.id)));
             clear();
             setPendingDelete(null);
           },

@@ -26,9 +26,10 @@ function generateUid() {
 export async function addUnit(unit) {
   const db = await openDB();
   const uid = generateUid();
+  const record = { uid, ...unit, createdAt: Date.now() };
   return new Promise((resolve, reject) => {
     const store = db.transaction(STORE_UNITS, 'readwrite').objectStore(STORE_UNITS);
-    const req = store.add({ uid, ...unit, createdAt: Date.now() });
+    const req = store.add(record);
     req.onsuccess = ({ target: { result: id } }) => resolve({ id, uid });
     req.onerror = ({ target: { error } }) => reject(error);
   });
@@ -114,40 +115,48 @@ export async function getAllSettings() {
 
 // ── Categorization ────────────────────────────────────────────────────────────
 
-/** Returns stored LLM groups [{ id, title, uids }] or null if none saved. */
+/** Returns stored groups [{ id, title }] or null if none saved. */
 export async function getCategorization() {
   return getSetting('categorization');
 }
 
-/** Overwrites the stored LLM groups (single slot — always latest). */
+/** Overwrites the stored groups (single slot — always latest). */
 export async function setCategorization(groups) {
   return setSetting('categorization', groups);
 }
 
 /**
- * Merges categorization groups from an external source (import/export file) into the
- * local categorization. Only UIDs that currently exist in the DB are included.
- * Groups are matched by title; new groups are created if no match is found.
+ * Merges categorization metadata [{ id, title }] from a peer or import file.
+ * - Same title → remap peer's id to local id (title is cross-device identity).
+ * - Unknown title → add as new category.
+ *
+ * Returns idRemap { peerId: localId } so callers can remap unit.categoryId before inserting.
  */
 export async function mergeCategorization(importedGroups) {
-  if (!importedGroups?.length) return;
-  const [existing, allUnits] = await Promise.all([getCategorization(), getAllUnits()]);
-  const knownUids = new Set(allUnits.map((u) => u.uid).filter(Boolean));
-  const groups = existing ?? [];
-  for (const importedGroup of importedGroups) {
-    const validUids = (importedGroup.uids ?? []).filter((uid) => knownUids.has(uid));
-    if (!validUids.length) continue;
-    const local = groups.find((g) => g.title === importedGroup.title);
-    if (local) {
-      for (const uid of validUids) {
-        if (!local.uids.includes(uid)) local.uids.push(uid);
-      }
+  if (!importedGroups?.length) return {};
+  const existing = (await getCategorization()) ?? [];
+  const titleToId = {};
+  for (const g of existing) titleToId[g.title.toLowerCase()] = g.id;
+
+  const idRemap = {};
+  let changed = false;
+
+  for (const { id, title } of importedGroups) {
+    if (!id || !title) continue;
+    const localId = titleToId[title.toLowerCase()];
+    if (localId) {
+      if (id !== localId) idRemap[id] = localId;
     } else {
-      groups.push({ id: generateUid(), title: importedGroup.title, uids: validUids });
+      existing.push({ id, title });
+      titleToId[title.toLowerCase()] = id;
+      changed = true;
     }
   }
-  await setCategorization(groups);
+
+  if (changed) await setCategorization(existing);
+  return idRemap;
 }
+
 
 export async function dumpDB() {
   const [units, settings] = await Promise.all([getAllUnits(), getAllSettings()]);
@@ -155,32 +164,52 @@ export async function dumpDB() {
 }
 
 /**
- * Merge units received from a peer or import file into the local store.
- * Deduplicates by `uid` — units without a uid or whose uid already exists are skipped.
- * The peer's local `id` is stripped so IndexedDB assigns a new local one.
- * Original `createdAt` is preserved (unlike addUnit which stamps Date.now()).
+ * Merges units from a peer or import file into the local store.
+ * - New units (unknown uid) are inserted.
+ * - Existing units are updated if incoming is newer (last-write-wins on updatedAt ?? createdAt).
+ * - idRemap remaps peer categoryIds to local ids where titles matched.
  *
- * @returns {number} count of units actually inserted
+ * @returns {{ added: number, updated: number }}
  */
-export async function mergeUnits(incoming) {
+export async function mergeUnits(incoming, idRemap = {}) {
   const existing = await getAllUnits();
-  const knownUids = new Set(existing.map((u) => u.uid).filter(Boolean));
+  const localByUid = new Map(existing.filter((u) => u.uid).map((u) => [u.uid, u]));
 
   const db = await openDB();
   let added = 0;
+  let updated = 0;
 
   for (const unit of incoming) {
-    if (!unit.uid || knownUids.has(unit.uid)) continue;
-    const { id: _localId, ...rest } = unit; // strip peer's auto-increment id
-    await new Promise((resolve, reject) => {
-      const store = db.transaction(STORE_UNITS, 'readwrite').objectStore(STORE_UNITS);
-      const req = store.add(rest);
-      req.onsuccess = () => resolve();
-      req.onerror = ({ target: { error } }) => reject(error);
-    });
-    knownUids.add(unit.uid);
-    added++;
+    if (!unit.uid) continue;
+    const { id: _localId, ...rest } = unit;
+    if (rest.categoryId && idRemap[rest.categoryId]) {
+      rest.categoryId = idRemap[rest.categoryId];
+    }
+
+    const incomingTs = unit.updatedAt ?? unit.createdAt ?? 0;
+    const local = localByUid.get(unit.uid);
+    if (!local) {
+      await new Promise((resolve, reject) => {
+        const store = db.transaction(STORE_UNITS, 'readwrite').objectStore(STORE_UNITS);
+        const req = store.add(rest);
+        req.onsuccess = () => resolve();
+        req.onerror = ({ target: { error } }) => reject(error);
+      });
+      localByUid.set(unit.uid, rest);
+      added++;
+    } else {
+      const localTs = local.updatedAt ?? local.createdAt ?? 0;
+      if (incomingTs > localTs) {
+        await new Promise((resolve, reject) => {
+          const store = db.transaction(STORE_UNITS, 'readwrite').objectStore(STORE_UNITS);
+          const req = store.put({ ...rest, id: local.id });
+          req.onsuccess = () => resolve();
+          req.onerror = ({ target: { error } }) => reject(error);
+        });
+        updated++;
+      }
+    }
   }
 
-  return added;
+  return { added, updated };
 }

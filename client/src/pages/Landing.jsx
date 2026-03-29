@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { SearchIcon, ConnectIcon, GearIcon, OneBIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, AiChatIcon } from '../components/Icons';
-import { getAllUnits, deleteUnit, getSetting, getCategorization, setCategorization } from '../utils/db';
+import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, AiChatIcon } from '../components/Icons';
+import { getAllUnits, updateUnit, deleteUnit, getCategorization, setCategorization } from '../utils/db';
+import { runMigrations } from '../utils/migrations';
 import { buildCarousels, withMiscGroup, MISC_ID } from '../utils/carouselGroups';
-import { categorizeUnits } from '../utils/categorize';
 import AddUnitModal from '../components/AddUnitModal';
 import MoveToCategoryModal from '../components/MoveToCategoryModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
@@ -35,7 +35,6 @@ export default function Landing() {
   const [units, setUnits]             = useState([]);
   // undefined = still loading from DB, null = loaded but none saved, array = loaded groups
   const [storedGroups, setStoredGroups] = useState(undefined);
-  const [categorizing, setCategorizing] = useState(false);
   const [toast, setToast]               = useState(null);
   // selectedCtx: { units: Unit[], index: number } | null
   const [selectedCtx, setSelectedCtx]   = useState(null);
@@ -66,31 +65,11 @@ export default function Landing() {
     };
   }, []);
 
-  // Keep a ref so runCategorize always reads current units without needing them as a dep
-  const unitsRef        = useRef([]);
-  unitsRef.current      = units;
-  const isCategorizing  = useRef(false);
-
   const reloadUnits = useCallback(() => {
     getAllUnits().then(setUnits);
   }, []);
 
   // ── Add unit ─────────────────────────────────────────────────────────────────
-  // (defined early so handleCategoryAssign can reference it)
-
-  const handleCategoryAssign = useCallback((uid, categoryId) => {
-    setStoredGroups((prev) => {
-      if (!prev || !uid) return prev;
-      const updated = prev.map((g) => ({
-        ...g,
-        uids: g.id === categoryId
-          ? [...g.uids.filter((u) => u !== uid), uid]
-          : g.uids.filter((u) => u !== uid),
-      }));
-      setCategorization(updated); // async, fire-and-forget
-      return updated;
-    });
-  }, []);
 
   const handleCategoryRename = useCallback((id, newTitle) => {
     setStoredGroups((prev) => {
@@ -103,82 +82,35 @@ export default function Landing() {
     setPendingRename(null);
   }, [catSel]);
 
-  const handleBulkMove = useCallback((categoryId, newCategory) => {
+  const handleBulkMove = useCallback(async (categoryId, newCategory) => {
     if (!moveCtx) return;
-    const movedUids = new Set(moveCtx.units.map((u) => u.uid).filter(Boolean));
-    setStoredGroups((prev) => {
-      if (!prev) return prev;
-      const base = newCategory ? [...prev, { ...newCategory, uids: [] }] : prev;
-      const next = base.map((g) => ({
-        ...g,
-        uids: categoryId === MISC_ID
-          ? g.uids.filter((uid) => !movedUids.has(uid))
-          : g.id === categoryId
-            ? [...g.uids.filter((uid) => !movedUids.has(uid)), ...movedUids]
-            : g.uids.filter((uid) => !movedUids.has(uid)),
-      })).filter((g) => g.uids.length > 0);
-      setCategorization(next);
-      return next;
-    });
+    const resolvedCategoryId = categoryId === MISC_ID ? null : categoryId;
+    for (const u of moveCtx.units) {
+      await updateUnit(u.id, { categoryId: resolvedCategoryId });
+    }
+    if (newCategory) {
+      setStoredGroups((prev) => {
+        const groups = [...(prev ?? []), { id: newCategory.id, title: newCategory.title }];
+        setCategorization(groups);
+        return groups;
+      });
+    }
+    reloadUnits();
     cardSel.clear();
     setMoveCtx(null);
-  }, [moveCtx, cardSel]);
-
-  // ── Categorize ──────────────────────────────────────────────────────────────
-
-  // Core categorize logic — takes units explicitly so it can be called at mount
-  // with freshly-loaded data before state has settled.
-  const runCategorize = useCallback(async (us) => {
-    if (isCategorizing.current) return;
-    isCategorizing.current = true;
-    setCategorizing(true);
-    try {
-      const apiKey = await getSetting('gemini_key');
-      if (!apiKey) throw new Error('No Gemini API key. Add one in Settings ⚙');
-      const carousels = await categorizeUnits(us, apiKey);
-      // Store only LLM groups (no Recent / needs-context — those are always computed fresh)
-      const groups = carousels
-        .filter((c) => c.id !== 'recent' && c.id !== 'needs-context')
-        .map((c) => ({ id: c.id, title: c.title, uids: c.units.map((u) => u.uid) }));
-      await setCategorization(groups);
-      setStoredGroups(groups);
-    } catch (e) {
-      setToast(e.message ?? 'Categorization failed.');
-    } finally {
-      setCategorizing(false);
-      isCategorizing.current = false;
-    }
-  }, []); // stable — units always passed as arg
-
-  const handleCategorize = useCallback(() => {
-    runCategorize(unitsRef.current);
-  }, [runCategorize]);
+  }, [moveCtx, cardSel, reloadUnits]);
 
   // ── Initial load ────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    Promise.all([getAllUnits(), getCategorization()]).then(([loadedUnits, stored]) => {
-      setUnits(loadedUnits);
-      const groups = stored ?? null;
-
-      if (groups) {
-        const liveUids = new Set(loadedUnits.map((u) => u.uid));
-        const cleaned = groups
-          .map((g) => ({ ...g, uids: g.uids.filter((uid) => liveUids.has(uid)) }))
-          .filter((g) => g.uids.length > 0);
-        if (cleaned.length !== groups.length || cleaned.some((g, i) => g.uids.length !== groups[i].uids.length)) {
-          setCategorization(cleaned);
-        }
-        setStoredGroups(cleaned);
-      } else {
+    runMigrations()
+      .then(() => Promise.all([getAllUnits(), getCategorization()]))
+      .then(([loadedUnits, stored]) => {
+        setUnits(loadedUnits);
+        const groups = stored ?? null;
         setStoredGroups(groups);
-      }
-      // Auto-categorize if no stored groups and there's something to categorize
-      if (!groups && loadedUnits.length > 0) {
-        runCategorize(loadedUnits);
-      }
-    });
-  }, [runCategorize]);
+      });
+  }, []);
 
   // ── Toast auto-dismiss ──────────────────────────────────────────────────────
 
@@ -192,18 +124,16 @@ export default function Landing() {
 
   const openAddUnit = useCallback((initial = {}) => setAddUnitInitial(initial), []);
   const closeAddUnit = useCallback(() => setAddUnitInitial(null), []);
-  const handleAddUnitSaved = useCallback((uid, categoryId, newCategory) => {
+  const handleAddUnitSaved = useCallback((newCategory) => {
     reloadUnits();
     if (newCategory) {
-      // Create the AI-suggested category then assign the unit to it
       setStoredGroups((prev) => {
-        const groups = [...(prev ?? []), { ...newCategory, uids: [] }];
-        setCategorization(groups); // fire-and-forget
+        const groups = [...(prev ?? []), { id: newCategory.id, title: newCategory.title }];
+        setCategorization(groups);
         return groups;
       });
     }
-    if (uid && categoryId) handleCategoryAssign(uid, categoryId);
-  }, [reloadUnits, handleCategoryAssign]);
+  }, [reloadUnits]);
 
   // Cmd/Ctrl+V anywhere on the page opens the add modal with clipboard content
   useClipboardPaste(openAddUnit, { disabled: isAnyModalOpen });
@@ -312,35 +242,23 @@ export default function Landing() {
     return () => document.removeEventListener('keydown', handler);
   }, [selectedCtx, closeDetail, goPrev, goNext]);
 
-const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
+  const handleUnitSaved = useCallback((updated, newCategory) => {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
     if (newCategory) {
       setStoredGroups((prev) => {
-        const groups = [...(prev ?? []), { ...newCategory, uids: [] }];
+        const groups = [...(prev ?? []), { id: newCategory.id, title: newCategory.title }];
         setCategorization(groups);
         return groups;
       });
     }
-    if (updated.uid) handleCategoryAssign(updated.uid, categoryId);
     setSelectedCtx(null);
-  }, [handleCategoryAssign]);
+  }, []);
 
   const handleUnitDelete = useCallback(async (id) => {
-    const deletedUnit = units.find((u) => u.id === id);
     await deleteUnit(id);
     setUnits((prev) => prev.filter((u) => u.id !== id));
-    if (deletedUnit?.uid) {
-      setStoredGroups((prev) => {
-        if (!prev) return prev;
-        const cleaned = prev
-          .map((g) => ({ ...g, uids: g.uids.filter((uid) => uid !== deletedUnit.uid) }))
-          .filter((g) => g.uids.length > 0);
-        setCategorization(cleaned);
-        return cleaned;
-      });
-    }
     setSelectedCtx(null);
-  }, [units]);
+  }, []);
 
   return (
     <div className={`landing${isDragging ? ' landing--dragging' : ''}${hasUnits ? ' landing--has-units' : ''}`}>
@@ -405,19 +323,10 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
                   title: `Delete ${n} item${n !== 1 ? 's' : ''}?`,
                   units: toDelete,
                   onConfirm: async () => {
-                    for (const u of toDelete) await deleteUnit(u.id);
-                    const deletedUids = new Set(toDelete.map((u) => u.uid).filter(Boolean));
-                    setUnits((prev) => prev.filter((u) => !cardSel.selected.has(u.id)));
-                    if (deletedUids.size > 0) {
-                      setStoredGroups((prev) => {
-                        if (!prev) return prev;
-                        const cleaned = prev
-                          .map((g) => ({ ...g, uids: g.uids.filter((uid) => !deletedUids.has(uid)) }))
-                          .filter((g) => g.uids.length > 0);
-                        setCategorization(cleaned);
-                        return cleaned;
-                      });
+                    for (const u of toDelete) {
+                      await deleteUnit(u.id);
                     }
+                    setUnits((prev) => prev.filter((u) => !cardSel.selected.has(u.id)));
                     cardSel.clear();
                     setPendingDelete(null);
                   },
@@ -443,7 +352,9 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
                   title: `Delete ${nc} categor${nc !== 1 ? 'ies' : 'y'} and ${nu} item${nu !== 1 ? 's' : ''}?`,
                   units: toDelete,
                   onConfirm: async () => {
-                    for (const u of toDelete) await deleteUnit(u.id);
+                    for (const u of toDelete) {
+                      await deleteUnit(u.id);
+                    }
                     setUnits((prev) => prev.filter((u) => !(u.uid && selUids.has(u.uid))));
                     setStoredGroups((prev) => {
                       if (!prev) return prev;
@@ -454,6 +365,7 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
                     catSel.clear();
                     setPendingDelete(null);
                   },
+
                 });
               },
             },
@@ -490,16 +402,6 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
             <button type="button" className="btn-icon" onClick={() => setShowUnitsOverlay(true)} title="Saved" aria-label="Saved">
               <SearchIcon />
             </button>
-            {/* <button
-              type="button"
-              className={`btn-icon btn-categorize${categorizing ? ' btn-categorize--loading' : ''}`}
-              onClick={handleCategorize}
-              disabled={categorizing || !hasUnits}
-              title="Categorize"
-              aria-label="Categorize"
-            >
-              <OneBIcon />
-            </button> */}
             <button type="button" className="btn-icon" onClick={() => setShowSettingsModal(true)} title="Settings" aria-label="Settings">
               <GearIcon />
             </button>
@@ -604,7 +506,7 @@ const handleUnitSaved = useCallback((updated, categoryId, newCategory) => {
           category={forageCategory}
           allUnits={units}
           onClose={() => { setShowForageModal(false); clearAllSelection(); }}
-          onSaveUnit={(uid, catId) => { reloadUnits(); handleCategoryAssign(uid, catId); }}
+          onSaveUnit={() => reloadUnits()}
         />
       )}
     </div>

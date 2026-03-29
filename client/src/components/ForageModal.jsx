@@ -5,7 +5,7 @@
  *   category    { id, title, uids }  the selected category
  *   allUnits    Unit[]               full unit list (filtered internally by uids)
  *   onClose     fn                   close handler
- *   onSaveUnit  fn(uid, categoryId)  called after response is saved as a new unit
+ *   onSaveUnit  fn()  called after response is saved as a new unit
  */
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { CloseIcon, CheckIcon } from './Icons';
@@ -131,13 +131,14 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
     if (!response || saveState) return;
     setSaveState('saving');
     try {
-      const { uid } = await addUnit({
+      await addUnit({
         type: 'snippet',
         content: response,
         quote: question,
+        categoryId: category.id === 'misc' ? null : category.id,
       });
       setSaveState('done');
-      onSaveUnit?.(uid, category.id);
+      onSaveUnit?.();
       setTimeout(onClose, 400);
     } catch {
       setSaveState('');
