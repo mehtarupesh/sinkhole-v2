@@ -31,9 +31,14 @@ function CategoryPill({ g, fontSize, opacity, selected, onClick, onLongPress }) 
 export default function CategoryCloud({ storedGroups, onCategoryClick, selected, onCategoryLongPress }) {
   if (!storedGroups || storedGroups.length === 0) return null;
 
+  // Drop empty real categories — keep Misc regardless (it surfaces uncategorized units).
+  const visibleGroups = storedGroups.filter((g) => g.id === MISC_ID || g.uids.length > 0);
+
+  if (visibleGroups.length === 0) return null;
+
   // Exclude the virtual Misc group from scaling — its count is incidental,
   // not a signal of importance, and would otherwise dominate the cloud.
-  const realGroups = storedGroups.filter((g) => g.id !== MISC_ID);
+  const realGroups = visibleGroups.filter((g) => g.id !== MISC_ID);
   const counts = realGroups.map((g) => g.uids.length);
   const minCount = Math.min(...counts);
   const maxCount = Math.max(...counts);
@@ -49,7 +54,7 @@ export default function CategoryCloud({ storedGroups, onCategoryClick, selected,
     <div className="category-cloud-section">
       <div className="category-cloud-section__line category-cloud-section__line--left" />
       <div className="category-cloud">
-        {storedGroups.map((g) => {
+        {visibleGroups.map((g) => {
           const ismisc = g.id === MISC_ID;
           const t = ismisc ? 0 : (Math.log(g.uids.length + 1) - logMin) / range;
           const fontSize = MIN_SIZE + t * (MAX_SIZE - MIN_SIZE);
