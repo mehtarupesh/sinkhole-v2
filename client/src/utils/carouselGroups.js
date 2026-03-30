@@ -6,6 +6,9 @@ export const RECENT_MAX = 15; // max units shown in the "Recent" carousel
 export const MISC_ID    = 'misc';
 export const MISC_TITLE = 'Unclassified';
 
+export const TRASH_ID    = 'trash';
+export const TRASH_TITLE = 'Trash';
+
 /**
  * Returns display groups — stored categories with computed uids, plus a virtual
  * Misc group for units with no categoryId or an unknown categoryId.

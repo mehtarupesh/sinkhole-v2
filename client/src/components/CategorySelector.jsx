@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import CategoryField from './CategoryField';
+import { TRASH_ID } from '../utils/carouselGroups';
 
 /**
  * Renders the full category-selection area:
@@ -62,7 +63,7 @@ export default function CategorySelector({
       {/* Existing chips + "+" button */}
       <div className="auto-suggest-chips-row">
         <CategoryField
-          groups={groups}
+          groups={groups.filter((g) => g.id !== TRASH_ID)}
           value={categoryId}
           onChange={handleExistingChipChange}
           disabled={disabled || suggestState === 'loading'}

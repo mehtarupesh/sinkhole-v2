@@ -36,7 +36,7 @@ export default function MoveToCategoryModal({ count, groups, onMove, onClose }) 
 
   const commitNew = (value) => {
     const trimmed = value.trim();
-    if (!trimmed) {
+    if (!trimmed || trimmed.toLowerCase() === 'trash') {
       setNewCatTitle(null);
       setEditingNew(false);
     } else {

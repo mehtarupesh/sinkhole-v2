@@ -4,9 +4,9 @@ import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon } from '../components/Icons';
-import { getAllUnits, updateUnit, deleteUnit, getCategorization, setCategorization } from '../utils/db';
+import { getAllUnits, updateUnit, getCategorization, setCategorization, ensureTrashCategory } from '../utils/db';
 import { runMigrations } from '../utils/migrations';
-import { buildCarousels, withMiscGroup, MISC_ID } from '../utils/carouselGroups';
+import { buildCarousels, withMiscGroup, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
 import AddUnitModal from '../components/AddUnitModal';
 import MoveToCategoryModal from '../components/MoveToCategoryModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
@@ -73,6 +73,7 @@ export default function Landing() {
   // ── Add unit ─────────────────────────────────────────────────────────────────
 
   const handleCategoryRename = useCallback((id, newTitle) => {
+    if (newTitle.toLowerCase() === 'trash') { setToast('"Trash" is a reserved name'); return; }
     setStoredGroups((prev) => {
       if (!prev) return prev;
       const updated = prev.map((g) => (g.id === id ? { ...g, title: newTitle } : g));
@@ -105,10 +106,9 @@ export default function Landing() {
 
   useEffect(() => {
     runMigrations()
-      .then(() => Promise.all([getAllUnits(), getCategorization()]))
-      .then(([loadedUnits, stored]) => {
+      .then(() => Promise.all([getAllUnits(), ensureTrashCategory()]))
+      .then(([loadedUnits, groups]) => {
         setUnits(loadedUnits);
-        const groups = stored ?? null;
         setStoredGroups(groups);
       });
   }, []);
@@ -127,7 +127,7 @@ export default function Landing() {
   const closeAddUnit = useCallback(() => setAddUnitInitial(null), []);
   const handleAddUnitSaved = useCallback((newCategory) => {
     reloadUnits();
-    if (newCategory) {
+    if (newCategory && newCategory.id !== TRASH_ID) {
       setStoredGroups((prev) => {
         const groups = [...(prev ?? []), { id: newCategory.id, title: newCategory.title }];
         setCategorization(groups);
@@ -155,11 +155,13 @@ export default function Landing() {
     });
   }, [hasPendingShare]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const nonTrashUnits = useMemo(() => units.filter((u) => u.categoryId !== TRASH_ID), [units]);
+
   const carousels = useMemo(
-    () => buildCarousels(units, storedGroups ?? null),
-    [units, storedGroups]
+    () => buildCarousels(nonTrashUnits, storedGroups ?? null),
+    [nonTrashUnits, storedGroups]
   );
-  const hasUnits = units.length > 0;
+  const hasUnits = nonTrashUnits.length > 0;
 
   const recentCarousel = useMemo(() => carousels.find((c) => c.id === 'recent') ?? null, [carousels]);
 
@@ -167,6 +169,12 @@ export default function Landing() {
   const displayGroups = useMemo(
     () => storedGroups ? withMiscGroup(units, storedGroups) : [],
     [units, storedGroups]
+  );
+
+  // Groups available for user selection (excludes reserved Trash).
+  const selectableGroups = useMemo(
+    () => (storedGroups ?? []).filter((g) => g.id !== TRASH_ID),
+    [storedGroups]
   );
 
   const forageCategory = useMemo(() => {
@@ -245,7 +253,7 @@ export default function Landing() {
 
   const handleUnitSaved = useCallback((updated, newCategory) => {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-    if (newCategory) {
+    if (newCategory && newCategory.id !== TRASH_ID) {
       setStoredGroups((prev) => {
         const groups = [...(prev ?? []), { id: newCategory.id, title: newCategory.title }];
         setCategorization(groups);
@@ -256,8 +264,8 @@ export default function Landing() {
   }, []);
 
   const handleUnitDelete = useCallback(async (id) => {
-    await deleteUnit(id);
-    setUnits((prev) => prev.filter((u) => u.id !== id));
+    const trashed = await updateUnit(id, { categoryId: TRASH_ID });
+    setUnits((prev) => prev.map((u) => (u.id === id ? trashed : u)));
     setSelectedCtx(null);
   }, []);
 
@@ -326,9 +334,9 @@ export default function Landing() {
                   units: toDelete,
                   onConfirm: async () => {
                     for (const u of toDelete) {
-                      await deleteUnit(u.id);
+                      await updateUnit(u.id, { categoryId: TRASH_ID });
                     }
-                    setUnits((prev) => prev.filter((u) => !cardSel.selected.has(u.id)));
+                    reloadUnits();
                     cardSel.clear();
                     setPendingDelete(null);
                   },
@@ -368,15 +376,15 @@ export default function Landing() {
                   units: toDelete,
                   onConfirm: async () => {
                     for (const u of toDelete) {
-                      await deleteUnit(u.id);
+                      await updateUnit(u.id, { categoryId: TRASH_ID });
                     }
-                    setUnits((prev) => prev.filter((u) => !(u.uid && selUids.has(u.uid))));
                     setStoredGroups((prev) => {
                       if (!prev) return prev;
                       const cleaned = prev.filter((g) => !catSel.selected.has(g.id));
                       setCategorization(cleaned);
                       return cleaned;
                     });
+                    reloadUnits();
                     catSel.clear();
                     setPendingDelete(null);
                   },
@@ -389,7 +397,7 @@ export default function Landing() {
               label: 'Rename',
               onClick: () => {
                 if (catSel.selected.size !== 1) { setToast('Select exactly 1 category to rename'); return; }
-                if (catSel.selected.has(MISC_ID)) { setToast('Misc cannot be renamed'); return; }
+                if (catSel.selected.has(MISC_ID) || catSel.selected.has(TRASH_ID)) { setToast('This category cannot be renamed'); return; }
                 const id = [...catSel.selected][0];
                 const group = storedGroups?.find((g) => g.id === id);
                 if (group) setPendingRename({ id, currentTitle: group.title });
@@ -428,7 +436,7 @@ export default function Landing() {
         <AddUnitModal
           onClose={closeAddUnit}
           onSaved={handleAddUnitSaved}
-          storedGroups={storedGroups ?? []}
+          storedGroups={selectableGroups}
           initialType={addUnitInitial.type}
           initialContent={addUnitInitial.content}
           initialFileName={addUnitInitial.fileName}
@@ -454,7 +462,7 @@ export default function Landing() {
                 onBack={closeDetail}
                 onSaved={handleUnitSaved}
                 onDelete={handleUnitDelete}
-                storedGroups={storedGroups ?? []}
+                storedGroups={selectableGroups}
               />
             </div>
             <div className="unit-detail-nav" data-testid="unit-detail-nav">
@@ -510,7 +518,7 @@ export default function Landing() {
       {moveCtx && (
         <MoveToCategoryModal
           count={moveCtx.units.length}
-          groups={storedGroups ?? []}
+          groups={selectableGroups}
           onMove={handleBulkMove}
           onClose={() => setMoveCtx(null)}
         />

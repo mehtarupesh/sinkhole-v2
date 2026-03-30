@@ -158,6 +158,23 @@ export async function mergeCategorization(importedGroups) {
 }
 
 
+/** Ensures the Trash category exists in storedGroups. Returns the (possibly updated) groups array. */
+export async function ensureTrashCategory() {
+  const groups = (await getCategorization()) ?? [];
+  if (groups.some((g) => g.id === 'trash')) return groups;
+  const updated = [...groups, { id: 'trash', title: 'Trash' }];
+  await setCategorization(updated);
+  return updated;
+}
+
+/** Hard-deletes all units in Trash. Returns the count of deleted units. */
+export async function emptyTrash() {
+  const all = await getAllUnits();
+  const trashUnits = all.filter((u) => u.categoryId === 'trash');
+  for (const u of trashUnits) await deleteUnit(u.id);
+  return trashUnits.length;
+}
+
 export async function dumpDB() {
   const [units, settings] = await Promise.all([getAllUnits(), getAllSettings()]);
   return { version: DB_VERSION, exportedAt: Date.now(), units, settings };

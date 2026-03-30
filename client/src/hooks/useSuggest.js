@@ -95,7 +95,7 @@ export function useSuggest() {
   // Called on Enter / blur of ghost input
   const commitGhostEdit = (value) => {
     const trimmed = value.trim();
-    if (!trimmed) {
+    if (!trimmed || trimmed.toLowerCase() === 'trash') {
       setNewCategory(null);
       setEditingGhost(false);
       setSuggestState('idle');

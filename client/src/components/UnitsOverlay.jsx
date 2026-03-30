@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CloseIcon, SearchIcon, TrashIcon, MoveFolderIcon, ChevronLeftIcon, ChevronRightIcon, OneBIcon } from './Icons';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import ForageModal from './ForageModal';
-import { getAllUnits, updateUnit, deleteUnit, getCategorization, setCategorization } from '../utils/db';
+import { getAllUnits, updateUnit, getCategorization, setCategorization } from '../utils/db';
 import MoveToCategoryModal from './MoveToCategoryModal';
-import { withMiscGroup, MISC_ID } from '../utils/carouselGroups';
+import { withMiscGroup, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
 import { groupByTime } from '../utils/timeGroups';
 import { CarouselCard } from './Carousel';
 import UnitDetail from './UnitDetail';
@@ -67,15 +67,15 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   }, [selectedCtx]);
 
   const handleDelete = useCallback(async (id) => {
-    await deleteUnit(id);
+    await updateUnit(id, { categoryId: TRASH_ID });
     setUnits((prev) => prev.filter((u) => u.id !== id));
     setSelectedCtx(null);
-  }, [units]);
+  }, []);
 
 
   const handleSaved = useCallback((updated, newCategory) => {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-    if (newCategory) {
+    if (newCategory && newCategory.id !== TRASH_ID) {
       setGroups((prev) => {
         const next = [...prev, { id: newCategory.id, title: newCategory.title }];
         setCategorization(next);
@@ -169,7 +169,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
           onConfirm: async () => {
             const deletedIds = new Set(toDelete.map((u) => u.id));
             for (const u of toDelete) {
-              await deleteUnit(u.id);
+              await updateUnit(u.id, { categoryId: TRASH_ID });
             }
             setUnits((prev) => prev.filter((u) => !deletedIds.has(u.id)));
             clear();
@@ -340,7 +340,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     {moveCtx && (
       <MoveToCategoryModal
         count={moveCtx.units.length}
-        groups={groups}
+        groups={groups.filter((g) => g.id !== TRASH_ID)}
         onMove={handleBulkMove}
         onClose={() => setMoveCtx(null)}
       />

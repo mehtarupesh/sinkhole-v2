@@ -5,7 +5,7 @@
  * Long-pressing a bubble enters category selection mode.
  */
 import { useLongPress } from '../hooks/useLongPress';
-import { MISC_ID } from '../utils/carouselGroups';
+import { MISC_ID, TRASH_ID } from '../utils/carouselGroups';
 
 // Extracted so useLongPress can be called at the top level of each pill component
 function CategoryPill({ g, fontSize, opacity, selected, onClick, onLongPress }) {
@@ -31,8 +31,8 @@ function CategoryPill({ g, fontSize, opacity, selected, onClick, onLongPress }) 
 export default function CategoryCloud({ storedGroups, onCategoryClick, selected, onCategoryLongPress }) {
   if (!storedGroups || storedGroups.length === 0) return null;
 
-  // Drop empty real categories — keep Misc regardless (it surfaces uncategorized units).
-  const visibleGroups = storedGroups.filter((g) => g.id === MISC_ID || g.uids.length > 0);
+  // Drop empty real categories — keep Misc and Trash regardless (they're always navigable).
+  const visibleGroups = storedGroups.filter((g) => g.id === MISC_ID || g.id === TRASH_ID || g.uids.length > 0);
 
   if (visibleGroups.length === 0) return null;
 
