@@ -16,14 +16,16 @@ function BadgeIcon() {
 }
 
 function relativeDate(date) {
-  const now = new Date();
-  const d = new Date(date);
-  const diff = Math.floor((now - d) / 86400000);
-  if (diff === 0) return 'today';
-  if (diff === 1) return '1d';
-  if (diff < 30) return `${diff}d`;
-  if (diff < 365) return `${Math.floor(diff / 30)}mo`;
-  return `${Math.floor(diff / 365)}y`;
+  const diffMs = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1)  return 'now';
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24)  return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d`;
+  if (days < 365) return `${Math.floor(days / 30)}mo`;
+  return `${Math.floor(days / 365)}y`;
 }
 
 export function CarouselCard({ unit, onClick, selected = false, onLongPress, categoryLabel = null }) {
