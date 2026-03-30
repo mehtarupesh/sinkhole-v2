@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { CloseIcon } from './Icons';
-import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, mergeUnits, mergeCategorization, emptyTrash } from '../utils/db';
+import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, mergeUnits, mergeCategorization } from '../utils/db';
 
 const TYPE_LABELS = { snippet: 'text', password: 'pw', image: 'img' };
 
@@ -44,12 +44,8 @@ export default function SettingsModal({ onClose }) {
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef();
 
-  const [trashCount, setTrashCount] = useState(0);
-  const [emptyingTrash, setEmptyingTrash] = useState(false);
-
   useEffect(() => {
     getSetting('gemini_key').then((val) => setHasKey(!!val)).catch(() => {});
-    getAllUnits().then((all) => setTrashCount(all.filter((u) => u.categoryId === 'trash').length));
   }, []);
 
   async function handleSave() {
@@ -72,17 +68,6 @@ export default function SettingsModal({ onClose }) {
     } catch {
       setError('Failed to remove key.');
     }
-  }
-
-  async function handleEmptyTrash() {
-    setEmptyingTrash(true);
-    try {
-      await emptyTrash();
-      setTrashCount(0);
-    } catch {
-      setError('Failed to empty trash.');
-    }
-    setEmptyingTrash(false);
   }
 
   async function handleExport() {
@@ -269,20 +254,6 @@ export default function SettingsModal({ onClose }) {
           </div>
         )}
 
-        <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} />
-
-        {trashCount > 0 ? (
-          <button
-            type="button"
-            className="unit-detail__delete"
-            onClick={handleEmptyTrash}
-            disabled={emptyingTrash}
-          >
-            {emptyingTrash ? '…' : `Empty Trash (${trashCount})`}
-          </button>
-        ) : (
-          <p style={{ fontSize: 13, color: '#737373' }}>Trash is empty</p>
-        )}
       </div>
     </div>
   );
