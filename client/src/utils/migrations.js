@@ -7,6 +7,7 @@ const migrations = [
   migration_0_categoriesToUnitField,
   migration_1_deduplicateCategoriesByTitle,
   migration_2_bootstrapAccessOrder,
+  migration_3_accessOrderToObjects,
 ];
 
 // ── Runner ────────────────────────────────────────────────────────────────────
@@ -119,6 +120,21 @@ async function migration_2_bootstrapAccessOrder() {
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     .map((u) => u.uid);
   await setSetting('accessOrder', order);
+}
+
+// ── Migration 3 — convert accessOrder from string[] to {uid,t}[] ─────────────
+// Migration 2 was briefly shipped with bare uid strings. Convert any existing
+// string entries to objects, using the unit's createdAt as the timestamp.
+
+async function migration_3_accessOrderToObjects() {
+  const order = await getSetting('accessOrder');
+  if (!order?.length) return;
+  if (typeof order[0] === 'object') return; // already in new shape
+
+  const units = await getAllUnits();
+  const createdAtByUid = new Map(units.filter((u) => u.uid).map((u) => [u.uid, u.createdAt ?? 0]));
+  const converted = order.map((uid) => ({ uid, t: createdAtByUid.get(uid) ?? 0 }));
+  await setSetting('accessOrder', converted);
 }
 
 // ── IDB helpers scoped to migration (avoid circular openDB calls) ─────────────

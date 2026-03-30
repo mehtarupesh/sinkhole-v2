@@ -97,7 +97,7 @@ export async function setSetting(key, value) {
 
 export async function touchUnit(uid) {
   const order = (await getSetting('accessOrder')) ?? [];
-  await setSetting('accessOrder', [uid, ...order.filter((u) => u !== uid)]);
+  await setSetting('accessOrder', [{ uid, t: Date.now() }, ...order.filter((u) => u.uid !== uid)]);
 }
 
 export async function getAccessOrder() {

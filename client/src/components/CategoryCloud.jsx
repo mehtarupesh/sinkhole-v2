@@ -47,7 +47,7 @@ export default function CategoryCloud({ storedGroups, onCategoryClick, selected,
   // Score each category: index of its first uid in accessOrder (lower = more recent)
   const rankMap = new Map();
   for (let i = 0; i < accessOrder.length; i++) {
-    const catId = uidToCat.get(accessOrder[i]);
+    const catId = uidToCat.get(accessOrder[i].uid);
     if (catId && !rankMap.has(catId)) rankMap.set(catId, i);
   }
 
