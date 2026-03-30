@@ -4,7 +4,7 @@ import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon } from '../components/Icons';
-import { getAllUnits, updateUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder } from '../utils/db';
+import { getAllUnits, updateUnit, deleteUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder } from '../utils/db';
 import { runMigrations } from '../utils/migrations';
 import { buildCarousels, withMiscGroup, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
 import AddUnitModal from '../components/AddUnitModal';
@@ -370,6 +370,24 @@ export default function Landing() {
               label: 'Delete',
               onClick: () => {
                 const selCats = displayGroups.filter((g) => catSel.selected.has(g.id));
+
+                // Only Trash selected → permanent hard delete
+                if (catSel.selected.size === 1 && catSel.selected.has(TRASH_ID)) {
+                  const toDelete = units.filter((u) => u.categoryId === TRASH_ID);
+                  const nu = toDelete.length;
+                  setPendingDelete({
+                    title: `Permanently delete ${nu} item${nu !== 1 ? 's' : ''} from Trash?`,
+                    units: toDelete,
+                    onConfirm: async () => {
+                      for (const u of toDelete) await deleteUnit(u.id);
+                      reloadUnits();
+                      catSel.clear();
+                      setPendingDelete(null);
+                    },
+                  });
+                  return;
+                }
+
                 const selUids = new Set(selCats.flatMap((g) => g.uids));
                 const toDelete = units.filter((u) => u.uid && selUids.has(u.uid));
                 const nc = catSel.selected.size;
@@ -391,7 +409,6 @@ export default function Landing() {
                     catSel.clear();
                     setPendingDelete(null);
                   },
-
                 });
               },
             },
