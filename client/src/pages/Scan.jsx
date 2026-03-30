@@ -69,7 +69,7 @@ export default function Scan() {
   function stopAndGoBack() {
     scanningRef.current = false;
     streamRef.current?.getTracks().forEach((t) => t.stop());
-    navigate('/connect');
+    navigate('/');
   }
 
   if (error) {
