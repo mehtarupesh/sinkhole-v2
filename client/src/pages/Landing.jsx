@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, AiChatIcon } from '../components/Icons';
+import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon } from '../components/Icons';
 import { getAllUnits, updateUnit, deleteUnit, getCategorization, setCategorization } from '../utils/db';
 import { runMigrations } from '../utils/migrations';
 import { buildCarousels, withMiscGroup, MISC_ID } from '../utils/carouselGroups';
@@ -42,8 +42,9 @@ export default function Landing() {
   const [pendingRename, setPendingRename] = useState(null); // { id, currentTitle } | null
 
   const [moveCtx, setMoveCtx] = useState(null); // { units: Unit[] } | null
+  const [cardForageCtx, setCardForageCtx] = useState(null); // { units: Unit[], category } | null
 
-  const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal || moveCtx !== null;
+  const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal || moveCtx !== null || cardForageCtx !== null;
 
   // ── Selection (cards + categories) ──────────────────────────────────────────
   const cardSel = useSelection();
@@ -339,6 +340,19 @@ export default function Landing() {
               label: 'Move to Category',
               onClick: () => setMoveCtx({ units: units.filter((u) => cardSel.selected.has(u.id)) }),
             },
+            {
+              icon: <OneBIcon />,
+              label: 'Forage',
+              onClick: () => {
+                const selectedUnits = units.filter((u) => cardSel.selected.has(u.id));
+                const catIds = new Set(selectedUnits.map((u) => u.categoryId));
+                const sharedGroup = catIds.size === 1 ? storedGroups?.find((g) => g.id === [...catIds][0]) : null;
+                const category = sharedGroup
+                  ? { id: sharedGroup.id, title: sharedGroup.title, uids: selectedUnits.map((u) => u.uid) }
+                  : { id: 'misc', title: 'Selection', uids: selectedUnits.map((u) => u.uid) };
+                setCardForageCtx({ units: selectedUnits, category });
+              },
+            },
           ] : [
             {
               icon: <TrashIcon />,
@@ -382,7 +396,7 @@ export default function Landing() {
               },
             },
             {
-              icon: <AiChatIcon />,
+              icon: <OneBIcon />,
               label: 'Forage',
               onClick: () => {
                 if (catSel.selected.size !== 1) { setToast('Select exactly 1 category to Forage'); return; }
@@ -507,6 +521,14 @@ export default function Landing() {
           category={forageCategory}
           allUnits={units}
           onClose={() => { setShowForageModal(false); clearAllSelection(); }}
+          onSaveUnit={() => reloadUnits()}
+        />
+      )}
+      {cardForageCtx && (
+        <ForageModal
+          category={cardForageCtx.category}
+          allUnits={cardForageCtx.units}
+          onClose={() => { setCardForageCtx(null); cardSel.clear(); }}
           onSaveUnit={() => reloadUnits()}
         />
       )}
