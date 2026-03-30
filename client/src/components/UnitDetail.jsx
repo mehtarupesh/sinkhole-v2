@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon } from './Icons';
-import { updateUnit } from '../utils/db';
+import { updateUnit, touchUnit } from '../utils/db';
 import { useSuggest } from '../hooks/useSuggest';
 import ContentField from './ContentField';
 import NoteTray from './NoteTray';
@@ -34,6 +34,9 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   const hasNote = !!quote.trim();
   const canAutoSuggest =
     !saving && (hasContent || hasNote) && suggest.suggestState !== 'loading';
+
+  // Record access — fire and forget, no await
+  useEffect(() => { if (unit.uid) touchUnit(unit.uid); }, [unit.uid]);
 
   // Close on Escape (desktop)
   useEffect(() => {

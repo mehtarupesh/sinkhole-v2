@@ -6,6 +6,7 @@ import { getSetting, setSetting, getAllUnits, getCategorization, setCategorizati
 const migrations = [
   migration_0_categoriesToUnitField,
   migration_1_deduplicateCategoriesByTitle,
+  migration_2_bootstrapAccessOrder,
 ];
 
 // ── Runner ────────────────────────────────────────────────────────────────────
@@ -104,6 +105,20 @@ async function migration_1_deduplicateCategoriesByTitle() {
 
   // Drop deprecated categories
   await setCategorization(groups.filter((g) => survivorIds.has(g.id)));
+}
+
+// ── Migration 2 — bootstrap access order from createdAt ──────────────────────
+// accessOrder didn't exist before. Seed it with all unit UIDs sorted by
+// createdAt descending — best proxy for access order when no history exists.
+
+async function migration_2_bootstrapAccessOrder() {
+  if (await getSetting('accessOrder')) return;
+  const units = await getAllUnits();
+  const order = units
+    .filter((u) => u.uid)
+    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+    .map((u) => u.uid);
+  await setSetting('accessOrder', order);
 }
 
 // ── IDB helpers scoped to migration (avoid circular openDB calls) ─────────────

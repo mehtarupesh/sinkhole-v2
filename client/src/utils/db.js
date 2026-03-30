@@ -93,6 +93,17 @@ export async function setSetting(key, value) {
   });
 }
 
+// ── Access order (device-local LRU list) ──────────────────────────────────────
+
+export async function touchUnit(uid) {
+  const order = (await getSetting('accessOrder')) ?? [];
+  await setSetting('accessOrder', [uid, ...order.filter((u) => u !== uid)]);
+}
+
+export async function getAccessOrder() {
+  return (await getSetting('accessOrder')) ?? [];
+}
+
 export async function deleteSetting(key) {
   const db = await openDB();
   return new Promise((resolve, reject) => {

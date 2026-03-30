@@ -4,7 +4,7 @@ import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon } from '../components/Icons';
-import { getAllUnits, updateUnit, getCategorization, setCategorization, ensureTrashCategory } from '../utils/db';
+import { getAllUnits, updateUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder } from '../utils/db';
 import { runMigrations } from '../utils/migrations';
 import { buildCarousels, withMiscGroup, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
 import AddUnitModal from '../components/AddUnitModal';
@@ -35,6 +35,7 @@ export default function Landing() {
   const [units, setUnits]             = useState([]);
   // undefined = still loading from DB, null = loaded but none saved, array = loaded groups
   const [storedGroups, setStoredGroups] = useState(undefined);
+  const [accessOrder, setAccessOrder]     = useState([]);
   const [toast, setToast]               = useState(null);
   // selectedCtx: { units: Unit[], index: number } | null
   const [selectedCtx, setSelectedCtx]   = useState(null);
@@ -106,10 +107,11 @@ export default function Landing() {
 
   useEffect(() => {
     runMigrations()
-      .then(() => Promise.all([getAllUnits(), ensureTrashCategory()]))
-      .then(([loadedUnits, groups]) => {
+      .then(() => Promise.all([getAllUnits(), ensureTrashCategory(), getAccessOrder()]))
+      .then(([loadedUnits, groups, order]) => {
         setUnits(loadedUnits);
         setStoredGroups(groups);
+        setAccessOrder(order);
       });
   }, []);
 
@@ -310,6 +312,7 @@ export default function Landing() {
           onCategoryClick={handleCategoryClick}
           selected={catSel.selected}
           onCategoryLongPress={handleCategoryLongPress}
+          accessOrder={accessOrder}
         />
       )}
 
