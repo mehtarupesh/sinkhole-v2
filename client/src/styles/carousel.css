@@ -98,14 +98,39 @@
   line-height: 0;
 }
 
-/* Date — bottom-right footnote */
-.bleed-card__date {
+/* Bottom row — holds optional category chip (left) and date (right) */
+.bleed-card__bottom {
   margin-top: auto;
   padding-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Date — bottom-left footnote */
+.bleed-card__date {
   font-size: 10px;
   color: #555;
-  text-align: right;
-  display: block;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+/* Category chip — bottom-right, subtle */
+.bleed-card__cat-chip {
+  margin-left: auto;
+  font-size: 9.5px;
+  color: #6a6a6a;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 108px;
+  line-height: 1.5;
 }
 
 /* ── Image variant ── */
@@ -135,17 +160,27 @@
   object-fit: cover;
 }
 
-.bleed-card--image:not(.bleed-card--quoted) .bleed-card__date {
+.bleed-card--image:not(.bleed-card--quoted) .bleed-card__bottom {
   position: absolute;
   bottom: 8px;
+  left: 10px;
   right: 10px;
   padding: 0;
   margin: 0;
   z-index: 2;
+}
+
+.bleed-card--image:not(.bleed-card--quoted) .bleed-card__date {
   color: rgba(255, 255, 255, 0.45);
 }
 
-.bleed-card--image.bleed-card--quoted .bleed-card__date {
+.bleed-card--image:not(.bleed-card--quoted) .bleed-card__cat-chip {
+  color: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.bleed-card--image.bleed-card--quoted .bleed-card__bottom {
   padding: 2px 12px 10px;
 }
 

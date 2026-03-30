@@ -2,6 +2,7 @@ import { useLongPress } from '../hooks/useLongPress';
 import { CheckIcon } from './Icons';
 import Linkify from './Linkify';
 import LinkPreview from './LinkPreview';
+import { MISC_ID } from '../utils/carouselGroups';
 
 function BadgeIcon() {
   const s = { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -25,7 +26,7 @@ function relativeDate(date) {
   return `${Math.floor(diff / 365)}y`;
 }
 
-export function CarouselCard({ unit, onClick, selected = false, onLongPress }) {
+export function CarouselCard({ unit, onClick, selected = false, onLongPress, categoryLabel = null }) {
   const pressHandlers = useLongPress({ onClick, onLongPress });
 
   const isImage  = unit.type === 'image' && unit.mimeType?.startsWith('image/');
@@ -101,14 +102,18 @@ export function CarouselCard({ unit, onClick, selected = false, onLongPress }) {
         )
       )}
 
-      <span className="bleed-card__date">{relativeDate(unit.createdAt)}</span>
+      <div className="bleed-card__bottom">
+        <span className="bleed-card__date">{relativeDate(unit.createdAt)}</span>
+        {categoryLabel && <span className="bleed-card__cat-chip">{categoryLabel}</span>}
+      </div>
     </button>
   );
 }
 
 // selected: Set<id> — which card IDs are currently selected
 // onCardLongPress: (unit) => void — called when a card is long-pressed
-export default function Carousel({ title, units, onUnitClick, onAddClick, selected, onCardLongPress }) {
+// groups: { id, title }[] | null — pass storedGroups to show category chips on cards
+export default function Carousel({ title, units, onUnitClick, onAddClick, selected, onCardLongPress, groups = null }) {
   if (!units?.length) return null;
   return (
     <div className="carousel">
@@ -121,15 +126,21 @@ export default function Carousel({ title, units, onUnitClick, onAddClick, select
         )}
       </div>
       <div className="carousel__row">
-        {units.map((unit, i) => (
-          <CarouselCard
-            key={unit.id}
-            unit={unit}
-            onClick={() => onUnitClick(unit, units, i)}
-            selected={selected?.has(unit.id) ?? false}
-            onLongPress={onCardLongPress ? () => onCardLongPress(unit) : undefined}
-          />
-        ))}
+        {units.map((unit, i) => {
+          const categoryLabel = groups && unit.categoryId && unit.categoryId !== MISC_ID
+            ? (groups.find((g) => g.id === unit.categoryId)?.title ?? null)
+            : null;
+          return (
+            <CarouselCard
+              key={unit.id}
+              unit={unit}
+              onClick={() => onUnitClick(unit, units, i)}
+              selected={selected?.has(unit.id) ?? false}
+              onLongPress={onCardLongPress ? () => onCardLongPress(unit) : undefined}
+              categoryLabel={categoryLabel}
+            />
+          );
+        })}
       </div>
     </div>
   );

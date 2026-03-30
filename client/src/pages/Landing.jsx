@@ -290,6 +290,7 @@ export default function Landing() {
             onUnitClick={handleCarouselUnitClick}
             selected={cardSel.selected}
             onCardLongPress={handleCardLongPress}
+            groups={storedGroups}
           />
         </div>
       )}
