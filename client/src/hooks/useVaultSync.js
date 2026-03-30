@@ -78,10 +78,12 @@ export function useVaultSync(connections) {
               .map((u) => u.uid);
 
             appendLog(conn.peer, `← offer from ${sp}: ${peerMap.size} items · sending ${toSend.length}, want ${want.length}`);
-            const sendDetail = toSend.length > 0 ? `Sending ${toSend.length} item${toSend.length !== 1 ? 's' : ''}…` : 'Waiting for other device…';
-            setPeerState(conn.peer, { detail: sendDetail });
             if (conn.open) conn.send({ type: VAULT_CHANNEL, phase: 'transfer', units: toSend, want, categorization });
-            if (want.length === 0) setPeerState(conn.peer, { status: 'done', added: 0 });
+            if (want.length === 0) {
+              setPeerState(conn.peer, { status: 'done', added: 0 });
+            } else {
+              setPeerState(conn.peer, { detail: `Waiting for ${want.length} item${want.length !== 1 ? 's' : ''}…` });
+            }
 
           } else if (msg.phase === 'transfer') {
             const incomingCount = msg.units?.length ?? 0;
@@ -93,13 +95,20 @@ export function useVaultSync(connections) {
               const [localUnits, categorization] = await Promise.all([getAllUnits(), getCategorization()]);
               const wantSet = new Set(msg.want);
               const toSend  = localUnits.filter((u) => wantSet.has(u.uid));
-              appendLog(conn.peer, `← transfer from ${sp}: ${msg.units.length} items (+${added} new, ~${updated} updated) · sending ${toSend.length} back`);
-              setPeerState(conn.peer, { detail: `Sending ${toSend.length} item${toSend.length !== 1 ? 's' : ''}…` });
               conn.send({ type: VAULT_CHANNEL, phase: 'transfer', units: toSend, categorization });
+              // Single state update: log + done together so no intermediate render shows "Sending…"
+              setStates(prev => {
+                const cur = prev[conn.peer] ?? { status: 'idle', added: 0, log: [] };
+                const logEntry = { ts: Date.now(), text: `← transfer from ${sp}: ${msg.units.length} items (+${added} new, ~${updated} updated) · sending ${toSend.length} back` };
+                return { ...prev, [conn.peer]: { ...cur, status: 'done', added, log: [...cur.log, logEntry] } };
+              });
             } else {
-              appendLog(conn.peer, `← transfer from ${sp}: ${msg.units.length} items (+${added} new, ~${updated} updated) · done`);
+              setStates(prev => {
+                const cur = prev[conn.peer] ?? { status: 'idle', added: 0, log: [] };
+                const logEntry = { ts: Date.now(), text: `← transfer from ${sp}: ${msg.units.length} items (+${added} new, ~${updated} updated) · done` };
+                return { ...prev, [conn.peer]: { ...cur, status: 'done', added, log: [...cur.log, logEntry] } };
+              });
             }
-            setPeerState(conn.peer, { status: 'done', added });
           }
         } catch (_) {
           setPeerState(conn.peer, { status: 'error' });
