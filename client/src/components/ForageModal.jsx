@@ -13,49 +13,8 @@ import { getSetting, addUnit } from '../utils/db';
 import { forageUnits } from '../utils/forage';
 import NoteTray from './NoteTray';
 import { CarouselCard } from './Carousel';
+import SimpleMarkdown from './SimpleMarkdown';
 import './ForageModal.css';
-
-// ── Simple inline markdown renderer (no external deps) ───────────────────────
-
-function parseBold(str) {
-  const parts = str.split(/\*\*(.*?)\*\*/g);
-  return parts.map((p, i) =>
-    i % 2 === 1 ? <strong key={i}>{p}</strong> : p
-  );
-}
-
-function SimpleMarkdown({ text }) {
-  const elements = [];
-  let listItems = [];
-
-  const flushList = (key) => {
-    if (listItems.length > 0) {
-      elements.push(<ul key={`ul-${key}`}>{listItems}</ul>);
-      listItems = [];
-    }
-  };
-
-  text.split('\n').forEach((line, i) => {
-    if (line.startsWith('## ')) {
-      flushList(i);
-      elements.push(<h3 key={i} className="forage__md-h3">{line.slice(3)}</h3>);
-    } else if (line.startsWith('# ')) {
-      flushList(i);
-      elements.push(<h2 key={i} className="forage__md-h2">{line.slice(2)}</h2>);
-    } else if (/^[-*] /.test(line)) {
-      listItems.push(<li key={i}>{parseBold(line.slice(2))}</li>);
-    } else if (line.trim() === '') {
-      flushList(i);
-      if (elements.length > 0) elements.push(<div key={i} className="forage__md-gap" />);
-    } else {
-      flushList(i);
-      elements.push(<p key={i} className="forage__md-p">{parseBold(line)}</p>);
-    }
-  });
-  flushList('end');
-
-  return <div className="forage__markdown">{elements}</div>;
-}
 
 // ── Quick prompt suggestions ──────────────────────────────────────────────────
 
@@ -221,7 +180,7 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
                 </div>
               ) : (
                 <>
-                  <SimpleMarkdown text={response} />
+                  <SimpleMarkdown text={response} className="forage__markdown" />
                   {loading && <span className="forage__cursor" aria-hidden="true">▋</span>}
                 </>
               )}

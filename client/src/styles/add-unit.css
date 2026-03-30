@@ -467,6 +467,39 @@
   right: 8px;
 }
 
+/* ── Snippet view-mode (markdown rendered) ── */
+
+.snippet__markdown {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #e5e5e5;
+  padding: 14px 52px 14px 16px; /* right pad leaves room for buttons */
+  min-height: 76px; /* tall enough to always show both copy + edit buttons */
+}
+
+.snippet__markdown p  { margin: 0 0 6px; }
+.snippet__markdown p:last-child { margin-bottom: 0; }
+.snippet__markdown h2 { font-size: 16px; font-weight: 600; color: #fafafa; margin: 0 0 8px; }
+.snippet__markdown h3 { font-size: 15px; font-weight: 600; color: #d4d4d4; margin: 0 0 6px; }
+.snippet__markdown ul { margin: 0 0 8px; padding-left: 20px; }
+.snippet__markdown li { margin-bottom: 4px; }
+.snippet__markdown strong { color: #fafafa; font-weight: 600; }
+
+/* Two action buttons stacked at top-right of the content wrap in view mode */
+.snippet__view-btns {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Override the generic absolute-position rule for buttons inside the container */
+.snippet__view-btns .add-unit__copy-btn {
+  position: static;
+}
+
 /* ── Type-switch confirmation banner ── */
 .add-unit__type-confirm {
   display: flex;

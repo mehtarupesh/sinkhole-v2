@@ -202,25 +202,25 @@
   color: #e5e5e5;
 }
 
-.forage__markdown .forage__md-h2 {
+.forage__markdown h2 {
   font-size: 14px;
   font-weight: 600;
   color: #fafafa;
   margin: 0 0 8px;
 }
 
-.forage__markdown .forage__md-h3 {
+.forage__markdown h3 {
   font-size: 13px;
   font-weight: 600;
   color: #d4d4d4;
   margin: 0 0 6px;
 }
 
-.forage__markdown .forage__md-p {
+.forage__markdown p {
   margin: 0 0 6px;
 }
 
-.forage__markdown .forage__md-p:last-child {
+.forage__markdown p:last-child {
   margin-bottom: 0;
 }
 
@@ -231,10 +231,6 @@
 
 .forage__markdown li {
   margin-bottom: 4px;
-}
-
-.forage__markdown .forage__md-gap {
-  height: 6px;
 }
 
 .forage__markdown strong {

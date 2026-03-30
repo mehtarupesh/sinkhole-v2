@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ImageTypeIcon, CameraIcon, CopyIcon, CheckIcon } from './Icons';
+import { ImageTypeIcon, CameraIcon, CopyIcon, CheckIcon, RenameIcon } from './Icons';
 import ImageLightbox from './ImageLightbox';
+import SimpleMarkdown from './SimpleMarkdown';
 
 /**
  * Renders the type-specific content input (snippet / password / image).
@@ -22,6 +23,7 @@ export default function ContentField({
   const [showPassword, setShowPassword] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isEditing, setIsEditing] = useState(!content);
 
   const copyTimerRef = useRef(null);
   const fileRef = useRef(null);
@@ -36,7 +38,10 @@ export default function ContentField({
     el.style.height = `${el.scrollHeight}px`;
   }, []);
 
-  useEffect(() => { resizeTextarea(); }, [content, resizeTextarea]);
+  useEffect(() => { resizeTextarea(); }, [content, isEditing, resizeTextarea]);
+
+  // If content is cleared externally (e.g. type switch), return to edit mode
+  useEffect(() => { if (!content) setIsEditing(true); }, [content]);
 
   const handleCopy = async () => {
     if (!content) return;
@@ -62,24 +67,51 @@ export default function ContentField({
 
       {type === 'snippet' && (
         <div className="add-unit__content-wrap">
-          <textarea
-            ref={textareaRef}
-            className="add-unit__textarea"
-            placeholder="Enter text…"
-            value={content}
-            onChange={(e) => onTextChange(e.target.value)}
-            disabled={disabled}
-            autoFocus
-          />
-          {content && (
-            <button
-              type="button"
-              className={`add-unit__copy-btn${copied ? ' add-unit__copy-btn--copied' : ''}`}
-              onClick={handleCopy}
-              aria-label="Copy to clipboard"
-            >
-              {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
-            </button>
+          {!isEditing && content ? (
+            <>
+              <SimpleMarkdown text={content} className="snippet__markdown" />
+              <div className="snippet__view-btns">
+                <button
+                  type="button"
+                  className={`add-unit__copy-btn${copied ? ' add-unit__copy-btn--copied' : ''}`}
+                  onClick={handleCopy}
+                  aria-label="Copy to clipboard"
+                >
+                  {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+                </button>
+                <button
+                  type="button"
+                  className="add-unit__copy-btn"
+                  onClick={() => setIsEditing(true)}
+                  aria-label="Edit"
+                >
+                  <RenameIcon size={14} />
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <textarea
+                ref={textareaRef}
+                className="add-unit__textarea"
+                placeholder="Enter text…"
+                value={content}
+                onChange={(e) => onTextChange(e.target.value)}
+                onBlur={() => { if (content) setIsEditing(false); }}
+                disabled={disabled}
+                autoFocus
+              />
+              {content && (
+                <button
+                  type="button"
+                  className={`add-unit__copy-btn${copied ? ' add-unit__copy-btn--copied' : ''}`}
+                  onClick={handleCopy}
+                  aria-label="Copy to clipboard"
+                >
+                  {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+                </button>
+              )}
+            </>
           )}
         </div>
       )}
