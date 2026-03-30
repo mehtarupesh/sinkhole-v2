@@ -36,7 +36,7 @@ export default function Connect() {
   }, [hostId]);
 
   const conn = connections[0] ?? null;
-  const { status: syncStatus, added: syncAdded } = getVaultState(conn);
+  const { status: syncStatus, added: syncAdded, detail: syncDetail } = getVaultState(conn);
 
   // On mobile, go straight to scan (user is the scanner, not the host showing QR).
   // Skip redirect if arriving back from scan with ?peerId= already set.
@@ -135,7 +135,7 @@ export default function Connect() {
 
             <div className="sync-status">
               {syncStatus === 'syncing' && (
-                <span className="sync-status__text sync-status__text--syncing">Syncing…</span>
+                <span className="sync-status__text sync-status__text--syncing">{syncDetail || 'Syncing…'}</span>
               )}
               {syncStatus === 'done' && (
                 <span className="sync-status__text sync-status__text--done">
