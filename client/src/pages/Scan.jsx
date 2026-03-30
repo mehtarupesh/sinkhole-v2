@@ -66,6 +66,12 @@ export default function Scan() {
     };
   }, [navigate]);
 
+  function stopAndGoBack() {
+    scanningRef.current = false;
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    navigate('/connect');
+  }
+
   if (error) {
     return (
       <div className="scan__error-view">
@@ -81,6 +87,14 @@ export default function Scan() {
     <div className="scan">
       <video ref={videoRef} className="scan__video" muted playsInline />
       <canvas ref={canvasRef} className="scan__canvas" />
+      <button
+        type="button"
+        className="scan__back-overlay btn-icon"
+        onClick={stopAndGoBack}
+        aria-label="Back to connect"
+      >
+        ← Back
+      </button>
       <p className="scan__hint">Point at the QR code to join</p>
     </div>
   );

@@ -55,10 +55,10 @@
 
 /* ── Scan page ── */
 .scan {
-  position: relative;
-  width: 100%;
-  min-height: 100vh;
+  position: fixed;
+  inset: 0;
   background: #000;
+  overflow: hidden;
 }
 
 .scan__video {
@@ -74,12 +74,19 @@
 
 .scan__hint {
   position: absolute;
-  bottom: 32px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  color: #fff;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
   margin: 0;
+  padding: 8px 20px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .scan__error-view {
@@ -104,6 +111,17 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
+}
+
+.scan__back-overlay {
+  position: absolute;
+  bottom: 40px;
+  left: 16px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 /* ── Connect page ── */
