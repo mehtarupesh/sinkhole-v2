@@ -173,18 +173,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
 
       {error && <p className="modal__error">{error}</p>}
 
-      {/* Note tray */}
-      <NoteTray
-        value={quote}
-        onChange={setQuote}
-        disabled={saving}
-        transcribeFn={transcribeFn}
-        shareContent={suggest.shareContent}
-        onShareToggle={() => suggest.setShareContent((v) => !v)}
-        hasContent={hasContent}
-      />
-
-      {/* Category chips — horizontal scroll */}
+      {/* Category selector */}
       <div className="sheet__categories" style={{ padding: '8px 0 0' }}>
         <CategorySelector
           groups={storedGroups}
@@ -196,6 +185,17 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
           disabled={saving}
         />
       </div>
+
+      {/* Note tray */}
+      <NoteTray
+        value={quote}
+        onChange={setQuote}
+        disabled={saving}
+        transcribeFn={transcribeFn}
+        shareContent={suggest.shareContent}
+        onShareToggle={() => suggest.setShareContent((v) => !v)}
+        hasContent={hasContent}
+      />
 
       <div className="add-unit__actions">
         <button
