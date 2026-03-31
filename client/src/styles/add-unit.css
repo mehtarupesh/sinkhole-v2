@@ -620,7 +620,7 @@
   border: 1px dashed rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.02);
-  color: #404040;
+  color: #737373;
   cursor: pointer;
   font-size: 13px;
   transition: border-color 0.15s, color 0.15s;
@@ -628,7 +628,7 @@
 
 .add-unit__upload-option:hover {
   border-color: rgba(255, 255, 255, 0.2);
-  color: #737373;
+  color: #a3a3a3;
 }
 
 .add-unit__reupload-row {

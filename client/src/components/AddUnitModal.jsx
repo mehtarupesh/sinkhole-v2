@@ -8,9 +8,9 @@ import CategorySelector from './CategorySelector';
 import { transcribeAndSuggest } from '../utils/transcribeAndSuggest';
 
 const TYPE_CONFIG = [
+  { type: 'image',    Icon: ImageTypeIcon },
   { type: 'snippet',  Icon: SnippetTypeIcon },
   { type: 'password', Icon: LockTypeIcon },
-  { type: 'image',    Icon: ImageTypeIcon },
 ];
 
 export default function AddUnitModal({
