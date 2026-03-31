@@ -204,6 +204,15 @@ export function AiChatIcon({ size = 20 }) {
   );
 }
 
+export function PinIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+      <rect x="8" y="3" width="8" height="11" rx="1.5" fill="currentColor" stroke="none" />
+      <line x1="12" y1="15" x2="12" y2="22" />
+    </svg>
+  );
+}
+
 export function SignalStatusIcon({ connected }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
