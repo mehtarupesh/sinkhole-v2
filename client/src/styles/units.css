@@ -26,17 +26,16 @@
   margin-right: -24px;
 }
 
-/* Snippet: minimal left breathing room; push action buttons back inside panel border */
+/* Snippet: minimal left breathing room; tight right padding — buttons sit at panel edge */
 .units-panel .snippet__markdown {
   padding-left: 12px;
+  padding-right: 40px; /* 8px gap + 28px button + 4px clearance */
   font-size: 16px;
 }
 
-/* The view-btns are absolute inside .add-unit__content-wrap whose right edge is now
-   24px past the panel border (from the negative margin). Add 24px to the right value
-   so they land 8px inside the panel's right padding — same visual position as before. */
+/* Push buttons to 8px from the panel's right border (content-wrap right edge = panel border) */
 .units-panel .snippet__view-btns {
-  right: 32px;
+  right: 8px;
 }
 
 /* Snippet edit mode: flat edges, no side borders */
