@@ -57,7 +57,6 @@ export default function NoteTray({
   // Auto-switch to text-hero when value is set externally (e.g. quick-prompt chip)
   useEffect(() => {
     if (value && mode === 'mic-hero') {
-      shouldFocus.current = true;
       setMode('text-hero');
     }
   }, [value]);
