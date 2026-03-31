@@ -74,24 +74,7 @@
   flex-shrink: 0;
 }
 
-.sheet__categories .auto-suggest-chips-row {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding-bottom: 8px;
-}
-
-.sheet__categories .auto-suggest-chips-row::-webkit-scrollbar { display: none; }
-
-.sheet__categories .category-field__chips {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.sheet__categories .category-field__chips::-webkit-scrollbar { display: none; }
+/* cat-picker handles its own layout — no scroll overrides needed here */
 
 /* Actions row inside sheet */
 .sheet__actions {
@@ -1014,6 +997,120 @@
   background: rgba(74, 222, 128, 0.08);
 }
 
+
+/* ── Compact category picker (Option C) ── */
+
+.cat-picker {
+  width: 100%;
+  padding-bottom: 10px;
+}
+
+/* Single trigger row: pill + status + suggest btn */
+.cat-picker__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Kill any margins that would throw off flex centering */
+.cat-picker__row > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* The selected-category pill */
+.cat-picker__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px 5px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  color: #525252;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.cat-picker__pill:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #a3a3a3;
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.cat-picker__pill:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Active state — a category is selected */
+.cat-picker__pill--active {
+  background: rgba(255, 255, 255, 0.10);
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #d4d4d4;
+  font-weight: 500;
+}
+
+.cat-picker__pill--active:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #e5e5e5;
+}
+
+.cat-picker__pill-caret {
+  font-size: 9px;
+  opacity: 0.5;
+  line-height: 1;
+}
+
+/* Suggest button — same row, margin-left: auto pushes it right */
+.cat-picker__suggest-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Status text inline (no second line) */
+.cat-picker__inline-status {
+  font-size: 11px;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* Expanded chip panel */
+.cat-picker__panel {
+  margin-top: 6px;
+  padding: 10px 12px 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Chips inside panel wrap — undo the sheet's no-wrap override */
+.cat-picker__panel .category-field {
+  padding: 0;
+  width: auto;
+}
+
+.cat-picker__panel .category-field__chips {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  padding-bottom: 0;
+}
+
+/* Ghost row inside panel — full width */
+.cat-picker__panel .auto-suggest-ghost-row {
+  width: 100%;
+  padding-bottom: 4px;
+}
 
 /* ── Auto-suggest ── */
 
