@@ -69,7 +69,12 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const handleDelete = useCallback(async (id) => {
     await updateUnit(id, { categoryId: TRASH_ID });
     setUnits((prev) => prev.filter((u) => u.id !== id));
-    setSelectedCtx(null);
+    setSelectedCtx((ctx) => {
+      if (!ctx) return null;
+      const newUnits = ctx.units.filter((u) => u.id !== id);
+      if (newUnits.length === 0) return null;
+      return { units: newUnits, index: Math.min(ctx.index, newUnits.length - 1) };
+    });
   }, []);
 
 
