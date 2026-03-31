@@ -245,8 +245,10 @@ export default function Landing() {
   useEffect(() => {
     if (!selectedCtx) return;
     const handler = (e) => {
-      if (e.key === 'Escape') closeDetail();
-      else if (e.key === 'ArrowLeft') goPrev();
+      if (e.key === 'Escape') { closeDetail(); return; }
+      const el = document.activeElement;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      if (e.key === 'ArrowLeft') goPrev();
       else if (e.key === 'ArrowRight') goNext();
     };
     document.addEventListener('keydown', handler);
