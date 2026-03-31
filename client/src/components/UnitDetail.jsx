@@ -215,11 +215,6 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
           {saveState === 'done' ? 'Saved ✓' : saving ? '…' : 'Save'}
         </button>
       </div>
-
-      <p className="unit-detail__meta">
-        Created {new Date(unit.createdAt).toLocaleString()}
-        {unit.updatedAt && ` · Edited ${new Date(unit.updatedAt).toLocaleString()}`}
-      </p>
     </div>
   );
 }

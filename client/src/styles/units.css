@@ -15,8 +15,47 @@
   flex-direction: column;
   gap: 12px;
   overflow-y: auto;
+  overflow-x: hidden;
   max-height: 85vh;
   max-height: 85dvh;
+}
+
+/* ── Full-width content (image / snippet body breaks out of panel padding) ── */
+.units-panel .add-unit__body {
+  margin-left: -24px;
+  margin-right: -24px;
+}
+
+/* Snippet: minimal left breathing room; push action buttons back inside panel border */
+.units-panel .snippet__markdown {
+  padding-left: 12px;
+  font-size: 16px;
+}
+
+/* The view-btns are absolute inside .add-unit__content-wrap whose right edge is now
+   24px past the panel border (from the negative margin). Add 24px to the right value
+   so they land 8px inside the panel's right padding — same visual position as before. */
+.units-panel .snippet__view-btns {
+  right: 32px;
+}
+
+/* Snippet edit mode: flat edges, no side borders */
+.units-panel .add-unit__textarea {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+/* Image: full-width preview, no rounded corners */
+.units-panel .add-unit__preview-btn {
+  width: 100%;
+  border-radius: 0;
+}
+
+.units-panel .add-unit__preview {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 0;
 }
 
 /* ── Unit card (used in SettingsModal preview) ── */
