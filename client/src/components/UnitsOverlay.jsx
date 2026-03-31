@@ -198,6 +198,12 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     },
   ];
 
+  // Flat list in visual order (groupByTime reorders filtered, so navigation must match)
+  const visuallyOrdered = useMemo(
+    () => (q ? filtered : groupByTime(filtered).flatMap(({ units: g }) => g)),
+    [q, filtered]
+  );
+
   const currentUnit = selectedCtx ? selectedCtx.units[selectedCtx.index] : null;
   const hasPrev = selectedCtx ? selectedCtx.index > 0 : false;
   const hasNext = selectedCtx ? selectedCtx.index < selectedCtx.units.length - 1 : false;
@@ -260,13 +266,13 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
               {label && <h3 className="search-time-label">{label}</h3>}
               <div className="search-grid">
                 {groupUnits.map((unit) => {
-                  const i = filtered.indexOf(unit);
+                  const i = visuallyOrdered.indexOf(unit);
                   return (
                     <CarouselCard
                       key={unit.id}
                       unit={unit}
                       selected={selected.has(unit.id)}
-                      onClick={() => isSelecting ? toggle(unit.id) : setSelectedCtx({ units: filtered, index: i })}
+                      onClick={() => isSelecting ? toggle(unit.id) : setSelectedCtx({ units: visuallyOrdered, index: i })}
                       onLongPress={() => enterWith(unit.id)}
                     />
                   );
