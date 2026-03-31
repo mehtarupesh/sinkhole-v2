@@ -13,7 +13,6 @@ import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import RenameCategoryModal from '../components/RenameCategoryModal';
 import ForageModal from '../components/ForageModal';
 import UnitsOverlay from '../components/UnitsOverlay';
-import PrototypeModal from '../components/PrototypeModal';
 import SettingsModal from '../components/SettingsModal';
 import Carousel from '../components/Carousel';
 import CategoryCloud from '../components/CategoryCloud';
@@ -29,7 +28,6 @@ export default function Landing() {
   const [addUnitInitial, setAddUnitInitial]     = useState(null);
   const [showUnitsOverlay, setShowUnitsOverlay] = useState(false);
   const [unitsOverlayCategory, setUnitsOverlayCategory] = useState('');
-  const [showPrototypeModal, setShowPrototypeModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal]   = useState(false);
   const [showForageModal, setShowForageModal]       = useState(false);
   const [units, setUnits]             = useState([]);
@@ -535,7 +533,6 @@ export default function Landing() {
           onCancel={() => setPendingRename(null)}
         />
       )}
-      {showPrototypeModal && <PrototypeModal onClose={() => setShowPrototypeModal(false)} />}
       {showSettingsModal && <SettingsModal onClose={() => setShowSettingsModal(false)} />}
       {moveCtx && (
         <MoveToCategoryModal
