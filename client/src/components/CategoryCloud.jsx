@@ -33,8 +33,8 @@ function CategoryPill({ g, fontSize, opacity, selected, onClick, onLongPress }) 
 export default function CategoryCloud({ storedGroups, onCategoryClick, selected, onCategoryLongPress, accessOrder = [] }) {
   if (!storedGroups || storedGroups.length === 0) return null;
 
-  // Drop empty real categories — keep Misc and Trash regardless (they're always navigable).
-  const visibleGroups = storedGroups.filter((g) => g.id === MISC_ID || g.id === TRASH_ID || g.uids.length > 0);
+  // Drop empty categories.
+  const visibleGroups = storedGroups.filter((g) => g.uids.length > 0);
 
   if (visibleGroups.length === 0) return null;
 
@@ -51,8 +51,13 @@ export default function CategoryCloud({ storedGroups, onCategoryClick, selected,
     if (catId && !rankMap.has(catId)) rankMap.set(catId, i);
   }
 
-  // Sort: most recently accessed first; unranked categories at the end
+  const PINNED_IDS = new Set([MISC_ID, TRASH_ID]);
+
+  // Sort: most recently accessed first; Trash & Unclassified always last
   const sorted = [...visibleGroups].sort((a, b) => {
+    const aPinned = PINNED_IDS.has(a.id);
+    const bPinned = PINNED_IDS.has(b.id);
+    if (aPinned !== bPinned) return aPinned ? 1 : -1;
     return (rankMap.get(a.id) ?? Infinity) - (rankMap.get(b.id) ?? Infinity);
   });
 
@@ -67,10 +72,11 @@ export default function CategoryCloud({ storedGroups, onCategoryClick, selected,
       <div className="category-cloud-section__line category-cloud-section__line--left" />
       <div className="category-cloud">
         {sorted.map((g) => {
+          const pinned = PINNED_IDS.has(g.id);
           const rank = rankMap.get(g.id) ?? Infinity;
-          const t = rank === Infinity ? 0 : 1 - rank / maxRank;
+          const t = pinned ? 0 : rank === Infinity ? 0 : 1 - rank / maxRank;
           const fontSize = MIN_SIZE + t * (MAX_SIZE - MIN_SIZE);
-          const opacity = 0.45 + t * 0.55;
+          const opacity = pinned ? 0.45 : 0.45 + t * 0.55;
           return (
             <CategoryPill
               key={g.id}

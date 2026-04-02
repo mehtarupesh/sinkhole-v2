@@ -6,7 +6,7 @@ import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon } from '../components/Icons';
 import { getAllUnits, updateUnit, deleteUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder } from '../utils/db';
 import { runMigrations } from '../utils/migrations';
-import { buildCarousels, withMiscGroup, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
+import { buildRecentCarousel, withMiscGroup, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
 import AddUnitModal from '../components/AddUnitModal';
 import MoveToCategoryModal from '../components/MoveToCategoryModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
@@ -72,7 +72,7 @@ export default function Landing() {
   // ── Add unit ─────────────────────────────────────────────────────────────────
 
   const handleCategoryRename = useCallback((id, newTitle) => {
-    if (newTitle.toLowerCase() === 'trash') { setToast('"Trash" is a reserved name'); return; }
+    if (newTitle.toLowerCase() === 'trash' || newTitle.toLowerCase() === 'unclassified') { setToast(newTitle + ' name is reserved'); return; }
     setStoredGroups((prev) => {
       if (!prev) return prev;
       const updated = prev.map((g) => (g.id === id ? { ...g, title: newTitle } : g));
@@ -157,13 +157,12 @@ export default function Landing() {
 
   const nonTrashUnits = useMemo(() => units.filter((u) => u.categoryId !== TRASH_ID), [units]);
 
-  const carousels = useMemo(
-    () => buildCarousels(nonTrashUnits, storedGroups ?? null),
-    [nonTrashUnits, storedGroups]
-  );
   const hasUnits = nonTrashUnits.length > 0;
 
-  const recentCarousel = useMemo(() => carousels.find((c) => c.id === 'recent') ?? null, [carousels]);
+  const recentCarousel = useMemo(
+    () => buildRecentCarousel(nonTrashUnits),
+    [nonTrashUnits]
+  );
 
   // displayGroups = storedGroups + virtual Misc group (never persisted).
   const displayGroups = useMemo(
@@ -401,7 +400,7 @@ export default function Landing() {
                     }
                     setStoredGroups((prev) => {
                       if (!prev) return prev;
-                      const cleaned = prev.filter((g) => !catSel.selected.has(g.id));
+                      const cleaned = prev.filter((g) => !catSel.selected.has(g.id) || g.id === TRASH_ID);
                       setCategorization(cleaned);
                       return cleaned;
                     });
