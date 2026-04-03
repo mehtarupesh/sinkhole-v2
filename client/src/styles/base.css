@@ -1,5 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
+/* ── Design tokens ── */
+:root {
+  --color-border:          rgba(255, 255, 255, 0.1);
+  --color-surface:         rgba(255, 255, 255, 0.06);
+  --color-text:            #e5e5e5;
+  --color-muted:           #737373;
+  --transition-speed:      0.15s;
+
+  --color-surface-hi:      rgba(255, 255, 255, 0.08);
+  --color-surface-lo:      rgba(255, 255, 255, 0.04);
+  --color-dim:             #a3a3a3;
+  --color-faint:           #525252;
+  --radius-sm:             8px;
+}
+
 /* ── Base ── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -9,7 +24,7 @@ body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
   background: #0f0f0f;
-  color: #e5e5e5;
+  color: var(--color-text);
   min-height: 100vh;
 }
 

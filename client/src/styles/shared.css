@@ -29,7 +29,7 @@
   max-width: 320px;
   padding: 24px;
   background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
 }
 
@@ -38,7 +38,7 @@
   max-width: 400px;
   padding: 20px;
   background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
 }
 
@@ -62,15 +62,15 @@
   padding: 2px 8px;
   font-size: 0.75rem;
   font-weight: 500;
-  color: #a3a3a3;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-dim);
+  background: var(--color-surface-hi);
   border-radius: 10px;
 }
 
 .modal__hint {
   margin: 0;
   font-size: 12px;
-  color: #737373;
+  color: var(--color-muted);
 }
 
 .modal__error {
@@ -90,7 +90,7 @@
   justify-content: center;
   padding: 24px;
   cursor: zoom-out;
-  animation: lightboxIn 0.15s ease;
+  animation: lightboxIn var(--transition-speed) ease;
 }
 
 @keyframes lightboxIn {
@@ -103,14 +103,14 @@
   top: 16px;
   right: 16px;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-hi);
   border: none;
-  border-radius: 8px;
-  color: #a3a3a3;
+  border-radius: var(--radius-sm);
+  color: var(--color-dim);
   cursor: pointer;
   display: flex;
   z-index: 1;
-  transition: background 0.15s;
+  transition: background var(--transition-speed);
 }
 
 .lightbox__close:hover {
@@ -121,7 +121,7 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: default;
 }
 
@@ -131,17 +131,17 @@
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  color: #e5e5e5;
+  color: var(--color-text);
   cursor: pointer;
   font-size: 13px;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background var(--transition-speed), border-color var(--transition-speed);
 }
 
 .btn-icon:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-border);
   border-color: rgba(255, 255, 255, 0.15);
 }
 
@@ -154,7 +154,7 @@
   padding: 6px;
   background: none;
   border: none;
-  color: #a3a3a3;
+  color: var(--color-dim);
   cursor: pointer;
   display: flex;
   line-height: 0;
@@ -171,7 +171,7 @@
 
 .qr-preparing {
   margin: 16px 0;
-  color: #737373;
+  color: var(--color-muted);
   font-size: 14px;
 }
 
@@ -179,7 +179,7 @@
 .mirror__label {
   display: block;
   font-size: 11px;
-  color: #737373;
+  color: var(--color-muted);
   margin-bottom: 6px;
 }
 
@@ -189,8 +189,8 @@
   padding: 12px;
   background: #0f0f0f;
   border: 1px solid #333;
-  border-radius: 8px;
-  color: #e5e5e5;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
   font-size: 14px;
   resize: vertical;
 }
@@ -208,16 +208,16 @@
 .mirror-sync__btn {
   padding: 5px 10px;
   background: none;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: #737373;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
   font-size: 12px;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color var(--transition-speed), border-color var(--transition-speed);
 }
 
 .mirror-sync__btn:hover:not(:disabled) {
-  color: #e5e5e5;
+  color: var(--color-text);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
@@ -239,11 +239,11 @@
   padding: 2px 0;
   font-size: 11px;
   font-family: monospace;
-  color: #737373;
+  color: var(--color-muted);
 }
 
 .sync-log__ts {
-  color: #525252;
+  color: var(--color-faint);
   flex-shrink: 0;
 }
 
@@ -258,19 +258,19 @@
   flex: 1;
   min-width: 0;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: #e5e5e5;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .connect-btn {
   padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-hi);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  color: #e5e5e5;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
@@ -297,9 +297,9 @@
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  background: var(--color-surface-lo);
+  border: 1px solid var(--color-surface-hi);
+  border-radius: var(--radius-sm);
 }
 
 .connection-btn {
@@ -310,7 +310,7 @@
   padding: 0;
   background: none;
   border: none;
-  color: #e5e5e5;
+  color: var(--color-text);
   cursor: pointer;
   font-size: 13px;
   text-align: left;
@@ -332,7 +332,7 @@
   padding: 4px;
   background: none;
   border: none;
-  color: #737373;
+  color: var(--color-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -344,14 +344,14 @@
   align-items: center;
   gap: 6px;
   padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-border);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 10px;
   color: #fafafa;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background var(--transition-speed), border-color var(--transition-speed);
 }
 
 .btn-primary:hover:not(:disabled) {
