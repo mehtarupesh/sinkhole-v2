@@ -78,7 +78,7 @@ Switching type when content is already filled shows a **confirmation banner** ("
 
 **ContentField** — renders differently per type (text input, password input, or file picker). Stores `content`, `fileName`, `mimeType`.
 
-**NoteField** — the `quote` field. Supports both text input and **voice recording**. Notes are always sent to AI regardless of the share toggle.
+**NoteTray** — the `quote` field. Supports both text input and **voice recording**. Notes are always sent to AI to automatically suggest a category.
 
 **CategorySelector** — chips for existing categories + a "✦ suggest category" trigger.
 
