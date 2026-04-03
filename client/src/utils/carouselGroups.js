@@ -9,6 +9,19 @@ export const TRASH_ID    = 'trash';
 export const TRASH_TITLE = 'Trash';
 
 /**
+ * Removes stored categories that have no units assigned to them.
+ * Trash is always preserved regardless of whether it is empty.
+ *
+ * @param {{ id:string, title:string }[]} storedGroups
+ * @param {object[]} units
+ * @returns {{ id:string, title:string }[]}
+ */
+export function pruneEmptyCategories(storedGroups, units) {
+  const populated = new Set(units.map((u) => u.categoryId).filter(Boolean));
+  return storedGroups.filter((g) => g.id === TRASH_ID || populated.has(g.id));
+}
+
+/**
  * Returns display groups — stored categories with computed uids, plus a virtual
  * Misc group for units with no categoryId or an unknown categoryId.
  * The Misc group is never persisted.
