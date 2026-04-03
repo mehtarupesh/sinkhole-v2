@@ -8,11 +8,24 @@
   --color-muted:           #737373;
   --transition-speed:      0.15s;
 
+  --text-2xs:              11px;
+  --text-xs:               12px;
+  --text-sm:               13px;
+
+  --color-panel:           #1a1a1a;
+  --color-error:           #f87171;
+
   --color-surface-hi:      rgba(255, 255, 255, 0.08);
   --color-surface-lo:      rgba(255, 255, 255, 0.04);
   --color-dim:             #a3a3a3;
   --color-faint:           #525252;
   --radius-sm:             8px;
+  --radius-md:             10px;
+  --radius-lg:             16px;
+
+  --color-bright:          #fafafa;
+  --color-border-hi:       rgba(255, 255, 255, 0.12);
+  --color-border-dark:     #404040;
 }
 
 /* ── Base ── */
@@ -37,7 +50,7 @@ body {
   position: fixed;
   bottom: 8px;
   right: 12px;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   color: #555;
   font-family: monospace;
   user-select: none;

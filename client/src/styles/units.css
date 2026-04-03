@@ -7,9 +7,9 @@
 .units-panel {
   width: 100%;
   max-width: 520px;
-  background: #1a1a1a;
+  background: var(--color-panel);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -64,7 +64,7 @@
   padding: 12px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   color: inherit;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s;
@@ -90,8 +90,8 @@
 
 .unit-card__date {
   flex: 1;
-  font-size: 11px;
-  color: #404040;
+  font-size: var(--text-2xs);
+  color: var(--color-border-dark);
 }
 
 .unit-card__body {
@@ -100,7 +100,7 @@
 
 .unit-card__text {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--color-dim);
   white-space: pre-wrap;
   word-break: break-word;
@@ -149,7 +149,7 @@
 }
 
 .search-header__icon {
-  color: #404040;
+  color: var(--color-border-dark);
   display: flex;
   flex-shrink: 0;
 }
@@ -207,7 +207,7 @@
 }
 
 .search-count {
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: rgba(255, 255, 255, 0.3);
   margin: 0 0 12px 2px;
 }
@@ -223,7 +223,7 @@
   margin: 0 0 10px;
   padding: 6px 0;
   background: #0f0f0f;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -281,7 +281,7 @@
   background: none;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: rgba(255, 255, 255, 0.25);
   cursor: pointer;
   white-space: nowrap;
@@ -294,7 +294,7 @@
 }
 
 .unit-detail__delete--confirm {
-  color: #f87171;
+  color: var(--color-error);
   background: rgba(248, 113, 113, 0.1);
   padding: 6px 12px;
 }
@@ -317,8 +317,8 @@
 
 .unit-detail__meta {
   margin: 12px 0 0;
-  font-size: 11px;
-  color: #404040;
+  font-size: var(--text-2xs);
+  color: var(--color-border-dark);
   font-family: monospace;
 }
 
@@ -362,7 +362,7 @@
 }
 
 .unit-detail-nav__count {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: rgba(255, 255, 255, 0.5);
   min-width: 44px;
   text-align: center;

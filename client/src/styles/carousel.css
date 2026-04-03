@@ -7,7 +7,7 @@
 }
 
 .carousel__title {
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 650;
   letter-spacing: 0.08em;
   color: #8a8a8a;
@@ -71,7 +71,7 @@
 
 .bleed-card:hover,
 .bleed-card:focus-visible {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--color-border-hi);
   box-shadow: 0 0 0 1px var(--color-surface-lo);
   outline: none;
 }
@@ -229,7 +229,7 @@
 }
 
 .link-preview__domain {
-  font-size: 11px;
+  font-size: var(--text-2xs);
   color: #7aafff;
   white-space: nowrap;
   overflow: hidden;
@@ -360,7 +360,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #fafafa;
+  background: var(--color-bright);
   color: #111;
   display: flex;
   align-items: center;

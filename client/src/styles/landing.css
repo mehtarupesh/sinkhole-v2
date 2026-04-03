@@ -36,7 +36,7 @@
   font-size: 2rem;
   font-weight: 700;
   margin: 0;
-  color: #fafafa;
+  color: var(--color-bright);
   letter-spacing: -0.02em;
   display: inline-flex;
   align-items: baseline;
@@ -50,7 +50,7 @@
 
 .landing__title-b {
   font-weight: 700;
-  color: #fafafa;
+  color: var(--color-bright);
 }
 
 .landing__sub {
@@ -76,7 +76,7 @@
   padding: 6px;
   background: rgba(18, 18, 18, 0.88);
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   white-space: nowrap;
@@ -140,9 +140,9 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--color-border-hi);
   border-radius: 999px;
-  color: #fafafa;
+  color: var(--color-bright);
   font-family: inherit;
   font-weight: 500;
   line-height: 1.2;
@@ -152,7 +152,7 @@
 }
 
 .category-cloud__pill:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--color-border-hi);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
@@ -194,8 +194,8 @@
   gap: 4px;
   padding: 6px;
   background: rgba(18, 18, 18, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
+  border: 1px solid var(--color-border-hi);
+  border-radius: var(--radius-lg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   white-space: nowrap;
@@ -203,7 +203,7 @@
 }
 
 .selection-bar__count {
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-text);
   padding: 0 6px;
@@ -225,7 +225,7 @@
   position: fixed;
   inset: 0;
   border: 2px dashed rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   margin: 16px;
   pointer-events: none;
   z-index: 50;
