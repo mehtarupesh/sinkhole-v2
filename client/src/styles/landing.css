@@ -219,6 +219,78 @@
   flex-shrink: 0;
 }
 
+/* ── Cleanup strip ── */
+.cleanup-strip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 680px;
+  margin-top: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-dim);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cleanup-strip::before,
+.cleanup-strip::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(245, 158, 11, 0.2);
+  transition: background 0.15s;
+}
+
+.cleanup-strip:hover::before,
+.cleanup-strip:hover::after {
+  background: rgba(245, 158, 11, 0.4);
+}
+
+.cleanup-strip__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+.cleanup-strip:hover .cleanup-strip__inner {
+  color: var(--color-text);
+}
+
+.cleanup-strip svg {
+  flex-shrink: 0;
+  color: #f59e0b;
+  opacity: 0.75;
+}
+
+.cleanup-strip__msg {
+  font-size: var(--text-sm);
+}
+
+.cleanup-strip__count {
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+.cleanup-strip__sep {
+  color: var(--color-faint);
+}
+
+.cleanup-strip__cta {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: #f59e0b;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.cleanup-strip:hover .cleanup-strip__cta {
+  opacity: 1;
+}
+
 /* ── Drop hint ── */
 .landing--dragging::after {
   content: '';

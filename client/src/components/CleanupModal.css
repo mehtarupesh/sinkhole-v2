@@ -1,0 +1,322 @@
+.cleanup-modal {
+  width: 100%;
+  max-width: 360px;
+  background: #141414;
+  border: 1px solid var(--color-border-hi);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 0 20px;
+  max-height: 90vh;
+}
+
+.cleanup-modal__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+}
+
+.cleanup-modal__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-bright);
+  letter-spacing: 0.01em;
+}
+
+/* Progress bar */
+.cleanup-modal__progress {
+  width: 100%;
+  height: 3px;
+  background: var(--color-surface-hi);
+}
+
+.cleanup-modal__progress-bar {
+  height: 100%;
+  background: var(--color-dim);
+  transition: width 0.3s ease;
+}
+
+.cleanup-modal__count {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  margin: 10px 0 0;
+}
+
+/* Card stack */
+.cleanup-modal__stack {
+  position: relative;
+  width: calc(100% - 32px);
+  height: 320px;
+  margin: 12px 0 0;
+  user-select: none;
+  touch-action: none;
+}
+
+.cleanup-card {
+  position: absolute;
+  inset: 0;
+  background: #1e1e1e;
+  border: 1px solid var(--color-border-hi);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  cursor: grab;
+}
+
+.cleanup-card--behind {
+  transform: scale(0.94) translateY(10px);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cleanup-card--top {
+  z-index: 1;
+  will-change: transform;
+  transform-origin: center bottom;
+}
+
+.cleanup-card--top.cleanup-card--snapping {
+  transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.cleanup-card--top.cleanup-card--flying {
+  transition: transform 0.35s cubic-bezier(0.55, 0, 1, 0.45);
+}
+
+/* Swipe hint overlays */
+.cleanup-card__hint {
+  position: absolute;
+  top: 18px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border-radius: 6px;
+  padding: 4px 10px;
+  border-width: 2px;
+  border-style: solid;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.cleanup-card__hint--keep {
+  left: 16px;
+  color: #4ade80;
+  border-color: #4ade80;
+  transform: rotate(-8deg);
+}
+
+.cleanup-card__hint--trash {
+  right: 16px;
+  color: var(--color-error);
+  border-color: var(--color-error);
+  transform: rotate(8deg);
+}
+
+/* Card content */
+.cleanup-card__content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.cleanup-card__img {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+}
+
+.cleanup-card__text {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  line-height: 1.55;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 7;
+  -webkit-box-orient: vertical;
+}
+
+.cleanup-card__quote {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-dim);
+  font-style: italic;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Card metadata footer */
+.cleanup-card__meta {
+  margin-top: auto;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cleanup-card__cat {
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  color: var(--color-dim);
+  background: var(--color-surface-hi);
+  border-radius: var(--radius-sm);
+  padding: 2px 7px;
+  align-self: flex-start;
+}
+
+/* Two-column stat row */
+.cleanup-card__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 12px;
+}
+
+.cleanup-card__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cleanup-card__stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-faint);
+  font-weight: 500;
+}
+
+.cleanup-card__stat-value {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.cleanup-card__stat-value--age {
+  color: #f59e0b; /* amber — age */
+}
+
+.cleanup-card__stat-value--access {
+  color: #60a5fa; /* blue — last access */
+}
+
+.cleanup-card__stat-value--never {
+  color: var(--color-error);
+}
+
+/* Action buttons */
+.cleanup-modal__actions {
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+  align-items: center;
+}
+
+.cleanup-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  cursor: pointer;
+  color: var(--color-dim);
+  font-size: var(--text-2xs);
+  justify-content: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.1s;
+}
+
+.cleanup-btn:active {
+  transform: scale(0.92);
+}
+
+.cleanup-btn--trash {
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.cleanup-btn--trash:hover {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.cleanup-btn--keep {
+  width: 72px;
+  height: 72px;
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.cleanup-btn--keep:hover {
+  background: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
+  border-color: #4ade80;
+}
+
+.cleanup-modal__hint {
+  font-size: var(--text-2xs);
+  color: var(--color-faint);
+  margin: 12px 0 0;
+  text-align: center;
+}
+
+/* Done screen */
+.cleanup-modal__done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.cleanup-modal__done-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.cleanup-modal__done-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-bright);
+}
+
+.cleanup-modal__done-sub {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-dim);
+  line-height: 1.5;
+}
+
+
+/* Primary button (reuse or define inline) */
+.cleanup-modal .btn--primary {
+  margin-top: 8px;
+  padding: 10px 28px;
+  background: var(--color-surface-hi);
+  border: 1px solid var(--color-border-hi);
+  border-radius: var(--radius-md);
+  color: var(--color-bright);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.cleanup-modal .btn--primary:hover {
+  background: rgba(255,255,255,0.12);
+}

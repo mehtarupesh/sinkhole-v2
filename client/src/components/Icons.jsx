@@ -213,6 +213,18 @@ export function PinIcon({ size = 20 }) {
   );
 }
 
+export function BroomIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3 21l7-7" />
+      <path d="M10 14l1.5-1.5" />
+      <path d="M12.5 11.5L19 5" />
+      <path d="M15 3l6 6" />
+      <path d="M3 21c0 0 3-1 6-4s4-6 4-6" />
+    </svg>
+  );
+}
+
 export function SignalStatusIcon({ connected }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

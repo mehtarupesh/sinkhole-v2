@@ -3,8 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon } from '../components/Icons';
+import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon, BroomIcon } from '../components/Icons';
 import { getAllUnits, updateUnit, deleteUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder } from '../utils/db';
+import { getCleanupCandidates } from '../utils/cleanupCandidates';
 import { runMigrations } from '../utils/migrations';
 import { buildRecentCarousel, withMiscGroup, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
 import AddUnitModal from '../components/AddUnitModal';
@@ -18,6 +19,7 @@ import Carousel from '../components/Carousel';
 import CategoryCloud from '../components/CategoryCloud';
 import UnitDetail from '../components/UnitDetail';
 import SelectionBar from '../components/SelectionBar';
+import CleanupModal from '../components/CleanupModal';
 import { useSelection } from '../hooks/useSelection';
 
 export default function Landing() {
@@ -42,8 +44,9 @@ export default function Landing() {
 
   const [moveCtx, setMoveCtx] = useState(null); // { units: Unit[] } | null
   const [cardForageCtx, setCardForageCtx] = useState(null); // { units: Unit[], category } | null
+  const [showCleanupModal, setShowCleanupModal] = useState(false);
 
-  const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal || moveCtx !== null || cardForageCtx !== null;
+  const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal || moveCtx !== null || cardForageCtx !== null || showCleanupModal;
 
   // ── Selection (cards + categories) ──────────────────────────────────────────
   const cardSel = useSelection();
@@ -156,6 +159,11 @@ export default function Landing() {
   }, [hasPendingShare]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const nonTrashUnits = useMemo(() => units.filter((u) => u.categoryId !== TRASH_ID), [units]);
+
+  const cleanupCandidates = useMemo(
+    () => getCleanupCandidates(units, accessOrder),
+    [units, accessOrder]
+  );
 
   const hasUnits = nonTrashUnits.length > 0;
 
@@ -313,6 +321,25 @@ export default function Landing() {
           onCategoryLongPress={handleCategoryLongPress}
           accessOrder={accessOrder}
         />
+      )}
+
+      {cleanupCandidates.length > 0 && !isSelecting && (
+        <button
+          type="button"
+          className="cleanup-strip"
+          onClick={() => setShowCleanupModal(true)}
+          aria-label="Clean up stale items"
+        >
+          <span className="cleanup-strip__inner">
+            <BroomIcon size={15} />
+            <span className="cleanup-strip__msg">
+              <span className="cleanup-strip__count">{cleanupCandidates.length}</span>
+              {' '}item{cleanupCandidates.length !== 1 ? 's' : ''} collecting dust
+            </span>
+            <span className="cleanup-strip__sep">·</span>
+            <span className="cleanup-strip__cta">Clean up →</span>
+          </span>
+        </button>
       )}
 
       {isSelecting && !isAnyModalOpen ? (
@@ -556,6 +583,15 @@ export default function Landing() {
           allUnits={cardForageCtx.units}
           onClose={() => { setCardForageCtx(null); cardSel.clear(); }}
           onSaveUnit={() => reloadUnits()}
+        />
+      )}
+      {showCleanupModal && (
+        <CleanupModal
+          candidates={cleanupCandidates}
+          storedGroups={storedGroups}
+          onTrash={async (unit) => { await updateUnit(unit.id, { categoryId: TRASH_ID }); reloadUnits(); }}
+          onKeep={() => {}}
+          onClose={() => setShowCleanupModal(false)}
         />
       )}
     </div>

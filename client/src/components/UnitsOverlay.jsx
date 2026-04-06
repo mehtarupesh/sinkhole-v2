@@ -4,7 +4,7 @@ import ConfirmDeleteModal from './ConfirmDeleteModal';
 import ForageModal from './ForageModal';
 import { getAllUnits, updateUnit, getCategorization, setCategorization } from '../utils/db';
 import MoveToCategoryModal from './MoveToCategoryModal';
-import { withMiscGroup, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
+import { withMiscGroup, pruneEmptyCategories, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
 import { groupByTime } from '../utils/timeGroups';
 import { CarouselCard } from './Carousel';
 import UnitDetail from './UnitDetail';
@@ -28,8 +28,10 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const [forageCtx, setForageCtx] = useState(null); // { units: Unit[] } | null
 
   useEffect(() => {
-    getAllUnits().then((all) => setUnits(all.slice().reverse()));
-    getCategorization().then((g) => setGroups(g || []));
+    Promise.all([getAllUnits(), getCategorization()]).then(([all, g]) => {
+      setUnits(all.slice().reverse());
+      setGroups(pruneEmptyCategories(g || [], all));
+    });
   }, []);
 
   useEffect(() => {
