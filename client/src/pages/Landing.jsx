@@ -78,7 +78,7 @@ export default function Landing() {
     if (newTitle.toLowerCase() === 'trash' || newTitle.toLowerCase() === 'unclassified') { setToast(newTitle + ' name is reserved'); return; }
     setStoredGroups((prev) => {
       if (!prev) return prev;
-      const updated = prev.map((g) => (g.id === id ? { ...g, title: newTitle } : g));
+      const updated = prev.map((g) => (g.id === id ? { ...g, title: newTitle, updatedAt: Date.now() } : g));
       setCategorization(updated);
       return updated;
     });

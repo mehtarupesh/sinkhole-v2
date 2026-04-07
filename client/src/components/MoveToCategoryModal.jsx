@@ -23,7 +23,7 @@ export default function MoveToCategoryModal({ count, groups, onMove, onClose }) 
 
   // A committed new category (non-empty title, not currently being edited)
   const newCat = (newCatTitle && !editingNew)
-    ? { id: slugify(newCatTitle), title: newCatTitle }
+    ? { id: slugify(newCatTitle), title: newCatTitle, updatedAt: Date.now() }
     : null;
 
   const canMove = !!targetId || newCat !== null;

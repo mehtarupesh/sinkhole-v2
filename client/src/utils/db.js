@@ -146,21 +146,42 @@ export async function setCategorization(groups) {
 export async function mergeCategorization(importedGroups) {
   if (!importedGroups?.length) return {};
   const existing = (await getCategorization()) ?? [];
-  const titleToId = {};
+
+  // id is the stable cross-device identity; title can change (rename).
+  const localById   = new Map(existing.map((g, i) => [g.id, i]));   // id → index
+  const titleToId   = {};
   for (const g of existing) titleToId[g.title.toLowerCase()] = g.id;
 
   const idRemap = {};
   let changed = false;
 
-  for (const { id, title } of importedGroups) {
+  for (const { id, title, updatedAt } of importedGroups) {
     if (!id || !title) continue;
-    const localId = titleToId[title.toLowerCase()];
-    if (localId) {
-      if (id !== localId) idRemap[id] = localId;
+
+    if (localById.has(id)) {
+      // Same category — apply rename only if peer's version is newer (LWW).
+      const idx      = localById.get(id);
+      const localTs  = existing[idx].updatedAt ?? 0;
+      const peerTs   = updatedAt ?? 0;
+      if (existing[idx].title !== title && peerTs > localTs) {
+        delete titleToId[existing[idx].title.toLowerCase()];
+        existing[idx] = { ...existing[idx], title, updatedAt: peerTs };
+        titleToId[title.toLowerCase()] = id;
+        changed = true;
+      }
     } else {
-      existing.push({ id, title });
-      titleToId[title.toLowerCase()] = id;
-      changed = true;
+      const localId = titleToId[title.toLowerCase()];
+      if (localId) {
+        // Same title, different id → cross-device dedup; remap peer id → local id.
+        if (id !== localId) idRemap[id] = localId;
+      } else {
+        // Brand-new category.
+        const entry = { id, title, updatedAt: updatedAt ?? 0 };
+        existing.push(entry);
+        localById.set(id, existing.length - 1);
+        titleToId[title.toLowerCase()] = id;
+        changed = true;
+      }
     }
   }
 
@@ -173,7 +194,7 @@ export async function mergeCategorization(importedGroups) {
 export async function ensureTrashCategory() {
   const groups = (await getCategorization()) ?? [];
   if (groups.some((g) => g.id === 'trash')) return groups;
-  const updated = [...groups, { id: 'trash', title: 'Trash' }];
+  const updated = [...groups, { id: 'trash', title: 'Trash', updatedAt: Date.now() }];
   await setCategorization(updated);
   return updated;
 }

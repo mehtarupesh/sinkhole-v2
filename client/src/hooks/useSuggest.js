@@ -65,7 +65,7 @@ export function useSuggest() {
       }
 
       if (result.suggestedTitle) {
-        setNewCategory({ id: slugify(result.suggestedTitle), title: result.suggestedTitle });
+        setNewCategory({ id: slugify(result.suggestedTitle), title: result.suggestedTitle, updatedAt: Date.now() });
         setSuggestState('done');
         return { type: 'new' };
       }
@@ -100,7 +100,7 @@ export function useSuggest() {
       setEditingGhost(false);
       setSuggestState('idle');
     } else {
-      setNewCategory({ id: slugify(trimmed), title: trimmed });
+      setNewCategory({ id: slugify(trimmed), title: trimmed, updatedAt: Date.now() });
       setEditingGhost(false);
     }
   };
@@ -127,7 +127,7 @@ export function useSuggest() {
       return { type: 'existing', categoryId };
     }
     if (suggestedTitle) {
-      setNewCategory({ id: slugify(suggestedTitle), title: suggestedTitle });
+      setNewCategory({ id: slugify(suggestedTitle), title: suggestedTitle, updatedAt: Date.now() });
       setSuggestState('done');
       return { type: 'new' };
     }

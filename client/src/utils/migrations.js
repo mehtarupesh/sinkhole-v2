@@ -8,6 +8,7 @@ const migrations = [
   migration_1_deduplicateCategoriesByTitle,
   migration_2_bootstrapAccessOrder,
   migration_3_accessOrderToObjects,
+  migration_4_categoryUpdatedAt,
 ];
 
 // ── Runner ────────────────────────────────────────────────────────────────────
@@ -135,6 +136,17 @@ async function migration_3_accessOrderToObjects() {
   const createdAtByUid = new Map(units.filter((u) => u.uid).map((u) => [u.uid, u.createdAt ?? 0]));
   const converted = order.map((uid) => ({ uid, t: createdAtByUid.get(uid) ?? 0 }));
   await setSetting('accessOrder', converted);
+}
+
+// ── Migration 4 — backfill updatedAt on category entries ─────────────────────
+// Categories now carry updatedAt for last-write-wins rename resolution during
+// P2P sync. Existing entries get updatedAt: 0 so any peer-stamped rename wins.
+
+async function migration_4_categoryUpdatedAt() {
+  const groups = await getCategorization();
+  if (!groups?.length) return;
+  if (groups.every((g) => g.updatedAt !== undefined)) return; // already done
+  await setCategorization(groups.map((g) => ({ updatedAt: 0, ...g })));
 }
 
 // ── IDB helpers scoped to migration (avoid circular openDB calls) ─────────────

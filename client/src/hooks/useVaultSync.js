@@ -58,7 +58,11 @@ export function useVaultSync(connections) {
           if (msg.phase === 'offer') {
             setStates(prev => ({ ...prev, [conn.peer]: { ...(prev[conn.peer] ?? { status: 'idle', added: 0 }), status: 'syncing', detail: 'Comparing vaults…', log: [] } }));
 
+            // Fetch local state before merging so Message 2 carries only the responder's own categories.
             const [localUnits, categorization] = await Promise.all([getAllUnits(), getCategorization()]);
+
+            // Merge initiator's categories so renames are resolved before inserting units.
+            await mergeCategorization(msg.categorization);
 
             const peerMap  = new Map((msg.units ?? []).map((u) => [u.uid, u.ts ?? 0]));
             const localMap = new Map(localUnits.filter((u) => u.uid).map((u) => [u.uid, u]));
@@ -92,10 +96,10 @@ export function useVaultSync(connections) {
             const { added, updated } = await mergeUnits(msg.units ?? [], idRemap);
 
             if (msg.want?.length > 0 && conn.open) {
-              const [localUnits, categorization] = await Promise.all([getAllUnits(), getCategorization()]);
+              const localUnits = await getAllUnits();
               const wantSet = new Set(msg.want);
               const toSend  = localUnits.filter((u) => wantSet.has(u.uid));
-              conn.send({ type: VAULT_CHANNEL, phase: 'transfer', units: toSend, categorization });
+              conn.send({ type: VAULT_CHANNEL, phase: 'transfer', units: toSend });
               // Single state update: log + done together so no intermediate render shows "Sending…"
               setStates(prev => {
                 const cur = prev[conn.peer] ?? { status: 'idle', added: 0, log: [] };
@@ -121,11 +125,11 @@ export function useVaultSync(connections) {
     if (!conn?.open) return;
     setStates(prev => ({ ...prev, [conn.peer]: { status: 'syncing', added: 0, log: [], detail: 'Reading vault…' } }));
     try {
-      const units = await getAllUnits();
+      const [units, categorization] = await Promise.all([getAllUnits(), getCategorization()]);
       const offerUnits = units.filter((u) => u.uid).map((u) => ({ uid: u.uid, ts: ts(u) }));
       appendLog(conn.peer, `→ offer to ${shortId(conn.peer)}: ${offerUnits.length} items`);
       setPeerState(conn.peer, { detail: `Comparing ${offerUnits.length} item${offerUnits.length !== 1 ? 's' : ''}…` });
-      conn.send({ type: VAULT_CHANNEL, phase: 'offer', units: offerUnits });
+      conn.send({ type: VAULT_CHANNEL, phase: 'offer', units: offerUnits, categorization });
     } catch (_) {
       setPeerState(conn.peer, { status: 'error' });
     }
