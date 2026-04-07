@@ -1,6 +1,6 @@
 import { TRASH_ID } from './carouselGroups';
 
-const DEFAULT_MIN_AGE_MS = 24 * 60 * 60 * 1000; // 1 day
+const DEFAULT_MIN_AGE_MS = 4 * 24 * 60 * 60 * 1000; // 4 days
 
 /**
  * Returns units that are candidates for cleanup:
@@ -20,7 +20,7 @@ export function getCleanupCandidates(units, accessOrder, { minAgeMs = DEFAULT_MI
   }
 
   const candidates = units
-    .filter((u) => u.categoryId !== TRASH_ID && u.createdAt < cutoff)
+    .filter((u) => u.categoryId !== TRASH_ID && (u.createdAt < cutoff && lastAccess.get(u.uid) < cutoff))
     .map((u) => ({ ...u, lastAccessedAt: lastAccess.get(u.uid) ?? null }));
 
   // Sort: never accessed first (lastAccessedAt=null → 0), then oldest access time first

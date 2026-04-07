@@ -45,7 +45,11 @@ function CardContent({ unit }) {
   );
 }
 
-export default function CleanupModal({ candidates, storedGroups, onTrash, onKeep, onClose }) {
+export default function CleanupModal({ candidates: initialCandidates, storedGroups, onTrash, onKeep, onClose }) {
+  // Snapshot on mount — prevents parent re-renders (from reloadUnits) from
+  // mutating the list mid-animation and causing cards to skip or flash.
+  const candidates = useRef(initialCandidates).current;
+
   const [index, setIndex] = useState(0);
   const [dx, setDx] = useState(0);
   const [cardClass, setCardClass] = useState('cleanup-card--top');
@@ -72,6 +76,7 @@ export default function CleanupModal({ candidates, storedGroups, onTrash, onKeep
     isAnimating.current = true;
 
     if (action === 'trash') onTrash(candidates[index]);
+    else if (action === 'keep') onKeep(candidates[index]);
     setResults((r) => [...r, action]);
 
     // Fly the card off screen
@@ -190,18 +195,6 @@ export default function CleanupModal({ candidates, storedGroups, onTrash, onKeep
                       <span className="cleanup-card__stat-value cleanup-card__stat-value--age">
                         {relativeDate(current.createdAt)}
                       </span>
-                    </div>
-                    <div className="cleanup-card__stat">
-                      <span className="cleanup-card__stat-label">Last opened</span>
-                      {current.lastAccessedAt ? (
-                        <span className="cleanup-card__stat-value cleanup-card__stat-value--access">
-                          {relativeDate(current.lastAccessedAt)}
-                        </span>
-                      ) : (
-                        <span className="cleanup-card__stat-value cleanup-card__stat-value--never">
-                          never
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>

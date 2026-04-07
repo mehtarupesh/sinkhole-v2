@@ -212,7 +212,8 @@
 }
 
 .cleanup-card__stat-value--never {
-  color: var(--color-error);
+  color: #f97066;
+  opacity: 0.7;
 }
 
 /* Action buttons */

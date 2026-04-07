@@ -4,10 +4,10 @@ import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon, BroomIcon } from '../components/Icons';
-import { getAllUnits, updateUnit, deleteUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder } from '../utils/db';
+import { getAllUnits, updateUnit, deleteUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder, touchUnit } from '../utils/db';
 import { getCleanupCandidates } from '../utils/cleanupCandidates';
 import { runMigrations } from '../utils/migrations';
-import { buildRecentCarousel, withMiscGroup, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
+import { buildRecentCarousel, withMiscGroup, MISC_ID, TRASH_ID,pruneEmptyCategories } from '../utils/carouselGroups';
 import AddUnitModal from '../components/AddUnitModal';
 import MoveToCategoryModal from '../components/MoveToCategoryModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
@@ -110,8 +110,9 @@ export default function Landing() {
     runMigrations()
       .then(() => Promise.all([getAllUnits(), ensureTrashCategory(), getAccessOrder()]))
       .then(([loadedUnits, groups, order]) => {
+        const non_empty_groups = pruneEmptyCategories(groups, loadedUnits);
         setUnits(loadedUnits);
-        setStoredGroups(groups);
+        setStoredGroups(non_empty_groups);
         setAccessOrder(order);
       });
   }, []);
@@ -590,7 +591,7 @@ export default function Landing() {
           candidates={cleanupCandidates}
           storedGroups={storedGroups}
           onTrash={async (unit) => { await updateUnit(unit.id, { categoryId: TRASH_ID }); reloadUnits(); }}
-          onKeep={() => {}}
+          onKeep={async (unit) => { await touchUnit(unit.uid); setAccessOrder(await getAccessOrder()); }}
           onClose={() => setShowCleanupModal(false)}
         />
       )}
