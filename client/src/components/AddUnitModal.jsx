@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon } from './Icons';
-import { addUnit } from '../utils/db';
+import { addUnit, touchUnit } from '../utils/db';
 import { useSuggest } from '../hooks/useSuggest';
 import ContentField from './ContentField';
 import NoteTray from './NoteTray';
@@ -149,7 +149,9 @@ export default function AddUnitModal({
       if (mimeType)     unit.mimeType = mimeType;
       if (quote.trim()) unit.quote    = quote.trim();
 
-      await addUnit(unit);
+      const { uid } = await addUnit(unit);
+      await touchUnit(uid);
+
       navigator.vibrate?.(40);
       setSaveState('done');
 
