@@ -9,6 +9,8 @@ import { CloseIcon } from '../components/Icons';
 import { generateOtp } from '../utils/otp';
 import { getKnownPeers, saveKnownPeer } from '../utils/db';
 
+const OTP_WINDOW_S = 10;
+
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 /**
@@ -20,7 +22,13 @@ export default function Connect() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { connections, start, stop, connect, disconnect } = usePeer();
-  const { sync: syncVault, getState: getVaultState } = useVaultSync(connections);
+  const otpRef = useRef(null);
+  const validateOtp = useCallback((code) => {
+    if (!code) return false;
+    const c = String(code).padStart(4, '0');
+    return c === otpRef.current || c === prevOtpRef.current;
+  }, []);
+  const { sync: syncVault, getState: getVaultState } = useVaultSync(connections, validateOtp);
 
   const [qrUrl, setQrUrl] = useState('');
   const [hostIdInput, setHostIdInput] = useState('');
@@ -28,14 +36,17 @@ export default function Connect() {
   const [connectError, setConnectError] = useState('');
   const [connecting, setConnecting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [otp, setOtp] = useState(() => generateOtp(getStableHostId()));
-  const [secsLeft, setSecsLeft] = useState(() => Math.ceil((30000 - (Date.now() % 30000)) / 1000));
+  const [otp, setOtp] = useState(generateOtp);
+  const [secsLeft, setSecsLeft] = useState(OTP_WINDOW_S);
   const [knownPeers, setKnownPeers] = useState([]);
+  const prevOtpRef = useRef('');
 
   const hostId = getStableHostId();
   const conn = connections[0] ?? null;
   const { status: syncStatus, added: syncAdded, detail: syncDetail } = getVaultState(conn);
   const isConnected = !!conn?.open;
+
+  otpRef.current = otp;
 
   const isInitiatorRef = useRef(false);
   const autoSyncedRef = useRef(false);
@@ -60,28 +71,23 @@ export default function Connect() {
     }
   }, [syncStatus, conn?.peer]);
 
-  // Rotate OTP every 30 s aligned to window boundary. Stops when connected.
+  // Rotate OTP every 30 s. Stops ticking when connected.
   useEffect(() => {
     if (isConnected) return;
-    const updateOtp = () => {
-      setOtp(generateOtp(hostId));
-      setSecsLeft(30);
-    };
-
-    const updateSecs = () => setSecsLeft(Math.ceil((30000 - (Date.now() % 30000)) / 1000));
-    const msToNext = 30000 - (Date.now() % 30000);
-    let rotateIntervalId;
-    const alignTimeoutId = setTimeout(() => {
-      updateOtp();
-      rotateIntervalId = setInterval(updateOtp, 30000);
-    }, msToNext);
-    const secIntervalId = setInterval(updateSecs, 1000);
-    return () => {
-      clearTimeout(alignTimeoutId);
-      clearInterval(rotateIntervalId);
-      clearInterval(secIntervalId);
-    };
-  }, [isConnected, hostId]);
+    const id = setInterval(() => {
+      setSecsLeft((s) => {
+        if (s <= 1) {
+          setOtp((cur) => {
+            prevOtpRef.current = cur;
+            return generateOtp();
+          });
+          return OTP_WINDOW_S;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isConnected]);
 
   // Keep QR URL in sync with OTP.
   useEffect(() => {
@@ -223,7 +229,12 @@ export default function Connect() {
               </button>
               <div className="connect-otp">
                 <span className="connect-otp__code">{otp}</span>
-                <span className="connect-otp__hint">resets in {secsLeft}s</span>
+                <div className="connect-otp__bar" key={otp}>
+                  <div
+                    className="connect-otp__bar-fill"
+                    style={{ transform: `scaleX(${secsLeft / OTP_WINDOW_S})` }}
+                  />
+                </div>
               </div>
             </div>
 

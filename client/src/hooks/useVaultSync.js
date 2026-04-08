@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAllUnits, getCategorization, mergeUnits, mergeCategorization, getAccessOrder, mergeAccessOrder, getTombstones, mergeTombstones } from '../utils/db';
-import { validateOtp } from '../utils/otp';
-import { getStableHostId } from '../utils/stableHostId';
 
 const VAULT_CHANNEL = 'sinkhole-vault-sync';
 
@@ -28,7 +26,7 @@ function ts(unit) {
  * @param {object[]} connections - All open PeerJS DataConnections.
  * @returns {{ sync(conn): void, getState(conn): { status, added, log } }}
  */
-export function useVaultSync(connections) {
+export function useVaultSync(connections, otpValidator) {
   const [states, setStates] = useState({});
   const listenedRef = useRef(new Set());
 
@@ -58,7 +56,7 @@ export function useVaultSync(connections) {
           if (msg?.type !== VAULT_CHANNEL) return;
 
           if (msg.phase === 'offer') {
-            if (!validateOtp(getStableHostId(), msg.otp)) {
+            if (otpValidator && !otpValidator(msg.otp)) {
               conn.close();
               return;
             }
