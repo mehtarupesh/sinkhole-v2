@@ -51,7 +51,7 @@ Two separate IndexedDB databases:
 
 Stored as a single JSON blob in the `settings` store under key `categorization`:
 ```
-[{ id: string, title: string }]
+[{ id: string, title: string, updatedAt: number }]
 ```
 
 Category membership is derived from units: a unit belongs to a category when `unit.categoryId === category.id`. Units with no `categoryId`, or a `categoryId` that doesn't match any stored category, appear in the virtual **Misc group** — never persisted, always computed fresh.
@@ -70,10 +70,10 @@ Category membership is derived from units: a unit belongs to a category when `un
 
 **New category added inline:**
 - AddUnitModal and UnitDetail resolve the new category id before saving the unit — `categoryId` is stamped on the unit atomically
-- Landing / UnitsOverlay add `{ id, title }` to stored groups and call `setCategorization` (one settings write)
+- Landing / UnitsOverlay add `{ id, title, updatedAt }` to stored groups and call `setCategorization` (one settings write)
 
 **Category renamed:**
-- `setCategorization` with updated title — no unit writes needed
+- `setCategorization` with updated title and fresh `updatedAt` — no unit writes needed
 
 **Category deleted:**
 - Units in the deleted category are also deleted (`deleteUnit` per unit)
@@ -88,7 +88,8 @@ All in the `settings` store as `{ key, value }` rows:
 | Key | Value | UX trigger |
 |-----|-------|------------|
 | `gemini_key` | API key string | Settings modal — "Save key" / "Remove key" buttons |
-| `categorization` | `[{ id, title }]` | See above |
+| `categorization` | `[{ id, title, updatedAt }]` | See above |
+| `accessOrder` | `[{ uid, t }]` — most-recently-accessed first | `touchUnit()` on unit open; merged from peers on P2P sync |
 | `data_migration_version` | integer | Written by migration runner after each completed migration |
 
 `getSetting('gemini_key')` is called before every AI operation (categorize, suggest, forage, note AI). If absent, the operation fails with a toast directing the user to Settings.
@@ -103,6 +104,18 @@ The runner reads `data_migration_version` from settings (defaults to -1 if absen
 
 **Migration 0** — `migration_0_categoriesToUnitField`:
 Converts from old schema (`categorization` stored as `[{ id, title, uids[] }]`) to new schema (`unit.categoryId`). Stamps `categoryId` onto each unit based on the old uid arrays, then strips `uids` from the stored categories.
+
+**Migration 1** — `migration_1_deduplicateCategoriesByTitle`:
+Deduplicates categories that landed with different IDs on each device (artifact of old sync). Picks the ID with the most units as the winner; rewires all units pointing to deprecated IDs.
+
+**Migration 2** — `migration_2_bootstrapAccessOrder`:
+Seeds `accessOrder` for existing installs using unit `createdAt` timestamps as a proxy.
+
+**Migration 3** — `migration_3_accessOrderToObjects`:
+Converts `accessOrder` from bare `string[]` (briefly shipped) to `[{ uid, t }]`.
+
+**Migration 4** — `migration_4_categoryUpdatedAt`:
+Backfills `updatedAt: 0` on all existing category entries so any peer with a real timestamp wins on rename resolution.
 
 ---
 
@@ -131,11 +144,15 @@ Converts from old schema (`categorization` stored as `[{ id, title, uids[] }]`) 
 
 `useVaultSync` (Connect page) runs a 3-message diffing protocol over PeerJS DataConnections:
 
-1. **Initiator → Responder** `offer`: `{ units: [{ uid, ts }] }` — sends uid + effective timestamp (`updatedAt ?? createdAt`) for every local unit
-2. **Responder → Initiator** `transfer`: `{ units, want, categorization }` — sends units the initiator is missing or has a stale version of; `want` lists uids where the initiator's version is newer
-3. **Initiator → Responder** `transfer`: `{ units, categorization }` — sends back the wanted units; no further reply
+1. **Initiator → Responder** `offer`: `{ units: [{ uid, ts }], categorization, accessOrder }` — unit manifest plus the initiator's full category and access-order state
+2. **Responder → Initiator** `transfer`: `{ units, want, categorization, accessOrder }` — units the initiator is missing or has stale; `want` lists uids where the initiator's version is newer; carries the responder's **pre-merge** category and access-order state
+3. **Initiator → Responder** `transfer` *(only if `want` is non-empty)*: `{ units }` — the requested units; no metadata needed (both sides already exchanged it in messages 1 and 2)
 
-**Diff logic (responder):**
+Categorization and access order are always exchanged in the first two messages, so renames and LRU state sync even when no units need transferring.
+
+**Diff logic (responder, on receiving offer):**
+- Merges initiator's `categorization` and `accessOrder` first (before reading local state for Message 2)
+- Fetches local state **before** merging so Message 2 carries only the responder's own data
 - `toSend` = local units the peer doesn't have OR where local `ts` > peer `ts`
 - `want` = peer units we don't have OR where peer `ts` > local `ts`
 
@@ -146,10 +163,17 @@ Both sides converge to the latest version of every unit after a single exchange.
 - Known `uid` → overwrite only if `incomingTs > localTs` (last-write-wins on `updatedAt ?? createdAt ?? 0`)
 - Returns `{ added, updated }`
 
-**`mergeCategorization(importedGroups)`** — merges `[{ id, title }]` metadata:
-- Match by title (case-insensitive) — title is the cross-device identity; id is a local FK
-- Same title, different id → remap peer's id to local id (returned as `idRemap`)
-- Unknown title → add as new category
+**`mergeCategorization(importedGroups)`** — merges `[{ id, title, updatedAt }]` metadata:
+- Match by **id first** — id is the stable cross-device identity, title can change (rename)
+  - Same id, title changed → apply rename only if peer `updatedAt > local updatedAt` (last-write-wins)
+  - Same id, same title → no-op
+- If id not found, match by title (case-insensitive) — cross-device dedup for categories created independently on two devices
+  - Same title, different id → remap peer's id to local id (returned as `idRemap`)
+- Neither match → add as new category
 - `idRemap` is passed to `mergeUnits` so incoming units land under the correct local `categoryId`
 
-Units carry `categoryId` across the wire. Both devices converge to the same units, same category titles, and correct category assignments after a sync.
+**`mergeAccessOrder(incoming)`** — merges `[{ uid, t }]` LRU lists:
+- Per uid, keeps the highest `t` (most recent access wins) across both devices
+- Re-sorts descending by `t`
+
+Units, category renames, and access order all converge correctly after a single sync.
