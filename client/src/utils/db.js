@@ -132,6 +132,20 @@ export async function mergeAccessOrder(incoming) {
   await setSetting('accessOrder', sorted);
 }
 
+// ── Known peers ───────────────────────────────────────────────────────────────
+
+export async function getKnownPeers() {
+  return (await getSetting('knownPeers')) ?? [];
+}
+
+export async function saveKnownPeer(hostId) {
+  const peers = await getKnownPeers();
+  const idx = peers.findIndex((p) => p.hostId === hostId);
+  const entry = { hostId, lastSeen: Date.now() };
+  if (idx >= 0) peers[idx] = entry; else peers.push(entry);
+  await setSetting('knownPeers', peers.sort((a, b) => b.lastSeen - a.lastSeen).slice(0, 10));
+}
+
 export async function deleteSetting(key) {
   const db = await openDB();
   return new Promise((resolve, reject) => {

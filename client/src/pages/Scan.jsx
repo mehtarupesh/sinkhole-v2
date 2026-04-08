@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import jsQR from 'jsqr';
 import { isValidPeerId } from '../utils/stableHostId';
 
-function parsePeerIdFromScan(data) {
+function parseScanData(data) {
   const s = (data || '').trim();
-  const match = s.match(/[?&]peerId=([^&\s]+)/);
-  if (match) return decodeURIComponent(match[1]);
+  const peerMatch = s.match(/[?&]peerId=([^&\s]+)/);
+  const otpMatch = s.match(/[?&]otp=([^&\s]+)/);
+  const otp = otpMatch ? decodeURIComponent(otpMatch[1]) : '';
+  if (peerMatch) return { peerId: decodeURIComponent(peerMatch[1]), otp };
   // Accept slug (e.g. elegant-green-coat) or legacy host-xxx
-  if (/^[a-z]+(-[a-z]+)+$/.test(s) || /^host-[a-z0-9]+$/i.test(s)) return s;
+  if (/^[a-z]+(-[a-z]+)+$/.test(s) || /^host-[a-z0-9]+$/i.test(s)) return { peerId: s, otp: '' };
   return null;
 }
 
@@ -37,10 +39,11 @@ export default function Scan() {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, imageData.width, imageData.height);
         if (code?.data) {
-          const peerId = parsePeerIdFromScan(code.data);
-          if (peerId && isValidPeerId(peerId)) {
+          const parsed = parseScanData(code.data);
+          if (parsed?.peerId && isValidPeerId(parsed.peerId)) {
             scanningRef.current = false;
-            navigate(`/connect?peerId=${encodeURIComponent(peerId)}`, { replace: true });
+            const otpParam = parsed.otp ? `&otp=${encodeURIComponent(parsed.otp)}` : '';
+            navigate(`/connect?peerId=${encodeURIComponent(parsed.peerId)}${otpParam}`, { replace: true });
             return;
           }
         }

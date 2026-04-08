@@ -6,6 +6,8 @@ import { useVaultSync } from '../hooks/useVaultSync';
 import { getJoinUrl } from '../utils/getJoinUrl';
 import { getStableHostId, isValidPeerId } from '../utils/stableHostId';
 import { CloseIcon } from '../components/Icons';
+import { generateOtp } from '../utils/otp';
+import { getKnownPeers, saveKnownPeer } from '../utils/db';
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -22,11 +24,22 @@ export default function Connect() {
 
   const [qrUrl, setQrUrl] = useState('');
   const [hostIdInput, setHostIdInput] = useState('');
+  const [otpInput, setOtpInput] = useState('');
   const [connectError, setConnectError] = useState('');
   const [connecting, setConnecting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [otp, setOtp] = useState(() => generateOtp(getStableHostId()));
+  const [secsLeft, setSecsLeft] = useState(() => Math.ceil((30000 - (Date.now() % 30000)) / 1000));
+  const [knownPeers, setKnownPeers] = useState([]);
 
   const hostId = getStableHostId();
+  const conn = connections[0] ?? null;
+  const { status: syncStatus, added: syncAdded, detail: syncDetail } = getVaultState(conn);
+  const isConnected = !!conn?.open;
+
+  const isInitiatorRef = useRef(false);
+  const autoSyncedRef = useRef(false);
+  const otpForConnRef = useRef('');
 
   const copyHostId = useCallback(() => {
     navigator.clipboard.writeText(hostId).then(() => {
@@ -35,8 +48,46 @@ export default function Connect() {
     });
   }, [hostId]);
 
-  const conn = connections[0] ?? null;
-  const { status: syncStatus, added: syncAdded, detail: syncDetail } = getVaultState(conn);
+  // Load known peers on mount.
+  useEffect(() => {
+    getKnownPeers().then(setKnownPeers);
+  }, []);
+
+  // Save peer and refresh list when sync completes.
+  useEffect(() => {
+    if (syncStatus === 'done' && conn?.peer) {
+      saveKnownPeer(conn.peer).then(() => getKnownPeers().then(setKnownPeers));
+    }
+  }, [syncStatus, conn?.peer]);
+
+  // Rotate OTP every 30 s aligned to window boundary. Stops when connected.
+  useEffect(() => {
+    if (isConnected) return;
+    const updateOtp = () => {
+      setOtp(generateOtp(hostId));
+      setSecsLeft(30);
+    };
+
+    const updateSecs = () => setSecsLeft(Math.ceil((30000 - (Date.now() % 30000)) / 1000));
+    const msToNext = 30000 - (Date.now() % 30000);
+    let rotateIntervalId;
+    const alignTimeoutId = setTimeout(() => {
+      updateOtp();
+      rotateIntervalId = setInterval(updateOtp, 30000);
+    }, msToNext);
+    const secIntervalId = setInterval(updateSecs, 1000);
+    return () => {
+      clearTimeout(alignTimeoutId);
+      clearInterval(rotateIntervalId);
+      clearInterval(secIntervalId);
+    };
+  }, [isConnected, hostId]);
+
+  // Keep QR URL in sync with OTP.
+  useEffect(() => {
+    if (isConnected) return;
+    getJoinUrl(hostId, otp).then(setQrUrl);
+  }, [otp, isConnected, hostId]);
 
   // On mobile, go straight to scan (user is the scanner, not the host showing QR).
   // Skip redirect if arriving back from scan with ?peerId= already set.
@@ -46,35 +97,37 @@ export default function Connect() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Start peer and prepare QR on mount; stop on unmount.
+  // Start peer on mount; stop on unmount.
   useEffect(() => {
-    const id = getStableHostId();
-    start(id);
-    getJoinUrl(id).then(setQrUrl);
+    start(hostId);
     return () => stop();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleKey = (e) => {
-      if (e.key === 'Escape') navigate('/');
+      if (e.key === 'Escape') {
+        navigate('/');
+      }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [navigate]);
 
-  // Auto-connect when arriving from Scan page via ?peerId=
+  // Auto-connect when arriving from Scan page via ?peerId=&otp=
   const urlPeerId = searchParams.get('peerId');
+  const urlOtp = searchParams.get('otp');
   useEffect(() => {
-    const hostId = urlPeerId?.trim();
-    if (!hostId || !isValidPeerId(hostId)) return;
+    const targetId = urlPeerId?.trim();
+    if (!targetId || !isValidPeerId(targetId)) return;
     setSearchParams({}, { replace: true });
-    if (connections.length === 0) { isInitiatorRef.current = true; connect(hostId); }
+    if (connections.length === 0) {
+      otpForConnRef.current = urlOtp || '';
+      isInitiatorRef.current = true;
+      connect(targetId);
+    }
   }, [urlPeerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-sync once when connection opens — only the joiner initiates.
-  const isConnected = !!conn?.open;
-  const autoSyncedRef = useRef(false);
-  const isInitiatorRef = useRef(false);
+  // Auto-sync once when connection opens — only the initiator fires.
   useEffect(() => {
     if (!isConnected || !conn) {
       autoSyncedRef.current = false;
@@ -82,26 +135,29 @@ export default function Connect() {
     }
     if (autoSyncedRef.current || !isInitiatorRef.current) return;
     autoSyncedRef.current = true;
-    syncVault(conn);
+    syncVault(conn, otpForConnRef.current);
   }, [isConnected]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const connectToHost = useCallback(() => {
-    const hostId = hostIdInput.trim();
-    if (!hostId || connections.length > 0) return;
+    const targetId = hostIdInput.trim();
+    const code = otpInput.trim();
+    if (!targetId || code.length !== 4 || connections.length > 0) return;
     setConnectError('');
     setConnecting(true);
+    otpForConnRef.current = code;
     isInitiatorRef.current = true;
-    connect(hostId, {
+    connect(targetId, {
       onOpen: () => {
         setConnecting(false);
         setHostIdInput('');
+        setOtpInput('');
       },
       onError: (msg) => {
         setConnectError(msg);
         setConnecting(false);
       },
     });
-  }, [hostIdInput, connect, connections.length]);
+  }, [hostIdInput, otpInput, connect, connections.length]);
 
   const peerLabel = conn?.peer
     ? conn.peer.length > 22 ? `${conn.peer.slice(0, 22)}…` : conn.peer
@@ -165,6 +221,10 @@ export default function Connect() {
                 {hostId}
                 <span className="connect-host-id__badge">{copied ? 'Copied!' : 'Copy'}</span>
               </button>
+              <div className="connect-otp">
+                <span className="connect-otp__code">{otp}</span>
+                <span className="connect-otp__hint">resets in {secsLeft}s</span>
+              </div>
             </div>
 
             <div className="connect-section">
@@ -190,22 +250,40 @@ export default function Connect() {
 
             <div className="connect-section">
               {connectError && <p className="connect-error">{connectError}</p>}
-              <div className="connect-form">
-                <input
-                  type="text"
-                  className="connect-input"
-                  value={hostIdInput}
-                  onChange={(e) => { setHostIdInput(e.target.value); setConnectError(''); }}
-                  onKeyDown={(e) => e.key === 'Enter' && connectToHost()}
-                  placeholder="Host ID"
-                  disabled={connecting}
-                  aria-label="Host ID"
-                />
+              <datalist id="known-peers-list">
+                {knownPeers.map((p) => <option key={p.hostId} value={p.hostId} />)}
+              </datalist>
+              <div className="connect-form connect-form--col">
+                <div className="connect-form__row">
+                  <input
+                    type="text"
+                    className="connect-input"
+                    list="known-peers-list"
+                    value={hostIdInput}
+                    onChange={(e) => { setHostIdInput(e.target.value); setConnectError(''); }}
+                    onKeyDown={(e) => e.key === 'Enter' && connectToHost()}
+                    placeholder="Host ID"
+                    disabled={connecting}
+                    aria-label="Host ID"
+                  />
+                  <input
+                    type="text"
+                    className="connect-input connect-input--otp"
+                    value={otpInput}
+                    onChange={(e) => { setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 4)); setConnectError(''); }}
+                    onKeyDown={(e) => e.key === 'Enter' && connectToHost()}
+                    placeholder="Code"
+                    disabled={connecting}
+                    aria-label="Device code"
+                    inputMode="numeric"
+                    maxLength={4}
+                  />
+                </div>
                 <button
                   type="button"
                   className="connect-btn"
                   onClick={connectToHost}
-                  disabled={connecting || !hostIdInput.trim()}
+                  disabled={connecting || !hostIdInput.trim() || otpInput.length !== 4}
                 >
                   {connecting ? '…' : 'Connect'}
                 </button>

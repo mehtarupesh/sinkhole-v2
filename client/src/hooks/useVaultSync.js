@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAllUnits, getCategorization, mergeUnits, mergeCategorization, getAccessOrder, mergeAccessOrder, getTombstones, mergeTombstones } from '../utils/db';
+import { validateOtp } from '../utils/otp';
+import { getStableHostId } from '../utils/stableHostId';
 
 const VAULT_CHANNEL = 'sinkhole-vault-sync';
 
@@ -56,6 +58,10 @@ export function useVaultSync(connections) {
           if (msg?.type !== VAULT_CHANNEL) return;
 
           if (msg.phase === 'offer') {
+            if (!validateOtp(getStableHostId(), msg.otp)) {
+              conn.close();
+              return;
+            }
             setStates(prev => ({ ...prev, [conn.peer]: { ...(prev[conn.peer] ?? { status: 'idle', added: 0 }), status: 'syncing', detail: 'Comparing vaults…', log: [] } }));
 
             // Snapshot cat/accessOrder before merging so Message 2 carries only the responder's own data.
@@ -130,7 +136,7 @@ export function useVaultSync(connections) {
     });
   }, [connections, appendLog, setPeerState]);
 
-  const sync = useCallback(async (conn) => {
+  const sync = useCallback(async (conn, otp) => {
     if (!conn?.open) return;
     setStates(prev => ({ ...prev, [conn.peer]: { status: 'syncing', added: 0, log: [], detail: 'Reading vault…' } }));
     try {
@@ -138,7 +144,7 @@ export function useVaultSync(connections) {
       const offerUnits = units.filter((u) => u.uid).map((u) => ({ uid: u.uid, ts: ts(u) }));
       appendLog(conn.peer, `→ offer to ${shortId(conn.peer)}: ${offerUnits.length} items`);
       setPeerState(conn.peer, { detail: `Comparing ${offerUnits.length} item${offerUnits.length !== 1 ? 's' : ''}…` });
-      conn.send({ type: VAULT_CHANNEL, phase: 'offer', units: offerUnits, categorization, accessOrder, tombstones });
+      conn.send({ type: VAULT_CHANNEL, phase: 'offer', units: offerUnits, categorization, accessOrder, tombstones, otp });
     } catch (_) {
       setPeerState(conn.peer, { status: 'error' });
     }
