@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { CloseIcon } from './Icons';
-import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, mergeUnits, mergeCategorization } from '../utils/db';
+import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, mergeUnits, mergeCategorization, mergeAccessOrder, mergeTombstones } from '../utils/db';
 
 const TYPE_LABELS = { snippet: 'text', password: 'pw', image: 'img' };
 
@@ -99,10 +99,16 @@ export default function SettingsModal({ onClose }) {
       const existing = await getAllUnits();
       const knownUids = new Set(existing.map((u) => u.uid).filter(Boolean));
       const newUnits = incoming.filter((u) => u.uid && !knownUids.has(u.uid));
-      const categorizationGroups = Array.isArray(data.settings)
-        ? (data.settings.find((s) => s.key === 'categorization')?.value ?? null)
+      const getSetting_ = (key) => Array.isArray(data.settings)
+        ? (data.settings.find((s) => s.key === key)?.value ?? null)
         : null;
-      setPreview({ newUnits, skipped: incoming.length - newUnits.length, categorizationGroups });
+      setPreview({
+        newUnits,
+        skipped: incoming.length - newUnits.length,
+        categorizationGroups: getSetting_('categorization'),
+        accessOrder: getSetting_('accessOrder') ?? [],
+        tombstones: getSetting_('tombstones') ?? [],
+      });
     } catch {
       setImportStatus('Invalid file.');
     }
@@ -113,8 +119,12 @@ export default function SettingsModal({ onClose }) {
     if (!preview) return;
     setImporting(true);
     try {
-      const idRemap = await mergeCategorization(preview.categorizationGroups);
-      const { added } = await mergeUnits(preview.newUnits, idRemap);
+      const [idRemap, tombstonedUids] = await Promise.all([
+        mergeCategorization(preview.categorizationGroups),
+        mergeTombstones(preview.tombstones),
+      ]);
+      await mergeAccessOrder(preview.accessOrder);
+      const { added } = await mergeUnits(preview.newUnits.filter((u) => !tombstonedUids.has(u.uid)), idRemap);
       setImportStatus(`Imported ${added} item${added !== 1 ? 's' : ''}.`);
       setPreview(null);
     } catch {

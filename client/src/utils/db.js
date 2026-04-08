@@ -105,6 +105,16 @@ export async function getAccessOrder() {
 }
 
 /**
+ * Returns a new accessOrder containing only entries whose uid exists in units.
+ * Pure — does not write to IDB. Callers should persist the result if it changed.
+ */
+export function pruneAccessOrder(accessOrder, units) {
+  if (!units || units.length === 0) return [];
+  const liveUids = new Set(units.map((u) => u.uid).filter(Boolean));
+  return accessOrder.filter((e) => liveUids.has(e.uid));
+}
+
+/**
  * Merges an incoming accessOrder from a peer.
  * Per-uid, keeps the highest timestamp (most recent access wins), then re-sorts.
  */
@@ -217,10 +227,93 @@ export async function ensureTrashCategory() {
   return updated;
 }
 
-/** Hard-deletes all units in Trash. Returns the count of deleted units. */
+// ── Tombstones ────────────────────────────────────────────────────────────────
+// Hard-deleted units are remembered as tombstones for this long so peers don't
+// resurrect them on next sync. Set to at least 2× the max expected sync gap.
+export const TOMBSTONE_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
+
+async function addTombstones(uids) {
+  const now = Date.now();
+  const uidSet = new Set(uids.filter(Boolean));
+  const [existing, accessOrder] = await Promise.all([getSetting('tombstones'), getSetting('accessOrder')]);
+  const existingTombstones = existing ?? [];
+  const existingUids = new Set(existingTombstones.map((t) => t.uid));
+  const fresh = [...uidSet].filter((uid) => !existingUids.has(uid)).map((uid) => ({ uid, deletedAt: now }));
+  const pruned = [...existingTombstones, ...fresh].filter((t) => now - t.deletedAt < TOMBSTONE_TTL_MS);
+  const cleanedAccessOrder = (accessOrder ?? []).filter((e) => !uidSet.has(e.uid));
+  await Promise.all([setSetting('tombstones', pruned), setSetting('accessOrder', cleanedAccessOrder)]);
+}
+
+export async function getTombstones() {
+  return (await getSetting('tombstones')) ?? [];
+}
+
+/**
+ * Returns an empty array when the vault is completely empty — tombstones serve
+ * no purpose if there are no units to protect against resurrection.
+ * Pure — does not write to IDB. Callers should persist the result if it changed.
+ */
+export function pruneTombstones(tombstones, units) {
+  if (!units || units.length === 0) return [];
+  return tombstones;
+}
+
+/**
+ * Merges tombstones from a peer. For each tombstoned uid, deletes the local unit
+ * if the tombstone is newer than the unit's last-modified timestamp (LWW).
+ * GCs entries older than TOMBSTONE_TTL_MS.
+ *
+ * @returns {Set<string>} Active tombstone uids after merge (use to filter incoming units).
+ */
+export async function mergeTombstones(incoming) {
+  if (!incoming?.length) return new Set((await getTombstones()).map((t) => t.uid));
+  const now = Date.now();
+  const local = (await getSetting('tombstones')) ?? [];
+
+  // Merge: per uid, keep highest deletedAt
+  const best = new Map();
+  for (const { uid, deletedAt } of [...local, ...incoming]) {
+    if (!uid) continue;
+    if (!best.has(uid) || deletedAt > best.get(uid)) best.set(uid, deletedAt);
+  }
+
+  // Apply deletes: tombstone wins over unit unless unit was edited after deletion
+  const [units, accessOrder] = await Promise.all([getAllUnits(), getSetting('accessOrder')]);
+  const localByUid = new Map(units.filter((u) => u.uid).map((u) => [u.uid, u]));
+  const deletedUids = new Set();
+  for (const [uid, deletedAt] of best) {
+    const unit = localByUid.get(uid);
+    if (!unit) continue;
+    const unitTs = unit.updatedAt ?? unit.createdAt ?? 0;
+    if (deletedAt > unitTs) { await deleteUnit(unit.id); deletedUids.add(uid); }
+  }
+
+  // GC expired tombstones, strip deleted uids from accessOrder, persist both
+  const pruned = Array.from(best.entries())
+    .filter(([, deletedAt]) => now - deletedAt < TOMBSTONE_TTL_MS)
+    .map(([uid, deletedAt]) => ({ uid, deletedAt }));
+  if (deletedUids.size > 0) {
+    const cleanedAccessOrder = (accessOrder ?? []).filter((e) => !deletedUids.has(e.uid));
+    await Promise.all([setSetting('tombstones', pruned), setSetting('accessOrder', cleanedAccessOrder)]);
+  } else {
+    await setSetting('tombstones', pruned);
+  }
+
+  return new Set(pruned.map((t) => t.uid));
+}
+
+/** Hard-deletes a single unit from Trash, recording a tombstone for sync. */
+export async function deleteTrashUnit(unit) {
+  if (unit.uid) await addTombstones([unit.uid]);
+  await deleteUnit(unit.id);
+}
+
+/** Hard-deletes all units in Trash, recording tombstones for sync. Returns the count deleted. */
 export async function emptyTrash() {
   const all = await getAllUnits();
   const trashUnits = all.filter((u) => u.categoryId === 'trash');
+  if (trashUnits.length === 0) return 0;
+  await addTombstones(trashUnits.map((u) => u.uid).filter(Boolean));
   for (const u of trashUnits) await deleteUnit(u.id);
   return trashUnits.length;
 }

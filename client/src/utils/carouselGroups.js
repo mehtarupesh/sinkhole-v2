@@ -17,7 +17,7 @@ export const TRASH_TITLE = 'Trash';
  * @returns {{ id:string, title:string }[]}
  */
 export function pruneEmptyCategories(storedGroups, units) {
-  if (!storedGroups || !units) return storedGroups;
+  if (!units || units.length === 0) return [];
   const populated = new Set(units.map((u) => u.categoryId).filter(Boolean));
   return storedGroups.filter((g) => g.id === TRASH_ID || populated.has(g.id));
 }

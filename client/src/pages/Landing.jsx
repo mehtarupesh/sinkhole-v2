@@ -4,7 +4,7 @@ import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon, BroomIcon } from '../components/Icons';
-import { getAllUnits, updateUnit, deleteUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder, touchUnit } from '../utils/db';
+import { getAllUnits, updateUnit, deleteTrashUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder, getTombstones, setSetting, touchUnit, pruneAccessOrder, pruneTombstones } from '../utils/db';
 import { getCleanupCandidates } from '../utils/cleanupCandidates';
 import { runMigrations } from '../utils/migrations';
 import { buildRecentCarousel, withMiscGroup, MISC_ID, TRASH_ID,pruneEmptyCategories } from '../utils/carouselGroups';
@@ -108,12 +108,17 @@ export default function Landing() {
 
   useEffect(() => {
     runMigrations()
-      .then(() => Promise.all([getAllUnits(), ensureTrashCategory(), getAccessOrder()]))
-      .then(([loadedUnits, groups, order]) => {
+      .then(() => Promise.all([getAllUnits(), ensureTrashCategory(), getAccessOrder(), getTombstones()]))
+      .then(([loadedUnits, groups, order, tombstones]) => {
         const non_empty_groups = pruneEmptyCategories(groups, loadedUnits);
+        const prunedOrder = pruneAccessOrder(order, loadedUnits);
+        const prunedTombstones = pruneTombstones(tombstones, loadedUnits);
+        if (prunedOrder.length !== order.length) setSetting('accessOrder', prunedOrder);
+        if (prunedTombstones.length !== tombstones.length) setSetting('tombstones', prunedTombstones);
+        if (non_empty_groups.length !== groups.length) setCategorization(non_empty_groups);
         setUnits(loadedUnits);
         setStoredGroups(non_empty_groups);
-        setAccessOrder(order);
+        setAccessOrder(prunedOrder);
       });
   }, []);
 
@@ -406,7 +411,7 @@ export default function Landing() {
                     title: `Permanently delete ${nu} item${nu !== 1 ? 's' : ''} from Trash?`,
                     units: toDelete,
                     onConfirm: async () => {
-                      for (const u of toDelete) await deleteUnit(u.id);
+                      for (const u of toDelete) await deleteTrashUnit(u);
                       reloadUnits();
                       catSel.clear();
                       setPendingDelete(null);
