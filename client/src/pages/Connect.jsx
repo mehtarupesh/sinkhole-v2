@@ -51,6 +51,7 @@ export default function Connect() {
   const isInitiatorRef = useRef(false);
   const autoSyncedRef = useRef(false);
   const otpForConnRef = useRef('');
+  const navigatingRef = useRef(false);
 
   const copyHostId = useCallback(() => {
     navigator.clipboard.writeText(hostId).then(() => {
@@ -64,12 +65,15 @@ export default function Connect() {
     getKnownPeers().then(setKnownPeers);
   }, []);
 
-  // Save peer and refresh list when sync completes.
+  // Navigate home after sync completes. Uses a ref so the timeout survives
+  // the connection dropping (which would revert syncStatus to 'idle' via getVaultState(null)).
   useEffect(() => {
-    if (syncStatus === 'done' && conn?.peer) {
-      saveKnownPeer(conn.peer).then(() => getKnownPeers().then(setKnownPeers));
-    }
-  }, [syncStatus, conn?.peer]);
+    if (syncStatus !== 'done' || navigatingRef.current) return;
+    navigatingRef.current = true;
+    const peer = conn?.peer;
+    if (peer) saveKnownPeer(peer).then(() => getKnownPeers().then(setKnownPeers));
+    setTimeout(() => { stop(); navigate('/'); }, 1200);
+  }, [syncStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Rotate OTP every 30 s. Stops ticking when connected.
   useEffect(() => {
@@ -203,7 +207,7 @@ export default function Connect() {
                 <span className="sync-status__text sync-status__text--done">
                   {syncAdded > 0
                     ? `Synced · ${syncAdded} new item${syncAdded !== 1 ? 's' : ''}`
-                    : 'Already up to date'}
+                    : 'Synced'}
                 </span>
               )}
               {syncStatus === 'error' && (
