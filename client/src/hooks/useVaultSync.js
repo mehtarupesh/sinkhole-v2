@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getAllUnits, getCategorization, mergeUnits, mergeCategorization } from '../utils/db';
+import { getAllUnits, getCategorization, mergeUnits, mergeCategorization, getAccessOrder, mergeAccessOrder } from '../utils/db';
 
 const VAULT_CHANNEL = 'sinkhole-vault-sync';
 
@@ -58,11 +58,11 @@ export function useVaultSync(connections) {
           if (msg.phase === 'offer') {
             setStates(prev => ({ ...prev, [conn.peer]: { ...(prev[conn.peer] ?? { status: 'idle', added: 0 }), status: 'syncing', detail: 'Comparing vaults…', log: [] } }));
 
-            // Fetch local state before merging so Message 2 carries only the responder's own categories.
-            const [localUnits, categorization] = await Promise.all([getAllUnits(), getCategorization()]);
+            // Fetch local state before merging so Message 2 carries only the responder's own data.
+            const [localUnits, categorization, accessOrder] = await Promise.all([getAllUnits(), getCategorization(), getAccessOrder()]);
 
-            // Merge initiator's categories so renames are resolved before inserting units.
-            await mergeCategorization(msg.categorization);
+            // Merge initiator's categories and access order.
+            await Promise.all([mergeCategorization(msg.categorization), mergeAccessOrder(msg.accessOrder)]);
 
             const peerMap  = new Map((msg.units ?? []).map((u) => [u.uid, u.ts ?? 0]));
             const localMap = new Map(localUnits.filter((u) => u.uid).map((u) => [u.uid, u]));
@@ -82,7 +82,7 @@ export function useVaultSync(connections) {
               .map((u) => u.uid);
 
             appendLog(conn.peer, `← offer from ${sp}: ${peerMap.size} items · sending ${toSend.length}, want ${want.length}`);
-            if (conn.open) conn.send({ type: VAULT_CHANNEL, phase: 'transfer', units: toSend, want, categorization });
+            if (conn.open) conn.send({ type: VAULT_CHANNEL, phase: 'transfer', units: toSend, want, categorization, accessOrder });
             if (want.length === 0) {
               setPeerState(conn.peer, { status: 'done', added: 0 });
             } else {
@@ -92,7 +92,7 @@ export function useVaultSync(connections) {
           } else if (msg.phase === 'transfer') {
             const incomingCount = msg.units?.length ?? 0;
             if (incomingCount > 0) setPeerState(conn.peer, { detail: `Merging ${incomingCount} item${incomingCount !== 1 ? 's' : ''}…` });
-            const idRemap = await mergeCategorization(msg.categorization);
+            const [idRemap] = await Promise.all([mergeCategorization(msg.categorization), mergeAccessOrder(msg.accessOrder)]);
             const { added, updated } = await mergeUnits(msg.units ?? [], idRemap);
 
             if (msg.want?.length > 0 && conn.open) {
@@ -125,11 +125,11 @@ export function useVaultSync(connections) {
     if (!conn?.open) return;
     setStates(prev => ({ ...prev, [conn.peer]: { status: 'syncing', added: 0, log: [], detail: 'Reading vault…' } }));
     try {
-      const [units, categorization] = await Promise.all([getAllUnits(), getCategorization()]);
+      const [units, categorization, accessOrder] = await Promise.all([getAllUnits(), getCategorization(), getAccessOrder()]);
       const offerUnits = units.filter((u) => u.uid).map((u) => ({ uid: u.uid, ts: ts(u) }));
       appendLog(conn.peer, `→ offer to ${shortId(conn.peer)}: ${offerUnits.length} items`);
       setPeerState(conn.peer, { detail: `Comparing ${offerUnits.length} item${offerUnits.length !== 1 ? 's' : ''}…` });
-      conn.send({ type: VAULT_CHANNEL, phase: 'offer', units: offerUnits, categorization });
+      conn.send({ type: VAULT_CHANNEL, phase: 'offer', units: offerUnits, categorization, accessOrder });
     } catch (_) {
       setPeerState(conn.peer, { status: 'error' });
     }

@@ -104,6 +104,24 @@ export async function getAccessOrder() {
   return (await getSetting('accessOrder')) ?? [];
 }
 
+/**
+ * Merges an incoming accessOrder from a peer.
+ * Per-uid, keeps the highest timestamp (most recent access wins), then re-sorts.
+ */
+export async function mergeAccessOrder(incoming) {
+  if (!incoming?.length) return;
+  const local = (await getSetting('accessOrder')) ?? [];
+  const best = new Map();
+  for (const { uid, t } of [...local, ...incoming]) {
+    if (!uid) continue;
+    if (!best.has(uid) || t > best.get(uid)) best.set(uid, t);
+  }
+  const sorted = Array.from(best.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([uid, t]) => ({ uid, t }));
+  await setSetting('accessOrder', sorted);
+}
+
 export async function deleteSetting(key) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
