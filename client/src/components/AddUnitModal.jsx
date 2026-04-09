@@ -257,14 +257,6 @@ export default function AddUnitModal({
         <div className="sheet__actions">
           <button
             type="button"
-            className="add-unit__cancel-btn"
-            onClick={onClose}
-            disabled={saving}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
             className={`connect-btn add-unit__save-btn${saveState === 'done' ? ' add-unit__save-btn--done' : ''}`}
             onClick={handleSave}
             disabled={saving}
