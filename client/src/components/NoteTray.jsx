@@ -253,10 +253,10 @@ export default function NoteTray({
               disabled={disabled || isTranscribing}
               aria-label="Tap to record note"
             >
-              {isTranscribing ? <span className="note-tray__spinner" /> : <MicIcon size={24} />}
+              {isTranscribing ? <span className="note-tray__spinner" /> : <MicIcon size={52} />}
             </button>
             <p className="note-tray__hint">
-              {isTranscribing ? 'Transcribing…' : 'Tap to speak'}
+              {isTranscribing ? 'Transcribing…' : ''}
             </p>
           </div>
 

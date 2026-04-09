@@ -152,10 +152,10 @@ export default function ContentField({
       {type === 'image' && (
         <div className="add-unit__file-area">
           {!content && (
-            <div className="add-unit__upload-row">
+            <div className="add-unit__upload-primary">
               <button
                 type="button"
-                className="add-unit__upload-option"
+                className="add-unit__upload-main"
                 onClick={() => cameraRef.current?.click()}
               >
                 <CameraIcon />
@@ -163,11 +163,10 @@ export default function ContentField({
               </button>
               <button
                 type="button"
-                className="add-unit__upload-option"
+                className="add-unit__upload-secondary"
                 onClick={() => fileRef.current?.click()}
               >
-                <ImageTypeIcon />
-                <span>Choose file</span>
+                or choose file
               </button>
             </div>
           )}
