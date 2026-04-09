@@ -180,7 +180,7 @@ export default function NoteTray({
     setTimeout(() => {
       setMode('text-hero');
       setExitingMic(false);
-    }, 270);
+    }, 140);
   }
 
   // ── Derived ───────────────────────────────────────────────────────────────────

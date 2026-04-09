@@ -235,23 +235,23 @@
 /* Text hero state */
 .note-tray--text-hero {
   border-top: 1px solid var(--color-surface);
-  animation: note-tray-slide-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: note-tray-slide-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes note-tray-slide-in {
-  from { opacity: 0; transform: translateX(28px); }
+  from { opacity: 0; transform: translateX(14px); }
   to   { opacity: 1; transform: translateX(0); }
 }
 
-/* Mic-hero exit: slides out to the left */
+/* Mic-hero exit: fades and slides left */
 .note-tray--mic-exit {
-  animation: note-tray-slide-out 0.27s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+  animation: note-tray-slide-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
   pointer-events: none;
 }
 
 @keyframes note-tray-slide-out {
-  from { opacity: 1; transform: translateX(0) scale(1); }
-  to   { opacity: 0; transform: translateX(-32px) scale(0.94); }
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-14px); }
 }
 
 .note-tray__row {
