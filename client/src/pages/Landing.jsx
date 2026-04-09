@@ -20,6 +20,7 @@ import CategoryCloud from '../components/CategoryCloud';
 import UnitDetail from '../components/UnitDetail';
 import SelectionBar from '../components/SelectionBar';
 import CleanupModal from '../components/CleanupModal';
+import CategoryView from '../components/CategoryView';
 import { useSelection } from '../hooks/useSelection';
 
 export default function Landing() {
@@ -45,8 +46,9 @@ export default function Landing() {
   const [moveCtx, setMoveCtx] = useState(null); // { units: Unit[] } | null
   const [cardForageCtx, setCardForageCtx] = useState(null); // { units: Unit[], category } | null
   const [showCleanupModal, setShowCleanupModal] = useState(false);
+  const [categoryViewCtx, setCategoryViewCtx] = useState(null); // { category } | null
 
-  const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal || moveCtx !== null || cardForageCtx !== null || showCleanupModal;
+  const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal || moveCtx !== null || cardForageCtx !== null || showCleanupModal || categoryViewCtx !== null;
 
   // ── Selection (cards + categories) ──────────────────────────────────────────
   const cardSel = useSelection();
@@ -233,11 +235,12 @@ export default function Landing() {
     openUnit(unit, ctxUnits, i);
   }, [cardSel, openUnit]);
 
-  // Tap a category pill: toggle when selecting, open overlay otherwise
+  // Tap a category pill: toggle when selecting, open CategoryView otherwise
   const handleCategoryClick = useCallback((id) => {
     if (catSel.isSelecting) { catSel.toggle(id); return; }
-    openUnitsOverlayWithCategory(id);
-  }, [catSel, openUnitsOverlayWithCategory]);
+    const cat = displayGroups.find((g) => g.id === id);
+    if (cat) setCategoryViewCtx({ category: cat });
+  }, [catSel, displayGroups]);
 
   const clearAllSelection = useCallback(() => {
     cardSel.clear();
@@ -598,6 +601,24 @@ export default function Landing() {
           onTrash={async (unit) => { await updateUnit(unit.id, { categoryId: TRASH_ID }); reloadUnits(); }}
           onKeep={async (unit) => { await touchUnit(unit.uid); setAccessOrder(await getAccessOrder()); }}
           onClose={() => setShowCleanupModal(false)}
+        />
+      )}
+      {categoryViewCtx && (
+        <CategoryView
+          category={categoryViewCtx.category}
+          allUnits={units}
+          storedGroups={selectableGroups}
+          onClose={() => setCategoryViewCtx(null)}
+          onUnitSaved={(updated, newCategory) => {
+            reloadUnits();
+            if (newCategory && newCategory.id !== TRASH_ID) {
+              setStoredGroups((prev) => {
+                const groups = [...(prev ?? []), { id: newCategory.id, title: newCategory.title }];
+                setCategorization(groups);
+                return groups;
+              });
+            }
+          }}
         />
       )}
     </div>

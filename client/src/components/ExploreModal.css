@@ -1,0 +1,145 @@
+/* ── ExploreModal ── */
+
+.explore-modal {
+  max-width: 480px;
+  max-height: 90vh;
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.explore__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Unit selection strip */
+.explore__strip-wrap {
+  flex-shrink: 0;
+  padding: 8px 0 6px;
+  border-bottom: 1px solid var(--color-surface);
+}
+
+.explore__strip {
+  padding-bottom: 4px;
+}
+
+.explore__unit-wrap {
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.explore__unit-wrap--dim {
+  opacity: 0.3;
+}
+
+/* Small dot indicator: bottom-right of card */
+.explore__unit-dot {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  pointer-events: none;
+}
+
+.explore__unit-dot--on {
+  background: #4ade80;
+  border-color: rgba(74, 222, 128, 0.5);
+}
+
+.explore__context-meta {
+  margin: 4px 0 0;
+  font-size: var(--text-2xs);
+  color: var(--color-faint);
+  text-align: center;
+  padding: 0 16px;
+}
+
+/* Messages */
+.explore__messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scrollbar-width: none;
+  min-height: 0;
+}
+
+.explore__messages::-webkit-scrollbar {
+  display: none;
+}
+
+.explore__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 20px;
+}
+
+.explore__empty-hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-faint);
+}
+
+.explore__message {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  animation: forage-response-in 0.15s ease;
+}
+
+.explore__message--user {
+  align-self: flex-end;
+  max-width: 80%;
+  background: var(--color-surface-lo);
+  border: 1px solid var(--color-surface-hi);
+}
+
+.explore__message--assistant {
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--color-surface-hi);
+}
+
+.explore__message-user-text {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-dim);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.explore__message-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-surface);
+}
+
+/* Scoped NoteTray overrides — match ForageModal */
+.explore-modal .note-tray {
+  padding-top: 4px;
+  border-top: none;
+}
+
+.explore-modal .note-tray--text-hero {
+  border-top: none;
+}
+
+.explore-modal .add-unit__body {
+  margin-bottom: 14px;
+}
