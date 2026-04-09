@@ -40,6 +40,7 @@ export default function NoteTray({
   placeholder = 'add a note…',
 }) {
   const [mode, setMode] = useState(() => isTouchDevice() ? 'mic-hero' : 'text-hero');
+  const [exitingMic, setExitingMic] = useState(false);
   const [recState, setRecState] = useState('idle'); // idle | recording | transcribing
   const [localError, setLocalError] = useState('');
 
@@ -51,7 +52,6 @@ export default function NoteTray({
   const animFrameRef  = useRef(null);
   const analyserRef   = useRef(null);
   const textareaRef   = useRef(null);
-  const swipeStartX   = useRef(null);
   const shouldFocus   = useRef(false);
 
   // Auto-switch to text-hero when value is set externally (e.g. quick-prompt chip)
@@ -176,21 +176,12 @@ export default function NoteTray({
 
   function switchToTextMode() {
     shouldFocus.current = true;
-    setMode('text-hero');
+    setExitingMic(true);
+    setTimeout(() => {
+      setMode('text-hero');
+      setExitingMic(false);
+    }, 270);
   }
-
-  // ── Swipe handling ────────────────────────────────────────────────────────────
-
-  const handleTouchStart = (e) => {
-    swipeStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = (e) => {
-    if (swipeStartX.current === null) return;
-    const dx = e.changedTouches[0].clientX - swipeStartX.current;
-    swipeStartX.current = null;
-    if (mode === 'mic-hero' && dx < -50) switchToTextMode();
-  };
 
   // ── Derived ───────────────────────────────────────────────────────────────────
 
@@ -226,22 +217,20 @@ export default function NoteTray({
   if (mode === 'mic-hero') {
     return (
       <div
-        className="note-tray note-tray--mic-hero"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        className={`note-tray note-tray--mic-hero${exitingMic ? ' note-tray--mic-exit' : ''}`}
       >
         {/* Three-column stage: swipe hint | orb + hint | empty */}
         <div className="note-tray__mic-stage">
 
-          {/* Left: swipe-left affordance */}
+          {/* Left: tap-to-type affordance */}
           <button
             type="button"
             className="note-tray__swipe-left"
             onClick={switchToTextMode}
-            aria-label="Tap or swipe left to type a note"
+            aria-label="Tap to type a note"
           >
-            <SwipeLeftIcon />
-            <span className="note-tray__swipe-label">swipe to type</span>
+            <PencilIcon />
+            <span className="note-tray__swipe-label">tap to type</span>
           </button>
 
           {/* Center: orb + hint stacked together */}
@@ -274,8 +263,6 @@ export default function NoteTray({
   return (
     <div
       className="note-tray note-tray--text-hero"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
     >
       <div className="note-tray__row">
         <button
@@ -287,7 +274,7 @@ export default function NoteTray({
         >
           {isTranscribing
             ? <span className="note-tray__spinner note-tray__spinner--sm" />
-            : <MicIcon size={15} />}
+            : <MicIcon size={52} />}
         </button>
 
         <textarea
@@ -331,11 +318,11 @@ function MicIcon({ size = 20 }) {
   );
 }
 
-function SwipeLeftIcon() {
+function PencilIcon() {
   return (
-    <svg width="28" height="18" viewBox="0 0 28 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="16 15 10 9 16 3" />
-      <polyline points="24 15 18 9 24 3" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
     </svg>
   );
 }

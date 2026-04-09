@@ -206,7 +206,7 @@
   justify-content: flex-end;
 }
 
-/* Swipe-left affordance */
+/* Tap-to-type affordance */
 .note-tray__swipe-left {
   flex-direction: column;
   align-items: center;
@@ -218,29 +218,40 @@
   cursor: pointer;
   color: var(--color-muted);
   transition: color 0.2s;
-  animation: swipe-nudge 1.8s ease-in-out infinite;
 }
 
 .note-tray__swipe-left:hover {
   color: var(--color-dim);
-  animation: none;
 }
 
 .note-tray__swipe-label {
   font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   font-family: inherit;
 }
 
-@keyframes swipe-nudge {
-  0%, 60%, 100% { transform: translateX(0);    opacity: 0.85; }
-  30%            { transform: translateX(-6px); opacity: 1;    }
-}
 
 /* Text hero state */
 .note-tray--text-hero {
   border-top: 1px solid var(--color-surface);
+  animation: note-tray-slide-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes note-tray-slide-in {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Mic-hero exit: slides out to the left */
+.note-tray--mic-exit {
+  animation: note-tray-slide-out 0.27s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+  pointer-events: none;
+}
+
+@keyframes note-tray-slide-out {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(-32px) scale(0.94); }
 }
 
 .note-tray__row {
@@ -252,24 +263,24 @@
 /* Small mic button in text-hero row */
 .note-tray__mic-btn {
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
+  width: 62px;
+  height: 62px;
   border-radius: 50%;
-  background: var(--color-surface-hi);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: var(--color-muted);
+  background: rgba(245, 166, 35, 0.08);
+  border: 1px solid rgba(245, 166, 35, 0.30);
+  color: #f5a623;
+  box-shadow: 0 0 18px rgba(245, 166, 35, 0.12);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 3px;
-  transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
+  transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .note-tray__mic-btn:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.09);
-  color: var(--color-dim);
-  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(245, 166, 35, 0.14);
+  border-color: rgba(245, 166, 35, 0.50);
+  box-shadow: 0 0 14px rgba(245, 166, 35, 0.18);
 }
 
 .note-tray__mic-btn--busy {
