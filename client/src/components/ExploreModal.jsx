@@ -1,32 +1,46 @@
 /**
- * ExploreModal — multi-turn chat about a category's units.
+ * ExploreModal (displayed as "Forage") — multi-turn chat about a category's units.
  *
  * Props:
  *   category   { id, title, uids }
- *   allUnits   Unit[]              units for this category
+ *   allUnits   Unit[]              units for this category (already filtered)
+ *   synthesis  string              optional — shown as the first AI message
  *   onClose    fn
  *   onSaveUnit fn()                called after a response is saved as a unit
  */
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { CloseIcon, CheckIcon } from './Icons';
+import { CloseIcon, CheckIcon, TrashIcon, RenameIcon } from './Icons';
 import { getSetting, addUnit } from '../utils/db';
 import { chatWithUnits } from '../utils/forage';
-import NoteTray from './NoteTray';
 import { CarouselCard } from './Carousel';
 import SimpleMarkdown from './SimpleMarkdown';
 import './ExploreModal.css';
 
-const QUICK_PROMPTS = ['Summarize', 'Key points', 'Action items', "What am I missing?"];
+const SYNTHESIS_ID = '__synthesis__';
 
-export default function ExploreModal({ category, allUnits, onClose, onSaveUnit }) {
-  // All units selected by default — user can deselect to narrow context
-  const [selectedIds, setSelectedIds] = useState(() => new Set(allUnits.map((u) => u.id)));
-  const [shareContent, setShareContent] = useState(false);
-  const [messages, setMessages] = useState([]); // [{id, role:'user'|'assistant', text, saved}]
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const messagesEndRef = useRef(null);
+function buildInitialMessages(synthesis) {
+  if (!synthesis?.trim()) return [];
+  return [{ id: SYNTHESIS_ID, role: 'assistant', text: synthesis, saved: false }];
+}
+
+export default function ExploreModal({ category, allUnits, synthesis, onClose, onSaveUnit }) {
+  const [selectedIds, setSelectedIds]       = useState(() => new Set(allUnits.map((u) => u.id)));
+  const [shareContent, setShareContent]     = useState(false);
+  const [messages, setMessages]             = useState(() => buildInitialMessages(synthesis));
+  const [input, setInput]                   = useState('');
+  const [loading, setLoading]               = useState(false);
+  const [error, setError]                   = useState('');
+
+  // Edit state
+  const [editingId, setEditingId]           = useState(null);
+  const [editText, setEditText]             = useState('');
+
+  // Delete confirm state
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  const messagesEndRef  = useRef(null);
+  const inputRef        = useRef(null);
+  const editTextareaRef = useRef(null);
 
   const contextUnits = useMemo(
     () => allUnits.filter((u) => selectedIds.has(u.id)),
@@ -38,37 +52,66 @@ export default function ExploreModal({ category, allUnits, onClose, onSaveUnit }
     [contextUnits]
   );
 
-  // Scroll to bottom when messages update
+  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Escape key closes
+  // Focus edit textarea when entering edit mode
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    if (editingId && editTextareaRef.current) {
+      editTextareaRef.current.focus();
+      editTextareaRef.current.select();
+    }
+  }, [editingId]);
+
+  // Escape: cancel edit → cancel delete confirm → close modal
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== 'Escape') return;
+      if (editingId)        { cancelEdit(); return; }
+      if (deleteConfirmId)  { setDeleteConfirmId(null); return; }
+      onClose();
+    };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [onClose, editingId, deleteConfirmId]);
+
+  // Auto-resize input textarea
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [input]);
+
+  // ── Unit selection ───────────────────────────────────────────────────────────
 
   const toggleUnit = useCallback((id) => {
     setSelectedIds((prev) => {
-      if (prev.size === 1 && prev.has(id)) return prev; // keep at least 1
+      if (prev.size === 1 && prev.has(id)) return prev;
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   }, []);
 
+  // ── Send ─────────────────────────────────────────────────────────────────────
+
   const doSend = useCallback(async (text) => {
     if (!text || loading) return;
     if (contextUnits.length === 0) { setError('Select at least one item.'); return; }
 
-    const userMsg = { id: crypto.randomUUID(), role: 'user', text };
+    const userMsg     = { id: crypto.randomUUID(), role: 'user', text };
     const assistantId = crypto.randomUUID();
     const assistantMsg = { id: assistantId, role: 'assistant', text: '', saved: false };
-    const allMessages = [...messages, userMsg];
 
-    setMessages([...allMessages, assistantMsg]);
+    // Only pass real conversation (skip synthesis placeholder for context building)
+    const historyForApi = [...messages, userMsg]
+      .filter((m) => m.id !== SYNTHESIS_ID)
+      .map((m) => ({ role: m.role, text: m.text }));
+
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setInput('');
     setLoading(true);
     setError('');
@@ -77,7 +120,7 @@ export default function ExploreModal({ category, allUnits, onClose, onSaveUnit }
       const apiKey = await getSetting('gemini_key');
       const stream = await chatWithUnits({
         units: contextUnits,
-        messages: allMessages.map((m) => ({ role: m.role, text: m.text })),
+        messages: historyForApi,
         shareContent,
         apiKey,
       });
@@ -85,7 +128,9 @@ export default function ExploreModal({ category, allUnits, onClose, onSaveUnit }
       for await (const chunk of stream) {
         accumulated += chunk.text ?? '';
         const snap = accumulated;
-        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, text: snap } : m)));
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, text: snap } : m))
+        );
       }
     } catch (e) {
       setMessages((prev) => prev.filter((m) => m.id !== assistantId));
@@ -95,11 +140,22 @@ export default function ExploreModal({ category, allUnits, onClose, onSaveUnit }
     }
   }, [loading, messages, contextUnits, shareContent]);
 
-  const handleSend = useCallback(() => doSend(input.trim()), [doSend, input]);
+  const handleSend = useCallback(() => {
+    const text = input.trim();
+    if (text) doSend(text);
+  }, [doSend, input]);
+
+  const handleInputKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  // ── Save ─────────────────────────────────────────────────────────────────────
 
   const handleSaveMessage = useCallback(async (msg) => {
     if (msg.saved || !msg.text) return;
-    // Find the user message that prompted this response
     const msgIndex = messages.findIndex((m) => m.id === msg.id);
     const prevUser = messages.slice(0, msgIndex).reverse().find((m) => m.role === 'user');
     try {
@@ -116,6 +172,52 @@ export default function ExploreModal({ category, allUnits, onClose, onSaveUnit }
     }
   }, [messages, category, onSaveUnit]);
 
+  // ── Edit ─────────────────────────────────────────────────────────────────────
+
+  const startEdit = useCallback((id, currentText) => {
+    setEditingId(id);
+    setEditText(currentText);
+    setDeleteConfirmId(null);
+  }, []);
+
+  const commitEdit = useCallback(() => {
+    if (!editingId) return;
+    const text = editText.trim();
+    if (text) {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === editingId ? { ...m, text } : m))
+      );
+    }
+    setEditingId(null);
+    setEditText('');
+  }, [editingId, editText]);
+
+  const cancelEdit = useCallback(() => {
+    setEditingId(null);
+    setEditText('');
+  }, []);
+
+  // Auto-resize edit textarea
+  const handleEditChange = (e) => {
+    setEditText(e.target.value);
+    const el = editTextareaRef.current;
+    if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
+  };
+
+  // ── Delete ───────────────────────────────────────────────────────────────────
+
+  const handleDeleteClick = useCallback((id) => {
+    if (deleteConfirmId === id) {
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      setDeleteConfirmId(null);
+    } else {
+      setDeleteConfirmId(id);
+      setEditingId(null);
+    }
+  }, [deleteConfirmId]);
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+
   const canSend = input.trim().length > 0 && !loading;
 
   return (
@@ -125,7 +227,7 @@ export default function ExploreModal({ category, allUnits, onClose, onSaveUnit }
         {/* Header */}
         <div className="modal__header">
           <div className="explore__title-wrap">
-            <span className="modal__title">Explore</span>
+            <span className="modal__title">Forage</span>
             <span className="forage__category-pill">{category.title}</span>
           </div>
           <button className="btn-close" onClick={onClose} aria-label="Close">
@@ -149,89 +251,91 @@ export default function ExploreModal({ category, allUnits, onClose, onSaveUnit }
           <p className="explore__context-meta">
             {contextUnits.length === allUnits.length
               ? `All ${allUnits.length} item${allUnits.length !== 1 ? 's' : ''} in context`
-              : `${contextUnits.length} of ${allUnits.length} items in context · tap to toggle`}
+              : `${contextUnits.length} of ${allUnits.length} in context · tap to toggle`}
           </p>
         </div>
 
-        {/* Messages area */}
+        {/* Messages */}
         <div className="explore__messages">
-          {messages.length === 0 ? (
-            <div className="explore__empty">
-              <p className="explore__empty-hint">Ask anything about these items</p>
-              <div className="forage__quick-prompts forage__quick-prompts--idle">
-                <span className="forage__quick-label">try</span>
-                {QUICK_PROMPTS.map((p) => (
-                  <button
-                    key={p}
-                    className="forage__quick-chip"
-                    onClick={() => doSend(p)}
-                    disabled={loading}
-                    type="button"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            messages.map((msg, i) => (
-              <div key={msg.id} className={`explore__message explore__message--${msg.role}`}>
-                {msg.role === 'user' ? (
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`explore__message explore__message--${msg.role}${msg.id === SYNTHESIS_ID ? ' explore__message--synthesis' : ''}`}
+            >
+              {/* Message body: edit mode or view mode */}
+              {editingId === msg.id ? (
+                <textarea
+                  ref={editTextareaRef}
+                  className="explore__edit-textarea"
+                  value={editText}
+                  onChange={handleEditChange}
+                  onBlur={commitEdit}
+                  onKeyDown={(e) => { if (e.key === 'Escape') cancelEdit(); }}
+                  rows={1}
+                />
+              ) : (
+                msg.role === 'user' ? (
                   <p className="explore__message-user-text">{msg.text}</p>
+                ) : msg.text ? (
+                  <SimpleMarkdown text={msg.text} className="forage__markdown" />
                 ) : (
-                  <>
-                    {msg.text ? (
-                      <SimpleMarkdown text={msg.text} className="forage__markdown" />
-                    ) : (
-                      <div className="forage__response-loading">
-                        <span className="note-field__spinner" />
-                        <span>Thinking…</span>
-                      </div>
-                    )}
-                    {loading && i === messages.length - 1 && msg.text && (
-                      <span className="forage__cursor" aria-hidden="true">▋</span>
-                    )}
-                    {!loading && msg.text && (
-                      <div className="explore__message-footer">
-                        <button
-                          className={`forage__save-btn${msg.saved ? ' forage__save-btn--done' : ''}`}
-                          onClick={() => handleSaveMessage(msg)}
-                          disabled={msg.saved}
-                          type="button"
-                        >
-                          {msg.saved ? <><CheckIcon /> Saved</> : 'Save'}
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            ))
-          )}
+                  <div className="forage__response-loading">
+                    <span className="note-field__spinner" />
+                    <span>Thinking…</span>
+                  </div>
+                )
+              )}
 
-          {/* Inline quick prompts after conversation starts */}
-          {messages.length > 0 && !loading && (
-            <div className="forage__quick-prompts" style={{ padding: '4px 0' }}>
-              <span className="forage__quick-label">or</span>
-              {QUICK_PROMPTS.map((p) => (
-                <button
-                  key={p}
-                  className="forage__quick-chip"
-                  onClick={() => doSend(p)}
-                  disabled={loading}
-                  type="button"
-                >
-                  {p}
-                </button>
-              ))}
+              {/* Streaming cursor */}
+              {loading && msg.role === 'assistant' && !editingId && msg.text && (
+                <span className="forage__cursor" aria-hidden="true">▋</span>
+              )}
+
+              {/* Message actions (shown when not streaming this message) */}
+              {!(loading && msg.role === 'assistant' && !msg.text) && msg.text && editingId !== msg.id && (
+                <div className="explore__message-actions">
+                  {/* Edit */}
+                  <button
+                    type="button"
+                    className="explore__msg-action"
+                    onClick={() => startEdit(msg.id, msg.text)}
+                    aria-label="Edit"
+                  >
+                    <RenameIcon size={12} />
+                  </button>
+
+                  {/* Delete / Confirm */}
+                  <button
+                    type="button"
+                    className={`explore__msg-action${deleteConfirmId === msg.id ? ' explore__msg-action--confirm' : ''}`}
+                    onClick={() => handleDeleteClick(msg.id)}
+                    onBlur={() => setDeleteConfirmId(null)}
+                    aria-label="Delete"
+                  >
+                    {deleteConfirmId === msg.id ? 'Confirm?' : <TrashIcon size={12} />}
+                  </button>
+
+                  {/* Save (AI messages only) */}
+                  {msg.role === 'assistant' && (
+                    <button
+                      type="button"
+                      className={`forage__save-btn explore__msg-save${msg.saved ? ' forage__save-btn--done' : ''}`}
+                      onClick={() => handleSaveMessage(msg)}
+                      disabled={msg.saved}
+                    >
+                      {msg.saved ? <><CheckIcon /> Saved</> : 'Save'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-          )}
+          ))}
 
           {error && <p className="modal__error" style={{ margin: '4px 0 0' }}>{error}</p>}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Content toggle */}
+        {/* Share content toggle */}
         {hasShareableContent && (
           <button
             className={`forage__content-row${shareContent ? ' forage__content-row--on' : ''}`}
@@ -251,26 +355,26 @@ export default function ExploreModal({ category, allUnits, onClose, onSaveUnit }
           </button>
         )}
 
-        {/* Input */}
-        <NoteTray
-          value={input}
-          onChange={setInput}
-          disabled={loading}
-          placeholder="Ask something…"
-        />
-
-        {/* Actions */}
-        <div className="add-unit__actions">
-          <button className="add-unit__cancel-btn" onClick={onClose} type="button">
-            Close
-          </button>
+        {/* Chat input row */}
+        <div className="explore__input-row">
+          <textarea
+            ref={inputRef}
+            className="explore__input"
+            placeholder="Ask something… (Enter to send)"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleInputKeyDown}
+            disabled={loading}
+            rows={1}
+          />
           <button
-            className={`add-unit__cancel-btn add-unit__cancel-btn--primary forage__ask-btn${!canSend ? ' forage__ask-btn--disabled' : ''}`}
+            className={`explore__send-btn${!canSend ? ' explore__send-btn--disabled' : ''}`}
             onClick={handleSend}
             disabled={!canSend}
             type="button"
+            aria-label="Send"
           >
-            {loading ? 'Thinking…' : 'Send ✦'}
+            {loading ? '…' : '✦'}
           </button>
         </div>
 

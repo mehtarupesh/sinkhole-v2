@@ -1,11 +1,29 @@
-/* ── ExploreModal ── */
+/* ── ExploreModal (Forage chat) ── */
 
 .explore-modal {
-  max-width: 480px;
-  max-height: 90vh;
-  max-height: 90dvh;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 96vh;
+  height: 96dvh;
+  max-height: 96vh;
+  max-height: 96dvh;
+  margin: auto 0 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   display: flex;
   flex-direction: column;
+}
+
+@media (min-width: 640px) {
+  .explore-modal {
+    width: 90vw !important;
+    max-width: 1100px !important;
+    height: 92vh;
+    height: 92dvh;
+    max-height: 92vh;
+    max-height: 92dvh;
+    margin: auto;
+    border-radius: var(--radius-lg);
+  }
 }
 
 /* Header */
@@ -17,7 +35,8 @@
   overflow: hidden;
 }
 
-/* Unit selection strip */
+/* ── Unit selection strip ── */
+
 .explore__strip-wrap {
   flex-shrink: 0;
   padding: 8px 0 6px;
@@ -28,6 +47,7 @@
   padding-bottom: 4px;
 }
 
+/* Card wrapper for selection */
 .explore__unit-wrap {
   position: relative;
   flex-shrink: 0;
@@ -39,7 +59,7 @@
   opacity: 0.3;
 }
 
-/* Small dot indicator: bottom-right of card */
+/* Small dot indicator at bottom-right of card */
 .explore__unit-dot {
   position: absolute;
   bottom: 6px;
@@ -58,21 +78,22 @@
 }
 
 .explore__context-meta {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
   font-size: var(--text-2xs);
   color: var(--color-faint);
   text-align: center;
   padding: 0 16px;
 }
 
-/* Messages */
+/* ── Messages ── */
+
 .explore__messages {
   flex: 1;
   overflow-y: auto;
   padding: 12px 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   scrollbar-width: none;
   min-height: 0;
 }
@@ -81,26 +102,13 @@
   display: none;
 }
 
-.explore__empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  padding: 40px 20px;
-}
-
-.explore__empty-hint {
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-faint);
-}
-
 .explore__message {
-  padding: 10px 14px;
+  padding: 10px 12px;
   border-radius: var(--radius-md);
   animation: forage-response-in 0.15s ease;
 }
 
+/* User bubble — right-aligned, narrower */
 .explore__message--user {
   align-self: flex-end;
   max-width: 80%;
@@ -108,10 +116,17 @@
   border: 1px solid var(--color-surface-hi);
 }
 
+/* AI bubble — full width */
 .explore__message--assistant {
   align-self: stretch;
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid var(--color-surface-hi);
+}
+
+/* Synthesis first message — slightly distinguishable */
+.explore__message--synthesis {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .explore__message-user-text {
@@ -122,24 +137,148 @@
   word-break: break-word;
 }
 
-.explore__message-footer {
+/* ── Message actions row ── */
+
+.explore__message-actions {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 10px;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--color-surface);
 }
 
-/* Scoped NoteTray overrides — match ForageModal */
-.explore-modal .note-tray {
-  padding-top: 4px;
-  border-top: none;
+.explore__msg-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-faint);
+  font-size: var(--text-2xs);
+  font-family: inherit;
+  cursor: pointer;
+  transition: color var(--transition-speed), background var(--transition-speed), border-color var(--transition-speed);
 }
 
-.explore-modal .note-tray--text-hero {
-  border-top: none;
+.explore__msg-action:hover {
+  color: var(--color-muted);
+  background: var(--color-surface);
+  border-color: var(--color-surface-hi);
 }
 
-.explore-modal .add-unit__body {
-  margin-bottom: 14px;
+/* Delete confirm state — mirrors unit-detail__delete--confirm */
+.explore__msg-action--confirm {
+  color: var(--color-error);
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.25);
+  padding: 0 8px;
+}
+
+.explore__msg-action--confirm:hover {
+  color: var(--color-error);
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+/* Save button sits flush in the actions row */
+.explore__msg-save {
+  margin-left: auto; /* push to right */
+}
+
+/* ── Edit textarea (inline message editing) ── */
+
+.explore__edit-textarea {
+  width: 100%;
+  background: var(--color-surface-lo);
+  border: 1px solid var(--color-border-hi);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  line-height: 1.55;
+  resize: none;
+  outline: none;
+  overflow: hidden;
+  min-height: 36px;
+  box-sizing: border-box;
+}
+
+.explore__edit-textarea:focus {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Chat input row ── */
+
+.explore__input-row {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--color-surface);
+  margin-top: 4px;
+}
+
+.explore__input {
+  flex: 1;
+  background: var(--color-surface-lo);
+  border: 1px solid var(--color-surface-hi);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  overflow: hidden;
+  min-height: 36px;
+  max-height: 120px;
+  box-sizing: border-box;
+  transition: border-color var(--transition-speed);
+}
+
+.explore__input:focus {
+  border-color: var(--color-border-hi);
+}
+
+.explore__input::placeholder {
+  color: var(--color-faint);
+}
+
+.explore__input:disabled {
+  opacity: 0.5;
+}
+
+.explore__send-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-hi);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-dim);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
+}
+
+.explore__send-btn:hover:not(:disabled) {
+  background: var(--color-border);
+  color: var(--color-text);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.explore__send-btn--disabled {
+  opacity: 0.35;
+  cursor: default;
 }

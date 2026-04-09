@@ -376,6 +376,7 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
         <ExploreModal
           category={category}
           allUnits={units}
+          synthesis={synthesis}
           onClose={() => setShowExplore(false)}
           onSaveUnit={onUnitSaved}
         />
