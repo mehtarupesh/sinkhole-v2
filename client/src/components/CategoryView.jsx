@@ -13,15 +13,19 @@
  *   onUnitSaved  fn(updated, newCategory?)   reload trigger for Landing
  */
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon } from './Icons';
 import { CarouselCard } from './Carousel';
 import { groupByTime } from '../utils/timeGroups';
 import { forageUnits } from '../utils/forage';
-import { getSetting, updateUnit } from '../utils/db';
+import { getSetting, updateUnit, setCategorization } from '../utils/db';
 import { TRASH_ID } from '../utils/carouselGroups';
 import SimpleMarkdown from './SimpleMarkdown';
 import UnitDetail from './UnitDetail';
 import ExploreModal from './ExploreModal';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
+import MoveToCategoryModal from './MoveToCategoryModal';
+import SelectionBar from './SelectionBar';
+import { useSelection } from '../hooks/useSelection';
 import './CategoryView.css';
 
 const SYNTHESIS_CHIPS = [
@@ -79,6 +83,11 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
 
   // Explore modal
   const [showExplore, setShowExplore]       = useState(false);
+
+  // Selection / action bar
+  const { selected, isSelecting, toggle, enterWith, selectAll, clear } = useSelection();
+  const [pendingDelete, setPendingDelete]   = useState(null); // { title, units, onConfirm }
+  const [moveCtx, setMoveCtx]               = useState(null); // { units: Unit[] } | null
 
   const swipeStart = useRef(null);
 
@@ -146,12 +155,13 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
     if (showExplore) return;
     const handler = (e) => {
       if (e.key !== 'Escape') return;
+      if (isSelecting)   { clear(); return; }
       if (selectedCtx)   { setSelectedCtx(null); return; }
       onClose();
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [onClose, selectedCtx, showExplore]);
+  }, [onClose, selectedCtx, showExplore, isSelecting, clear]);
 
   useEffect(() => {
     if (!selectedCtx) return;
@@ -178,6 +188,36 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
     swipeStart.current = null;
     if (dx > 80 && dx > dy * 1.5) onClose();
   };
+
+  // ── Bulk actions ─────────────────────────────────────────────────────────────
+
+  const unitActions = [
+    {
+      icon: <TrashIcon />,
+      label: 'Delete',
+      onClick: () => {
+        const toDelete = units.filter((u) => selected.has(u.id));
+        const n = toDelete.length;
+        setPendingDelete({
+          title: `Delete ${n} item${n !== 1 ? 's' : ''}?`,
+          units: toDelete,
+          onConfirm: async () => {
+            for (const u of toDelete) {
+              await updateUnit(u.id, { categoryId: TRASH_ID });
+            }
+            onUnitSaved?.();
+            clear();
+            setPendingDelete(null);
+          },
+        });
+      },
+    },
+    {
+      icon: <MoveFolderIcon />,
+      label: 'Move to Category',
+      onClick: () => setMoveCtx({ units: units.filter((u) => selected.has(u.id)) }),
+    },
+  ];
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -312,9 +352,9 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
                       <CarouselCard
                         key={unit.id}
                         unit={unit}
-                        selected={false}
-                        onClick={() => setSelectedCtx({ units: visuallyOrdered, index: i >= 0 ? i : 0 })}
-                        onLongPress={() => setSelectedCtx({ units: visuallyOrdered, index: i >= 0 ? i : 0 })}
+                        selected={selected.has(unit.id)}
+                        onClick={() => isSelecting ? toggle(unit.id) : setSelectedCtx({ units: visuallyOrdered, index: i >= 0 ? i : 0 })}
+                        onLongPress={() => enterWith(unit.id)}
                       />
                     );
                   })}
@@ -381,6 +421,45 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
           synthesis={synthesis}
           onClose={() => setShowExplore(false)}
           onSaveUnit={onUnitSaved}
+        />
+      )}
+
+      {isSelecting && (
+        <SelectionBar
+          count={selected.size}
+          total={units.length}
+          onSelectAll={() => selectAll(units.map((u) => u.id))}
+          onClear={clear}
+          actions={unitActions}
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmDeleteModal
+          title={pendingDelete.title}
+          exportUnits={pendingDelete.units}
+          onConfirm={pendingDelete.onConfirm}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
+
+      {moveCtx && (
+        <MoveToCategoryModal
+          count={moveCtx.units.length}
+          groups={storedGroups.filter((g) => g.id !== TRASH_ID)}
+          onMove={async (categoryId, newCategory) => {
+            const resolvedId = categoryId === 'misc' ? null : categoryId;
+            for (const u of moveCtx.units) {
+              await updateUnit(u.id, { categoryId: resolvedId });
+            }
+            if (newCategory) {
+              setCategorization([...storedGroups, { id: newCategory.id, title: newCategory.title }]);
+            }
+            onUnitSaved?.();
+            clear();
+            setMoveCtx(null);
+          }}
+          onClose={() => setMoveCtx(null)}
         />
       )}
     </>

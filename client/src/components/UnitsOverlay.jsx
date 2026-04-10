@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { CloseIcon, SearchIcon, TrashIcon, MoveFolderIcon, ChevronLeftIcon, ChevronRightIcon, OneBIcon } from './Icons';
+import { CloseIcon, SearchIcon, TrashIcon, MoveFolderIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
-import ForageModal from './ForageModal';
 import { getAllUnits, updateUnit, getCategorization, setCategorization } from '../utils/db';
 import MoveToCategoryModal from './MoveToCategoryModal';
 import { withMiscGroup, pruneEmptyCategories, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
@@ -25,7 +24,6 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
 
   const { selected, isSelecting, toggle, enterWith, selectAll, clear } = useSelection();
   const [moveCtx, setMoveCtx] = useState(null); // { units: Unit[] } | null
-  const [forageCtx, setForageCtx] = useState(null); // { units: Unit[] } | null
 
   useEffect(() => {
     Promise.all([getAllUnits(), getCategorization()]).then(([all, g]) => {
@@ -190,19 +188,6 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
       label: 'Move to Category',
       onClick: () => setMoveCtx({ units: filtered.filter((u) => selected.has(u.id)) }),
     },
-    {
-      icon: <OneBIcon />,
-      label: 'Forage',
-      onClick: () => {
-        const selectedUnits = filtered.filter((u) => selected.has(u.id));
-        const catIds = new Set(selectedUnits.map((u) => u.categoryId));
-        const sharedGroup = catIds.size === 1 ? groups.find((g) => g.id === [...catIds][0]) : null;
-        const category = sharedGroup
-          ? { id: sharedGroup.id, title: sharedGroup.title, uids: selectedUnits.map((u) => u.uid) }
-          : { id: 'misc', title: 'Selection', uids: selectedUnits.map((u) => u.uid) };
-        setForageCtx({ units: selectedUnits, category });
-      },
-    },
   ];
 
   // Flat list in visual order (groupByTime reorders filtered, so navigation must match)
@@ -358,14 +343,6 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
         onClose={() => setMoveCtx(null)}
       />
     )}
-    {forageCtx && (
-      <ForageModal
-        category={forageCtx.category}
-        allUnits={forageCtx.units}
-        onClose={() => setForageCtx(null)}
-        onSaveUnit={() => getAllUnits().then((all) => setUnits(all.slice().reverse()))}
-      />
-    )}
-    </>
+</>
   );
 }
