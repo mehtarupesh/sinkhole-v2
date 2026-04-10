@@ -1,6 +1,7 @@
 /* ── ExploreModal (Forage chat) ── */
 
 .explore-modal {
+  position: relative;
   width: 100% !important;
   max-width: 100% !important;
   height: 96vh;
@@ -114,6 +115,11 @@
   max-width: 80%;
   background: var(--color-surface-lo);
   border: 1px solid var(--color-surface-hi);
+}
+
+/* Lock width while editing so the bubble doesn't shrink */
+.explore__message--user-editing {
+  width: 80%;
 }
 
 /* AI bubble — full width */
@@ -281,4 +287,65 @@
 .explore__send-btn--disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+/* ── Close confirmation sheet ── */
+
+.explore__close-confirm {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(10, 10, 12, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  z-index: 10;
+  animation: forage-response-in 0.12s ease;
+}
+
+.explore__close-confirm-text {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.explore__close-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.explore__close-confirm-btn {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
+}
+
+.explore__close-confirm-btn--cancel {
+  background: var(--color-surface-lo);
+  border: 1px solid var(--color-surface-hi);
+  color: var(--color-muted);
+}
+
+.explore__close-confirm-btn--cancel:hover {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.explore__close-confirm-btn--confirm {
+  background: var(--color-surface-hi);
+  border: 1px solid var(--color-border-hi);
+  color: var(--color-text);
+}
+
+.explore__close-confirm-btn--confirm:hover {
+  background: var(--color-border);
 }

@@ -9,7 +9,7 @@
  *   onSaveUnit fn()                called after a response is saved as a unit
  */
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { CloseIcon, CheckIcon, TrashIcon, RenameIcon } from './Icons';
+import { CloseIcon, CheckIcon, TrashIcon, RenameIcon, CopyIcon } from './Icons';
 import { getSetting, addUnit } from '../utils/db';
 import { chatWithUnits } from '../utils/forage';
 import { CarouselCard } from './Carousel';
@@ -25,7 +25,7 @@ function buildInitialMessages(synthesis) {
 
 export default function ExploreModal({ category, allUnits, synthesis, onClose, onSaveUnit }) {
   const [selectedIds, setSelectedIds]       = useState(() => new Set(allUnits.map((u) => u.id)));
-  const [shareContent, setShareContent]     = useState(false);
+  const [shareContent, setShareContent]     = useState(true);
   const [messages, setMessages]             = useState(() => buildInitialMessages(synthesis));
   const [input, setInput]                   = useState('');
   const [loading, setLoading]               = useState(false);
@@ -37,6 +37,13 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
 
   // Delete confirm state
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  // Copy state — tracks which message was just copied
+  const [copiedId, setCopiedId] = useState(null);
+  const copyTimerRef = useRef(null);
+
+  // Close confirm state
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   const messagesEndRef  = useRef(null);
   const inputRef        = useRef(null);
@@ -57,25 +64,29 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Focus edit textarea when entering edit mode
+  // Focus edit textarea when entering edit mode and auto-size to content
   useEffect(() => {
     if (editingId && editTextareaRef.current) {
-      editTextareaRef.current.focus();
-      editTextareaRef.current.select();
+      const el = editTextareaRef.current;
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+      el.focus();
+      el.select();
     }
   }, [editingId]);
 
-  // Escape: cancel edit → cancel delete confirm → close modal
+  // Escape: cancel edit → cancel delete confirm → ask before close
   useEffect(() => {
     const handler = (e) => {
       if (e.key !== 'Escape') return;
       if (editingId)        { cancelEdit(); return; }
       if (deleteConfirmId)  { setDeleteConfirmId(null); return; }
-      onClose();
+      if (showCloseConfirm) { setShowCloseConfirm(false); return; }
+      setShowCloseConfirm(true);
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [onClose, editingId, deleteConfirmId]);
+  }, [onClose, editingId, deleteConfirmId, showCloseConfirm]);
 
   // Auto-resize input textarea
   useEffect(() => {
@@ -204,6 +215,17 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
     if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
   };
 
+  // ── Copy ─────────────────────────────────────────────────────────────────────
+
+  const handleCopyMessage = useCallback(async (id, text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      clearTimeout(copyTimerRef.current);
+      setCopiedId(id);
+      copyTimerRef.current = setTimeout(() => setCopiedId(null), 1500);
+    } catch { /* clipboard unavailable */ }
+  }, []);
+
   // ── Delete ───────────────────────────────────────────────────────────────────
 
   const handleDeleteClick = useCallback((id) => {
@@ -221,7 +243,7 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
   const canSend = input.trim().length > 0 && !loading;
 
   return (
-    <div className="overlay" onClick={onClose}>
+    <div className="overlay" onClick={() => setShowCloseConfirm(true)}>
       <div className="modal explore-modal" onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
@@ -230,7 +252,7 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
             <span className="modal__title">Forage</span>
             <span className="forage__category-pill">{category.title}</span>
           </div>
-          <button className="btn-close" onClick={onClose} aria-label="Close">
+          <button className="btn-close" onClick={() => setShowCloseConfirm(true)} aria-label="Close">
             <CloseIcon />
           </button>
         </div>
@@ -260,7 +282,7 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`explore__message explore__message--${msg.role}${msg.id === SYNTHESIS_ID ? ' explore__message--synthesis' : ''}`}
+              className={`explore__message explore__message--${msg.role}${msg.id === SYNTHESIS_ID ? ' explore__message--synthesis' : ''}${editingId === msg.id && msg.role === 'user' ? ' explore__message--user-editing' : ''}`}
             >
               {/* Message body: edit mode or view mode */}
               {editingId === msg.id ? (
@@ -302,6 +324,16 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
                     aria-label="Edit"
                   >
                     <RenameIcon size={12} />
+                  </button>
+
+                  {/* Copy */}
+                  <button
+                    type="button"
+                    className="explore__msg-action"
+                    onClick={() => handleCopyMessage(msg.id, msg.text)}
+                    aria-label="Copy"
+                  >
+                    {copiedId === msg.id ? <CheckIcon size={12} /> : <CopyIcon size={12} />}
                   </button>
 
                   {/* Delete / Confirm */}
@@ -377,6 +409,29 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
             {loading ? '…' : '✦'}
           </button>
         </div>
+
+        {/* Close confirmation overlay */}
+        {showCloseConfirm && (
+          <div className="explore__close-confirm">
+            <p className="explore__close-confirm-text">Close Forage? Chat will be lost.</p>
+            <div className="explore__close-confirm-actions">
+              <button
+                type="button"
+                className="explore__close-confirm-btn explore__close-confirm-btn--cancel"
+                onClick={() => setShowCloseConfirm(false)}
+              >
+                Keep open
+              </button>
+              <button
+                type="button"
+                className="explore__close-confirm-btn explore__close-confirm-btn--confirm"
+                onClick={onClose}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

@@ -142,9 +142,9 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
   // ── Keyboard ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
+    if (showExplore) return;
     const handler = (e) => {
       if (e.key !== 'Escape') return;
-      if (showExplore)   { setShowExplore(false); return; }
       if (selectedCtx)   { setSelectedCtx(null); return; }
       onClose();
     };

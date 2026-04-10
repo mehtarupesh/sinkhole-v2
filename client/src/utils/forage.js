@@ -134,6 +134,7 @@ export async function chatWithUnits({ units, messages, shareContent, apiKey }) {
     config: {
       systemInstruction: EXPLORE_SYSTEM_PROMPT,
       thinkingConfig: { thinkingLevel: 'MINIMAL' },
+      tools: [{ urlContext: {} }, { googleSearch: {} }],
     },
   });
 }
