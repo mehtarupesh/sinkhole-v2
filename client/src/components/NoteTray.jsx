@@ -32,6 +32,8 @@ function isTouchDevice() {
 export default function NoteTray({
   value,
   onChange,
+  onSubmit,
+  className = '',
   disabled = false,
   transcribeFn,
   shareContent,
@@ -192,7 +194,7 @@ export default function NoteTray({
 
   if (isRec) {
     return (
-      <div className="note-tray">
+      <div className={`note-tray${className ? ` ${className}` : ''}`}>
         <div
           className="note-tray__wave-zone"
           onClick={stopRecording}
@@ -217,7 +219,7 @@ export default function NoteTray({
   if (mode === 'mic-hero') {
     return (
       <div
-        className={`note-tray note-tray--mic-hero${exitingMic ? ' note-tray--mic-exit' : ''}`}
+        className={`note-tray note-tray--mic-hero${exitingMic ? ' note-tray--mic-exit' : ''}${className ? ` ${className}` : ''}`}
       >
         {/* Three-column stage: swipe hint | orb + hint | empty */}
         <div className="note-tray__mic-stage">
@@ -262,7 +264,7 @@ export default function NoteTray({
 
   return (
     <div
-      className="note-tray note-tray--text-hero"
+      className={`note-tray note-tray--text-hero${className ? ` ${className}` : ''}`}
     >
       <div className="note-tray__row">
         <button
@@ -283,6 +285,12 @@ export default function NoteTray({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey && onSubmit) {
+              e.preventDefault();
+              onSubmit();
+            }
+          }}
           disabled={disabled || isTranscribing}
           rows={1}
         />

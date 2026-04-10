@@ -20,6 +20,7 @@ import { forageUnits } from '../utils/forage';
 import { getSetting, updateUnit, setCategorization } from '../utils/db';
 import { TRASH_ID } from '../utils/carouselGroups';
 import SimpleMarkdown from './SimpleMarkdown';
+import NoteTray from './NoteTray';
 import UnitDetail from './UnitDetail';
 import ExploreModal from './ExploreModal';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
@@ -126,8 +127,8 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
 
   const handleChipClick = useCallback((key) => {
     setActiveChip(key);
-    setCustomQ('');
     const chip = SYNTHESIS_CHIPS.find((c) => c.key === key);
+    setCustomQ(chip.label);
     runSynthesis(chip.prompt);
   }, [runSynthesis]);
 
@@ -280,13 +281,13 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
 
           {/* Custom question row */}
           <div className="category-view__custom-row">
-            <input
-              className="category-view__custom-input"
-              placeholder="Custom question…"
+            <NoteTray
+              className="category-view__note-tray"
               value={customQ}
-              onChange={(e) => setCustomQ(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleCustomRun(); }}
+              onChange={setCustomQ}
+              onSubmit={handleCustomRun}
               disabled={synthesisLoading}
+              placeholder="Custom question…"
             />
             {customQ.trim() && (
               <button

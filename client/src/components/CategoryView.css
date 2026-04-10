@@ -101,29 +101,20 @@
   gap: 8px;
 }
 
-.category-view__custom-input {
+/* NoteTray scoped inside custom question row */
+.category-view__custom-row .note-tray {
   flex: 1;
-  background: var(--color-surface-lo);
-  border: 1px solid var(--color-surface-hi);
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  color: var(--color-text);
-  font-size: var(--text-xs);
-  font-family: inherit;
-  outline: none;
-  transition: border-color var(--transition-speed);
+  padding: 0;
+  border-top: none;
 }
 
-.category-view__custom-input:focus {
-  border-color: var(--color-border-hi);
+.category-view__custom-row .note-tray--text-hero {
+  border-top: none;
+  animation: none;
 }
 
-.category-view__custom-input::placeholder {
-  color: var(--color-faint);
-}
-
-.category-view__custom-input:disabled {
-  opacity: 0.5;
+.category-view__custom-row .note-tray--mic-hero {
+  border-top: none;
 }
 
 .category-view__run-btn {

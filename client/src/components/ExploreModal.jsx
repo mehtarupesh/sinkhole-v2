@@ -13,6 +13,7 @@ import { CloseIcon, CheckIcon, TrashIcon, RenameIcon, CopyIcon } from './Icons';
 import { getSetting, addUnit } from '../utils/db';
 import { chatWithUnits } from '../utils/forage';
 import { CarouselCard } from './Carousel';
+import NoteTray from './NoteTray';
 import SimpleMarkdown from './SimpleMarkdown';
 import './ExploreModal.css';
 
@@ -46,7 +47,6 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   const messagesEndRef  = useRef(null);
-  const inputRef        = useRef(null);
   const editTextareaRef = useRef(null);
 
   const contextUnits = useMemo(
@@ -87,14 +87,6 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose, editingId, deleteConfirmId, showCloseConfirm]);
-
-  // Auto-resize input textarea
-  useEffect(() => {
-    const el = inputRef.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${el.scrollHeight}px`;
-  }, [input]);
 
   // ── Unit selection ───────────────────────────────────────────────────────────
 
@@ -155,13 +147,6 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
     const text = input.trim();
     if (text) doSend(text);
   }, [doSend, input]);
-
-  const handleInputKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
 
   // ── Save ─────────────────────────────────────────────────────────────────────
 
@@ -389,15 +374,13 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
 
         {/* Chat input row */}
         <div className="explore__input-row">
-          <textarea
-            ref={inputRef}
-            className="explore__input"
-            placeholder="Ask something… (Enter to send)"
+          <NoteTray
+            className="explore__note-tray"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleInputKeyDown}
+            onChange={setInput}
+            onSubmit={handleSend}
             disabled={loading}
-            rows={1}
+            placeholder="Ask something…"
           />
           <button
             className={`explore__send-btn${!canSend ? ' explore__send-btn--disabled' : ''}`}
