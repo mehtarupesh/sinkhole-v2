@@ -363,6 +363,16 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
             ))
           )}
         </div>
+
+        {isSelecting && (
+          <SelectionBar
+            count={selected.size}
+            total={units.length}
+            onSelectAll={() => selectAll(units.map((u) => u.id))}
+            onClear={clear}
+            actions={unitActions}
+          />
+        )}
       </div>
 
       {/* Unit detail overlay */}
@@ -421,16 +431,6 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
           synthesis={synthesis}
           onClose={() => setShowExplore(false)}
           onSaveUnit={onUnitSaved}
-        />
-      )}
-
-      {isSelecting && (
-        <SelectionBar
-          count={selected.size}
-          total={units.length}
-          onSelectAll={() => selectAll(units.map((u) => u.id))}
-          onClear={clear}
-          actions={unitActions}
         />
       )}
 
