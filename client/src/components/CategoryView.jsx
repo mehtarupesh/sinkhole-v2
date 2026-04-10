@@ -17,7 +17,8 @@ import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import { CarouselCard } from './Carousel';
 import { groupByTime } from '../utils/timeGroups';
 import { forageUnits } from '../utils/forage';
-import { getSetting } from '../utils/db';
+import { getSetting, updateUnit } from '../utils/db';
+import { TRASH_ID } from '../utils/carouselGroups';
 import SimpleMarkdown from './SimpleMarkdown';
 import UnitDetail from './UnitDetail';
 import ExploreModal from './ExploreModal';
@@ -337,7 +338,8 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
                   onUnitSaved?.(updated, newCategory);
                   setSelectedCtx(null);
                 }}
-                onDelete={() => {
+                onDelete={async (id) => {
+                  await updateUnit(id, { categoryId: TRASH_ID });
                   onUnitSaved?.();
                   setSelectedCtx(null);
                 }}

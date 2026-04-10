@@ -605,10 +605,10 @@ export default function Landing() {
       )}
       {categoryViewCtx && (
         <CategoryView
-          category={categoryViewCtx.category}
+          category={displayGroups.find((g) => g.id === categoryViewCtx.category.id) ?? categoryViewCtx.category}
           allUnits={units}
           storedGroups={selectableGroups}
-          onClose={() => setCategoryViewCtx(null)}
+          onClose={async () => { setCategoryViewCtx(null); setAccessOrder(await getAccessOrder()); }}
           onUnitSaved={(updated, newCategory) => {
             reloadUnits();
             if (newCategory && newCategory.id !== TRASH_ID) {
