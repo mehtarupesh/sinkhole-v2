@@ -32,6 +32,15 @@ async function getDeviceKey() {
   return key;
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+// Safe for large buffers — spread operator hits call stack limit on big images.
+function uint8ToBase64(buf) {
+  let str = '';
+  for (let i = 0; i < buf.length; i++) str += String.fromCharCode(buf[i]);
+  return btoa(str);
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /** Encrypts plaintext with the device key. Returns a portable encoded string. */
@@ -42,7 +51,7 @@ export async function encryptContent(plaintext) {
   const buf = new Uint8Array(iv.length + ct.byteLength);
   buf.set(iv);
   buf.set(new Uint8Array(ct), iv.length);
-  return PREFIX + btoa(String.fromCharCode(...buf));
+  return PREFIX + uint8ToBase64(buf);
 }
 
 /** Decrypts a string produced by encryptContent using the device key. */

@@ -46,7 +46,7 @@ export function CarouselCard({ unit, onClick, selected = false, onLongPress, cat
         'bleed-card',
         isImage  && 'bleed-card--image',
         isFile   && 'bleed-card--file',
-        noteOnly ? 'bleed-card--note-only' : hasQuote && 'bleed-card--quoted',
+        noteOnly ? 'bleed-card--note-only' : (hasQuote && 'bleed-card--quoted'),
         selected && 'bleed-card--selected',
       ].filter(Boolean).join(' ')}
       {...pressHandlers}
@@ -100,7 +100,7 @@ export function CarouselCard({ unit, onClick, selected = false, onLongPress, cat
       {noteOnly ? (
         <p className="bleed-card__note-main">{unit.quote}</p>
       ) : (
-        !isLocked && hasQuote && (
+        hasQuote && (
           <div className="bleed-card__footer">
             <p className="bleed-card__quote">{unit.quote}</p>
           </div>
