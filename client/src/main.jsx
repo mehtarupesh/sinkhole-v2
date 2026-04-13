@@ -7,6 +7,20 @@ import './index.css';
 
 const basename = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') || '/';
 
+// Failsafe: reload the page whenever a new SW takes control.
+// This is synchronous and doesn't depend on workbox-window's async import,
+// so it fires even if the registerSW activated listener races and loses.
+// The `refreshing` flag prevents a double-reload if both paths fire.
+if ('serviceWorker' in navigator) {
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+}
+
 registerSW({ immediate: true });
 
 ReactDOM.createRoot(document.getElementById('root')).render(

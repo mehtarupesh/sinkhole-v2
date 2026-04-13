@@ -4,7 +4,11 @@ import { clientsClaim } from 'workbox-core';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { writePendingShare } from './utils/pendingShare';
 
-self.skipWaiting();
+// Call skipWaiting inside the install event — the canonical way per the spec.
+// Calling it at module scope runs before the install phase begins, which can
+// cause the new SW to activate before workbox-window's async listeners are
+// ready, silently breaking the auto-reload on update.
+self.addEventListener('install', () => self.skipWaiting());
 clientsClaim();
 
 // Injected at build time by vite-plugin-pwa (injectManifest strategy).
