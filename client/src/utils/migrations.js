@@ -9,6 +9,7 @@ const migrations = [
   migration_2_bootstrapAccessOrder,
   migration_3_accessOrderToObjects,
   migration_4_categoryUpdatedAt,
+  migration_5_deprecatePasswordType,
 ];
 
 // ── Runner ────────────────────────────────────────────────────────────────────
@@ -149,6 +150,24 @@ async function migration_4_categoryUpdatedAt() {
   await setCategorization(groups.map((g) => ({ updatedAt: 0, ...g })));
 }
 
+// ── Migration 5 — deprecate 'password' type ───────────────────────────────────
+// Password was UI-only masking, never real encryption. We convert all password
+// units to snippet type (content unchanged, no encryption key available at
+// migration time). All units get an explicit `encrypted: false` field so future
+// code can rely on the field being present.
+
+async function migration_5_deprecatePasswordType() {
+  const db = await openDBForMigration();
+  const units = await getAllUnitsForMigration(db);
+  const needsWork = units.filter((u) => u.type === 'password' || u.encrypted === undefined);
+  if (!needsWork.length) return;
+  for (const unit of needsWork) {
+    const changes = { encrypted: false };
+    if (unit.type === 'password') changes.type = 'snippet';
+    await updateUnitFields(db, unit, changes);
+  }
+}
+
 // ── IDB helpers scoped to migration (avoid circular openDB calls) ─────────────
 
 function openDBForMigration() {
@@ -179,5 +198,14 @@ function updateUnitCategoryId(db, id, categoryId) {
       putReq.onerror = ({ target: { error } }) => reject(error);
     };
     getReq.onerror = ({ target: { error } }) => reject(error);
+  });
+}
+
+function updateUnitFields(db, unit, changes) {
+  return new Promise((resolve, reject) => {
+    const store = db.transaction('units', 'readwrite').objectStore('units');
+    const putReq = store.put({ ...unit, ...changes });
+    putReq.onsuccess = () => resolve();
+    putReq.onerror = ({ target: { error } }) => reject(error);
   });
 }

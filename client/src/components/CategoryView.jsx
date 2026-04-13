@@ -93,7 +93,7 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
   const swipeStart = useRef(null);
 
   const hasShareableContent = useMemo(
-    () => units.some((u) => u.type !== 'password' && u.content),
+    () => units.some((u) => u.type !== 'password' && u.content && !u.encrypted),
     [units]
   );
 

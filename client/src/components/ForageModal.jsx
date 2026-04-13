@@ -42,7 +42,7 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
   );
   // Show content toggle when any non-password unit has content (images or text)
   const hasShareableContent = useMemo(
-    () => categoryUnits.some((u) => u.type !== 'password' && u.content),
+    () => categoryUnits.some((u) => u.type !== 'password' && u.content && !u.encrypted),
     [categoryUnits]
   );
 

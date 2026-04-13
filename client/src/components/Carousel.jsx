@@ -1,8 +1,9 @@
 import { useLongPress } from '../hooks/useLongPress';
-import { CheckIcon } from './Icons';
+import { CheckIcon, LockTypeIcon } from './Icons';
 import Linkify from './Linkify';
 import LinkPreview from './LinkPreview';
 import { MISC_ID } from '../utils/carouselGroups';
+import { isEncryptedContent } from '../utils/crypto';
 
 function BadgeIcon() {
   const s = { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -31,11 +32,12 @@ function relativeDate(date) {
 export function CarouselCard({ unit, onClick, selected = false, onLongPress, categoryLabel = null }) {
   const pressHandlers = useLongPress({ onClick, onLongPress });
 
-  const isImage  = unit.type === 'image' && unit.mimeType?.startsWith('image/');
-  const isFile   = unit.type === 'image' && !unit.mimeType?.startsWith('image/');
-  const hasBadge = unit.type === 'snippet';
+  const isLocked = unit.encrypted && isEncryptedContent(unit.content);
+  const isImage  = !isLocked && unit.type === 'image' && unit.mimeType?.startsWith('image/');
+  const isFile   = !isLocked && unit.type === 'image' && !unit.mimeType?.startsWith('image/');
+  const hasBadge = !isLocked && unit.type === 'snippet';
   const hasQuote = !!unit.quote;
-  const noteOnly = !unit.content && hasQuote;
+  const noteOnly = !isLocked && !unit.content && hasQuote;
 
   return (
     <button
@@ -43,7 +45,6 @@ export function CarouselCard({ unit, onClick, selected = false, onLongPress, cat
       className={[
         'bleed-card',
         isImage  && 'bleed-card--image',
-        unit.type === 'password' && !noteOnly && 'bleed-card--pw',
         isFile   && 'bleed-card--file',
         noteOnly ? 'bleed-card--note-only' : hasQuote && 'bleed-card--quoted',
         selected && 'bleed-card--selected',
@@ -57,34 +58,36 @@ export function CarouselCard({ unit, onClick, selected = false, onLongPress, cat
         </span>
       )}
 
-      {/* Badge — hidden for note-only cards */}
-      {!noteOnly && hasBadge && <span className="bleed-card__badge"><BadgeIcon /></span>}
+      {/* Encrypted — show lock badge and masked body */}
+      {isLocked && (
+        <>
+          <span className="bleed-card__badge bleed-card__badge--lock">
+            <LockTypeIcon />
+          </span>
+          <div className="bleed-card__locked">
+            <span className="bleed-card__locked-dots">{'•'.repeat(12)}</span>
+          </div>
+        </>
+      )}
 
-      {/* Regular content — hidden when note is the only thing */}
-      {!noteOnly && isImage && (
+      {/* Badge — hidden for note-only and locked cards */}
+      {!noteOnly && !isLocked && hasBadge && <span className="bleed-card__badge"><BadgeIcon /></span>}
+
+      {/* Regular content — hidden when note is the only thing or locked */}
+      {!noteOnly && !isLocked && isImage && (
         <div className="bleed-card__media">
           <img src={unit.content} alt={unit.fileName} className="bleed-card__img" />
         </div>
       )}
 
-      {!noteOnly && unit.type === 'snippet' && (
+      {!noteOnly && !isLocked && unit.type === 'snippet' && (
         <>
           <p className="bleed-card__text"><Linkify>{unit.content}</Linkify></p>
           <LinkPreview text={unit.content} />
         </>
       )}
 
-      {!noteOnly && unit.type === 'password' && (
-        <div className="bleed-card__pw">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-          <span className="bleed-card__pw-mask">{'•'.repeat(Math.min(unit.content.length, 10))}</span>
-        </div>
-      )}
-
-      {!noteOnly && isFile && (
+      {!noteOnly && !isLocked && isFile && (
         <div className="bleed-card__file-body">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -97,7 +100,7 @@ export function CarouselCard({ unit, onClick, selected = false, onLongPress, cat
       {noteOnly ? (
         <p className="bleed-card__note-main">{unit.quote}</p>
       ) : (
-        hasQuote && (
+        !isLocked && hasQuote && (
           <div className="bleed-card__footer">
             <p className="bleed-card__quote">{unit.quote}</p>
           </div>

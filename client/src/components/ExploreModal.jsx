@@ -55,7 +55,7 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
   );
 
   const hasShareableContent = useMemo(
-    () => contextUnits.some((u) => u.type !== 'password' && u.content),
+    () => contextUnits.some((u) => u.type !== 'password' && u.content && !u.encrypted),
     [contextUnits]
   );
 

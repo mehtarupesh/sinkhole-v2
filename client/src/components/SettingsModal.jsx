@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { CloseIcon } from './Icons';
 import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, mergeUnits, mergeCategorization, mergeAccessOrder, mergeTombstones } from '../utils/db';
 
-const TYPE_LABELS = { snippet: 'text', password: 'pw', image: 'img' };
+const TYPE_LABELS = { snippet: 'text', image: 'img' };
 
 function PreviewCard({ unit }) {
   return (
@@ -14,20 +14,15 @@ function PreviewCard({ unit }) {
         </span>
       </div>
       <div className="unit-card__body">
-        {unit.type === 'snippet' && (
+        {unit.encrypted ? (
+          <p className="unit-card__text unit-card__text--muted">{'•'.repeat(12)}</p>
+        ) : unit.type === 'snippet' ? (
           <p className="unit-card__text">{unit.content?.slice(0, 120)}</p>
-        )}
-        {unit.type === 'password' && (
-          <p className="unit-card__text unit-card__text--muted">
-            {'•'.repeat(Math.min(unit.content?.length ?? 0, 16))}
-          </p>
-        )}
-        {unit.type === 'image' && unit.mimeType?.startsWith('image/') && (
+        ) : unit.type === 'image' && unit.mimeType?.startsWith('image/') ? (
           <img src={unit.content} alt={unit.fileName} className="unit-card__img" />
-        )}
-        {unit.type === 'image' && !unit.mimeType?.startsWith('image/') && (
+        ) : unit.type === 'image' ? (
           <p className="unit-card__text unit-card__text--muted">{unit.fileName}</p>
-        )}
+        ) : null}
       </div>
     </div>
   );

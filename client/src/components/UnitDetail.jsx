@@ -6,18 +6,18 @@ import ContentField from './ContentField';
 import NoteTray from './NoteTray';
 import CategorySelector from './CategorySelector';
 import { transcribeAndSuggest } from '../utils/transcribeAndSuggest';
+import { encryptContent, decryptContent, isEncryptedContent } from '../utils/crypto';
 
 const TYPE_ICONS = {
   snippet: SnippetTypeIcon,
-  password: LockTypeIcon,
   image: ImageTypeIcon,
 };
 
 export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGroups = [] }) {
-  const [content, setContent] = useState(unit.content);
+  const [content,  setContent]  = useState(unit.content);
   const [fileName, setFileName] = useState(unit.fileName || '');
   const [mimeType, setMimeType] = useState(unit.mimeType || '');
-  const [quote, setQuote] = useState(unit.quote || '');
+  const [quote,    setQuote]    = useState(unit.quote || '');
   const [saveState, setSaveState] = useState(''); // '' | 'saving' | 'done'
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
@@ -26,14 +26,21 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   const initialCategoryId = useRef(unit.categoryId ?? '').current;
   const [categoryId, setCategoryId] = useState(initialCategoryId);
 
+  // ── Encryption ───────────────────────────────────────────────────────────────
+  // revealed  = whether the user has chosen to see the content this session
+  //             starts false for encrypted units (content stays hidden until user clicks lock)
+  // isLocked  = !revealed (used for display and to decide whether to encrypt on save)
+  const [revealed, setRevealed] = useState(!(unit.encrypted ?? false));
+  const isLocked = !revealed;
+
   // ── AI suggest ───────────────────────────────────────────────────────────────
   const suggest = useSuggest();
 
   // ── Derived ──────────────────────────────────────────────────────────────────
-  const hasContent = unit.type === 'image' ? !!content : !!content.trim();
-  const hasNote = !!quote.trim();
+  const hasContent = unit.type === 'image' ? !!content : !isLocked && !!content.trim();
+  const hasNote    = !!quote.trim();
   const canAutoSuggest =
-    !saving && (hasContent || hasNote) && suggest.suggestState !== 'loading';
+    !saving && !isLocked && (hasContent || hasNote) && suggest.suggestState !== 'loading';
 
   // Record access — fire and forget, no await
   useEffect(() => { if (unit.uid) touchUnit(unit.uid); }, [unit.uid]);
@@ -50,7 +57,31 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
     quote !== (unit.quote || '') ||
     fileName !== (unit.fileName || '') ||
     categoryId !== initialCategoryId ||
+    isLocked !== (unit.encrypted ?? false) ||
     !!suggest.newCategory;
+
+  // ── Lock toggle ───────────────────────────────────────────────────────────────
+  // Clicking the lock flips visibility.
+  // Revealing for the first time: decrypt ciphertext → plaintext in state.
+  // Re-hiding: just flip revealed=false; content stays plaintext in state until Save re-encrypts.
+  const handleEncryptToggle = async () => {
+    if (isLocked) {
+      // Reveal: decrypt lazily if content is still ciphertext
+      if (isEncryptedContent(content)) {
+        try {
+          const plain = await decryptContent(content);
+          setContent(plain);
+        } catch {
+          setError('Decryption failed — key unavailable on this device');
+          return;
+        }
+      }
+      setRevealed(true);
+    } else {
+      // Hide again
+      setRevealed(false);
+    }
+  };
 
   // ── AI suggest helpers ────────────────────────────────────────────────────────
 
@@ -66,14 +97,14 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
     const result = await transcribeAndSuggest(blob, apiKey, {
       type: unit.type,
       existingCategories: storedGroups,
-      content: suggest.shareContent && unit.type !== 'password' ? content : null,
+      content: suggest.shareContent && !isLocked ? content : null,
       mimeType: suggest.shareContent && unit.type === 'image' ? mimeType : null,
     });
     const applied = suggest.applyResult(result);
     if (applied.type === 'existing') setCategoryId(applied.categoryId);
     else setCategoryId('');
     return result.transcript;
-  }, [unit.type, storedGroups, suggest, content, mimeType]);
+  }, [unit.type, storedGroups, suggest, content, mimeType, isLocked]);
 
   // ── Save ──────────────────────────────────────────────────────────────────────
   const performSave = async (quoteText) => {
@@ -82,7 +113,16 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
       const resolvedCategoryId = suggest.newCategory
         ? suggest.newCategory.id
         : (categoryId || null);
-      const changes = { content, fileName, mimeType, categoryId: resolvedCategoryId };
+
+      // isLocked drives what gets stored:
+      // - locked (hidden): keep/make ciphertext; encrypted=true
+      // - revealed (visible): store plaintext; encrypted=false
+      let finalContent = content;
+      if (isLocked && !isEncryptedContent(content)) {
+        finalContent = await encryptContent(content);
+      }
+
+      const changes = { content: finalContent, encrypted: isLocked, fileName, mimeType, categoryId: resolvedCategoryId };
       if (quoteText?.trim()) {
         changes.quote = quoteText.trim();
       } else {
@@ -105,7 +145,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
     await onDelete(unit.id);
   };
 
-  const TypeIcon = TYPE_ICONS[unit.type];
+  const TypeIcon = TYPE_ICONS[unit.type] ?? SnippetTypeIcon;
 
   const handleTouchStart = (e) => {
     swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -128,6 +168,16 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
           <span className="add-unit__type-icon add-unit__type-icon--active">
             {TypeIcon && <TypeIcon />}
           </span>
+          <button
+            type="button"
+            className={`add-unit__type-icon add-unit__encrypt-toggle${isLocked ? ' add-unit__type-icon--active add-unit__encrypt-toggle--on' : ''}`}
+            onClick={handleEncryptToggle}
+            aria-label={isLocked ? 'Click to reveal' : 'Click to hide'}
+            title={isLocked ? 'Click to reveal' : 'Click to hide'}
+            disabled={saving}
+          >
+            <LockTypeIcon />
+          </button>
         </div>
         <div className="modal__header-actions">
           <button
@@ -139,7 +189,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
           >
             {confirmDelete ? 'Confirm?' : <TrashIcon />}
           </button>
-          {unit.type === 'image' && content && (
+          {unit.type === 'image' && content && !isLocked && (
             <a
               href={content}
               download={fileName || 'file'}
@@ -156,19 +206,31 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
         </div>
       </div>
 
-      {/* Content — takes up available vertical space */}
+      {/* Content — locked body when encrypted and not yet revealed */}
       <div className="add-unit__body">
-        <ContentField
-          type={unit.type}
-          content={content}
-          fileName={fileName}
-          mimeType={mimeType}
-          onTextChange={(text) => { setContent(text); setError(''); }}
-          onFileSelected={({ content: c, fileName: fn, mimeType: mt }) => {
-            setContent(c); setFileName(fn); setMimeType(mt); setError('');
-          }}
-          disabled={saving}
-        />
+        {isLocked ? (
+          <button
+            type="button"
+            className="unit-detail__locked-body"
+            onClick={handleEncryptToggle}
+            aria-label="Click to reveal content"
+          >
+            <LockTypeIcon />
+            <span>Click lock to reveal</span>
+          </button>
+        ) : (
+          <ContentField
+            type={unit.type === 'password' ? 'snippet' : unit.type}
+            content={content}
+            fileName={fileName}
+            mimeType={mimeType}
+            onTextChange={(text) => { setContent(text); setError(''); }}
+            onFileSelected={({ content: c, fileName: fn, mimeType: mt }) => {
+              setContent(c); setFileName(fn); setMimeType(mt); setError('');
+            }}
+            disabled={saving}
+          />
+        )}
       </div>
 
       {error && <p className="modal__error">{error}</p>}

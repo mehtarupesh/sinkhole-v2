@@ -25,14 +25,13 @@ function CardContent({ unit }) {
       {isImage && (
         <img src={unit.content} alt={unit.fileName ?? 'image'} className="cleanup-card__img" />
       )}
-      {unit.type === 'snippet' && !noteOnly && (
+      {unit.encrypted ? (
+        <p className="cleanup-card__text">{'•'.repeat(12)}</p>
+      ) : unit.type === 'snippet' && !noteOnly ? (
         <p className="cleanup-card__text">
           <Linkify>{unit.content}</Linkify>
         </p>
-      )}
-      {unit.type === 'password' && (
-        <p className="cleanup-card__text">{'•'.repeat(Math.min(unit.content?.length ?? 0, 12))}</p>
-      )}
+      ) : null}
       {isFile && (
         <p className="cleanup-card__text">{unit.fileName}</p>
       )}

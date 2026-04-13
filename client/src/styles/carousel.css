@@ -236,30 +236,25 @@
   text-overflow: ellipsis;
 }
 
-/* ── Password variant ── */
-.bleed-card--pw {
-  text-align: center;
+/* ── Encrypted variant ── */
+.bleed-card__badge--lock {
+  color: rgba(245, 166, 35, 0.5);
+  background: rgba(245, 166, 35, 0.06);
+  border: 1px solid rgba(245, 166, 35, 0.18);
 }
 
-.bleed-card--pw .bleed-card__badge {
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.bleed-card__pw {
+.bleed-card__locked {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  color: #444;
+  padding: 8px 0;
 }
 
-.bleed-card__pw-mask {
+.bleed-card__locked-dots {
   font-size: 16px;
-  letter-spacing: 0.18em;
-  color: #3a3a3a;
+  letter-spacing: 0.16em;
+  color: #333;
 }
 
 /* ── File variant ── */

@@ -6,11 +6,11 @@ import ContentField from './ContentField';
 import NoteTray from './NoteTray';
 import CategorySelector from './CategorySelector';
 import { transcribeAndSuggest } from '../utils/transcribeAndSuggest';
+import { encryptContent } from '../utils/crypto';
 
 const TYPE_CONFIG = [
-  { type: 'image',    Icon: ImageTypeIcon },
-  { type: 'snippet',  Icon: SnippetTypeIcon },
-  { type: 'password', Icon: LockTypeIcon },
+  { type: 'image',   Icon: ImageTypeIcon },
+  { type: 'snippet', Icon: SnippetTypeIcon },
 ];
 
 export default function AddUnitModal({
@@ -33,6 +33,9 @@ export default function AddUnitModal({
 
   // ── Category ─────────────────────────────────────────────────────────────
   const [categoryId, setCategoryId] = useState('');
+
+  // ── Encryption ───────────────────────────────────────────────────────────
+  const [encrypted, setEncrypted] = useState(false);
 
   // ── Save ─────────────────────────────────────────────────────────────────
   const [saveState, setSaveState] = useState(''); // '' | 'saving' | 'done'
@@ -124,7 +127,7 @@ export default function AddUnitModal({
     const result = await transcribeAndSuggest(blob, apiKey, {
       type,
       existingCategories: storedGroups,
-      content: suggest.shareContent && type !== 'password' ? content : null,
+      content: suggest.shareContent && !encrypted ? content : null,
       mimeType: suggest.shareContent && type === 'image' ? mimeType : null,
     });
     const applied = suggest.applyResult(result);
@@ -144,7 +147,11 @@ export default function AddUnitModal({
       const resolvedCategoryId = suggest.newCategory
         ? suggest.newCategory.id
         : (categoryId || null);
-      const unit = { type, content, categoryId: resolvedCategoryId };
+      let finalContent = content;
+      if (encrypted && content) {
+        finalContent = await encryptContent(content);
+      }
+      const unit = { type, content: finalContent, encrypted, categoryId: resolvedCategoryId };
       if (fileName)     unit.fileName = fileName;
       if (mimeType)     unit.mimeType = mimeType;
       if (quote.trim()) unit.quote    = quote.trim();
@@ -194,6 +201,15 @@ export default function AddUnitModal({
                 <Icon />
               </button>
             ))}
+            <button
+              type="button"
+              className={`add-unit__type-icon add-unit__encrypt-toggle${encrypted ? ' add-unit__type-icon--active add-unit__encrypt-toggle--on' : ''}`}
+              onClick={() => setEncrypted((v) => !v)}
+              aria-label="Toggle encryption"
+              title="Encrypt"
+            >
+              <LockTypeIcon />
+            </button>
           </div>
         </div>
 

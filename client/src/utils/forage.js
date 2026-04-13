@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { isEncryptedContent } from './crypto';
 
 const SYSTEM_PROMPT = `You are helping a user forage through their personal stash of saved information in an app called 1Burrow.
 The user saves snippets, images, links, and notes with short context notes.
@@ -54,7 +55,7 @@ export async function forageUnits({ units, question, shareContent, apiKey }) {
   // Content — only when shareContent=true
   if (shareContent) {
     units.forEach((u, i) => {
-      if (u.type === 'password' || !u.content) return;
+      if (u.type === 'password' || !u.content || isEncryptedContent(u.content)) return;
 
       if (u.type === 'image') {
         parts.push({ text: `\nItem ${i + 1} image (note: "${u.quote || ''}"):` });
@@ -109,7 +110,7 @@ export async function chatWithUnits({ units, messages, shareContent, apiKey }) {
 
   if (shareContent) {
     units.forEach((u, i) => {
-      if (u.type === 'password' || !u.content) return;
+      if (u.type === 'password' || !u.content || isEncryptedContent(u.content)) return;
       if (u.type === 'image') {
         contextParts.push({ text: `\nItem ${i + 1} image (note: "${u.quote || ''}"):` });
         const { data, mimeType } = extractImageData(u.content, u.mimeType);

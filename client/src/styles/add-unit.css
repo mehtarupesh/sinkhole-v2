@@ -84,6 +84,38 @@
   flex-shrink: 0;
 }
 
+/* ── Encrypt toggle — sits in the type row as a 3rd icon ── */
+.add-unit__encrypt-toggle {
+  margin-left: auto; /* push to the right, visually separated from type buttons */
+}
+
+.add-unit__encrypt-toggle--on {
+  color: #f5a623;
+  border-color: rgba(245, 166, 35, 0.45) !important;
+  background: rgba(245, 166, 35, 0.08) !important;
+}
+
+/* Locked body — tappable reveal target in UnitDetail */
+.unit-detail__locked-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 40px 20px;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: color 0.15s ease;
+}
+
+.unit-detail__locked-body:hover {
+  color: #f5a623;
+}
+
 /* ── Note Tray ── */
 .note-tray {
   flex-shrink: 0;
