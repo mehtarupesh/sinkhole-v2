@@ -1,14 +1,25 @@
 /* eslint-disable no-restricted-globals */
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { cleanupOutdatedCaches, precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
+import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { writePendingShare } from './utils/pendingShare';
 
 self.skipWaiting();
 clientsClaim();
 
-// Injected at build time by vite-plugin-pwa (injectManifest strategy)
+// Injected at build time by vite-plugin-pwa (injectManifest strategy).
+// All built assets (JS, CSS, HTML) are precached here — enabling full offline access.
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
+
+// SPA offline navigation fallback: serve cached index.html for any navigation
+// request that isn't handled by precache (e.g. /connect, /host while offline).
+const navigationHandler = createHandlerBoundToURL('/index.html');
+const navigationRoute = new NavigationRoute(navigationHandler, {
+  // Let the share-target POST handler run before this catch-all.
+  denylist: [/\/share-target/],
+});
+registerRoute(navigationRoute);
 
 /**
  * Convert an ArrayBuffer to a base64 data URL.

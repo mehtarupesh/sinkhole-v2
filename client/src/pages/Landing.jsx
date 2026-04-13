@@ -386,19 +386,19 @@ export default function Landing() {
               label: 'Move to Category',
               onClick: () => setMoveCtx({ units: units.filter((u) => cardSel.selected.has(u.id)) }),
             },
-            {
-              icon: <OneBIcon />,
-              label: 'Forage',
-              onClick: () => {
-                const selectedUnits = units.filter((u) => cardSel.selected.has(u.id));
-                const catIds = new Set(selectedUnits.map((u) => u.categoryId));
-                const sharedGroup = catIds.size === 1 ? storedGroups?.find((g) => g.id === [...catIds][0]) : null;
-                const category = sharedGroup
-                  ? { id: sharedGroup.id, title: sharedGroup.title, uids: selectedUnits.map((u) => u.uid) }
-                  : { id: 'misc', title: 'Selection', uids: selectedUnits.map((u) => u.uid) };
-                setCardForageCtx({ units: selectedUnits, category });
-              },
-            },
+            // {
+            //   icon: <OneBIcon />,
+            //   label: 'Forage',
+            //   onClick: () => {
+            //     const selectedUnits = units.filter((u) => cardSel.selected.has(u.id));
+            //     const catIds = new Set(selectedUnits.map((u) => u.categoryId));
+            //     const sharedGroup = catIds.size === 1 ? storedGroups?.find((g) => g.id === [...catIds][0]) : null;
+            //     const category = sharedGroup
+            //       ? { id: sharedGroup.id, title: sharedGroup.title, uids: selectedUnits.map((u) => u.uid) }
+            //       : { id: 'misc', title: 'Selection', uids: selectedUnits.map((u) => u.uid) };
+            //     setCardForageCtx({ units: selectedUnits, category });
+            //   },
+            // },
           ] : [
             {
               icon: <TrashIcon />,
@@ -458,14 +458,14 @@ export default function Landing() {
                 if (group) setPendingRename({ id, currentTitle: group.title });
               },
             },
-            {
-              icon: <OneBIcon />,
-              label: 'Forage',
-              onClick: () => {
-                if (catSel.selected.size !== 1) { setToast('Select exactly 1 category to Forage'); return; }
-                setShowForageModal(true);
-              },
-            },
+            // {
+            //   icon: <OneBIcon />,
+            //   label: 'Forage',
+            //   onClick: () => {
+            //     if (catSel.selected.size !== 1) { setToast('Select exactly 1 category to Forage'); return; }
+            //     setShowForageModal(true);
+            //   },
+            // },
           ]}
         />
       ) : (

@@ -34,9 +34,9 @@ export default defineConfig({
         enabled: true,
       },
       manifest: {
-        name: 'Instant Mirror',
-        short_name: 'Instant Mirror',
-        description: 'Instant Mirror',
+        name: '1burrow',
+        short_name: '1burrow',
+        description: 'Stash Now. Forage Later',
         theme_color: '#000000',
         background_color: '#000000',
         start_url: process.env.VITE_BASE_URL || '/',
@@ -44,6 +44,7 @@ export default defineConfig({
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: 'pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
         ],
         share_target: {
           action: `${(process.env.VITE_BASE_URL || '/').replace(/\/?$/, '/') }share-target`,

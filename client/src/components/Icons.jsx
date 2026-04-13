@@ -143,16 +143,15 @@ export function OneBIcon() {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden>
       <text
-        x="11" y="19"
+        x="12" y="12"
         textAnchor="middle"
+        dominantBaseline="central"
         fontFamily="'Space Grotesk', system-ui, sans-serif"
-        fontSize="20"
-        letterSpacing="-0.5"
+        fontSize="14"
+        letterSpacing="0"
       >
-        <tspan fontWeight="400" fill="rgba(255,255,255,0.35)">1</tspan>
-        <tspan fontWeight="700" fill="currentColor">b</tspan>
+        <tspan fontWeight="400" fill="rgba(255,255,255,0.35)">1</tspan><tspan fontWeight="700" fill="currentColor" dx="-0.5">b</tspan>
       </text>
-      <path d="M20 -1l1.1 3.3 3.3 1.1-3.3 1.1-1.1 3.3-1.1-3.3L15.6 3.3l3.3-1.1z" fill="currentColor" opacity="0.65" />
     </svg>
   );
 }

@@ -1,0 +1,8 @@
+<svg width="512" height="512" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <rect width="24" height="24" fill="#000000"/>
+  <text x="12" y="12" text-anchor="middle" dominant-baseline="central"
+        font-family="'Space Grotesk', system-ui, sans-serif"
+        font-size="14" letter-spacing="0">
+    <tspan font-weight="400" fill="rgba(255,255,255,0.35)">1</tspan><tspan font-weight="700" fill="white" dx="-0.5">b</tspan>
+  </text>
+</svg>
