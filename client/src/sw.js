@@ -18,7 +18,10 @@ cleanupOutdatedCaches();
 
 // SPA offline navigation fallback: serve cached index.html for any navigation
 // request that isn't handled by precache (e.g. /connect, /host while offline).
-const navigationHandler = createHandlerBoundToURL('/index.html');
+// Must use BASE_URL (e.g. '/sinkhole-v2/index.html') not '/index.html' — the
+// precache keys are scoped to the deployment base, and passing an absolute root
+// path causes a non-precached-url throw that crashes the SW on startup.
+const navigationHandler = createHandlerBoundToURL(`${import.meta.env.BASE_URL}index.html`);
 const navigationRoute = new NavigationRoute(navigationHandler, {
   // Let the share-target POST handler run before this catch-all.
   denylist: [/\/share-target/],
