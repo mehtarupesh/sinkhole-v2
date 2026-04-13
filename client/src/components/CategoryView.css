@@ -3,11 +3,19 @@
 /* Header */
 .category-view__header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   padding: 12px 16px 12px 12px;
   border-bottom: 1px solid var(--color-surface);
   flex-shrink: 0;
+}
+
+.category-view__header > .btn-icon {
+  margin-top: 2px;
+}
+
+.category-view__header > .category-view__explore-btn {
+  margin-top: 2px;
 }
 
 .category-view__back {
@@ -17,9 +25,15 @@
 .category-view__title-wrap {
   flex: 1;
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.category-view__title-row {
+  display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
 }
 
 .category-view__title {
@@ -58,13 +72,12 @@
   border-color: rgba(255, 255, 255, 0.14);
 }
 
-/* Personal stats row */
+/* Stats subtitle (inside header) */
 .category-view__stats {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0;
-  padding: 0 2px;
 }
 
 .category-view__stat {
@@ -78,14 +91,18 @@
   color: var(--color-faint);
 }
 
-/* Synthesis section */
+/* Synthesis section — overlaps the scroll area so cards slide behind it */
 .category-view__synthesis {
   flex-shrink: 0;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--color-surface);
+  padding: 12px 20px 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  background: #0f0f0f;
+  position: relative;
+  z-index: 2;
+  margin-bottom: -20px;
+  padding-bottom: 20px;
 }
 
 .category-view__chips {

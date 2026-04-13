@@ -47,22 +47,12 @@ function computeStats(units) {
   const diffDays = Math.floor((now - latest) / 86_400_000);
   const lastAdded = diffDays === 0 ? 'today' : diffDays === 1 ? 'yesterday' : `${diffDays}d ago`;
 
-  // Most active day of week
-  const dayCounts = {};
-  for (const u of units) {
-    const day = new Date(u.createdAt ?? 0).toLocaleDateString('en', { weekday: 'long' });
-    dayCounts[day] = (dayCounts[day] ?? 0) + 1;
-  }
-  const topDay = Object.entries(dayCounts).sort((a, b) => b[1] - a[1])[0];
-  // Only surface it if that day has ≥35% of items (a real pattern)
-  const activeDay = topDay && topDay[1] / units.length >= 0.35 ? topDay[0] : null;
-
   // Items added this month (calendar month)
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
   const thisMonth = units.filter((u) => (u.createdAt ?? 0) >= monthStart).length;
   const monthStat = thisMonth > 0 ? `${thisMonth} item${thisMonth !== 1 ? 's' : ''} this month` : null;
 
-  return { lastAdded, activeDay, monthStat };
+  return { lastAdded, monthStat };
 }
 
 export default function CategoryView({ category, allUnits, storedGroups, onClose, onUnitSaved }) {
@@ -93,7 +83,7 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
   const swipeStart = useRef(null);
 
   const hasShareableContent = useMemo(
-    () => units.some((u) => u.type !== 'password' && u.content && !u.encrypted),
+    () => units.some((u) => u.content && !u.encrypted),
     [units]
   );
 
@@ -237,8 +227,18 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
             <ChevronLeftIcon />
           </button>
           <div className="category-view__title-wrap">
-            <span className="category-view__title">{category.title}</span>
-            <span className="category-view__count">{units.length}</span>
+            <div className="category-view__title-row">
+              <span className="category-view__title">{category.title}</span>
+              <span className="category-view__count">{units.length}</span>
+            </div>
+            {stats && (
+              <div className="category-view__stats">
+                <span className="category-view__stat">Last added {stats.lastAdded}</span>
+                {stats.monthStat && (
+                  <span className="category-view__stat">{stats.monthStat}</span>
+                )}
+              </div>
+            )}
           </div>
           <button
             className="category-view__explore-btn"
@@ -251,19 +251,6 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
 
         {/* Synthesis section */}
         <div className="category-view__synthesis">
-          {/* Personal stats — instant, no AI */}
-          {stats && (
-            <div className="category-view__stats">
-              <span className="category-view__stat">Last added {stats.lastAdded}</span>
-              {stats.activeDay && (
-                <span className="category-view__stat">Active on {stats.activeDay}s</span>
-              )}
-              {stats.monthStat && (
-                <span className="category-view__stat">{stats.monthStat}</span>
-              )}
-            </div>
-          )}
-
           {/* Quick-prompt chips */}
           <div className="category-view__chips">
             {SYNTHESIS_CHIPS.map((c) => (
