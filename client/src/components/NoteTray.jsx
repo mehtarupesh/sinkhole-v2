@@ -40,8 +40,9 @@ export default function NoteTray({
   onShareToggle,
   hasContent = false,
   placeholder = 'add a note…',
+  defaultMode = isTouchDevice() ? 'mic-hero' : 'text-hero',
 }) {
-  const [mode, setMode] = useState(() => isTouchDevice() ? 'mic-hero' : 'text-hero');
+  const [mode, setMode] = useState(() => defaultMode);
   const [exitingMic, setExitingMic] = useState(false);
   const [recState, setRecState] = useState('idle'); // idle | recording | transcribing
   const [localError, setLocalError] = useState('');

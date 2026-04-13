@@ -288,6 +288,7 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
               onSubmit={handleCustomRun}
               disabled={synthesisLoading}
               placeholder="Custom question…"
+              defaultMode="text-hero"
             />
             {customQ.trim() && (
               <button
