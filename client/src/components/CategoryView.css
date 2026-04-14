@@ -140,24 +140,32 @@
 /* Synthesis response */
 .category-view__response {
   position: relative;
-  padding: 10px 28px 10px 12px;
+  padding: 10px 36px 10px 12px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--color-surface-hi);
   border-radius: var(--radius-md);
   animation: forage-response-in 0.2s ease;
 }
 
-.category-view__response-clear {
+.category-view__response-actions {
   position: absolute;
   top: 6px;
   right: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.category-view__response-clear {
+  /* sits inside .category-view__response-actions — no longer absolute */
 }
 
 /* Footer row inside synthesis response — stale hint + chat link */
 .category-view__response-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
@@ -167,15 +175,14 @@
 /* Staleness hint — shown inside response box when cached synthesis predates new items */
 .category-view__stale-hint {
   margin: 0;
+  margin-right: auto;
   font-size: var(--text-xs);
   color: #d97706;
-  flex: 1;
 }
 
 /* "Chat ✦" link inside synthesis response — progressive path to multi-turn */
 .category-view__chat-link {
   flex-shrink: 0;
-  margin-left: auto;
   background: none;
   border: none;
   padding: 0;
@@ -215,4 +222,20 @@
 
 .category-view__share-toggle--on {
   color: var(--color-muted);
+}
+
+/* Synthesis edit textarea */
+.category-view__synthesis-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-family: inherit;
+  color: var(--color-text);
+  line-height: 1.6;
+  padding: 0;
+  display: block;
 }

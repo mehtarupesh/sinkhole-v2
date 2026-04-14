@@ -13,7 +13,7 @@
  *   onUnitSaved  fn(updated, newCategory?)   reload trigger for Landing
  */
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon, CopyIcon, CheckIcon, RenameIcon } from './Icons';
 import { CarouselCard } from './Carousel';
 import { groupByTime } from '../utils/timeGroups';
 import { synthesizeFromUnits } from '../utils/forage';
@@ -65,6 +65,10 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
   const [synthesisError, setSynthesisError] = useState('');
   const [cacheUnitCount, setCacheUnitCount] = useState(null);
   const [confirmClearSynthesis, setConfirmClearSynthesis] = useState(false);
+  const [isEditingSynthesis, setIsEditingSynthesis] = useState(false);
+  const [synthesisCopied, setSynthesisCopied] = useState(false);
+  const synthesisCopyTimerRef = useRef(null);
+  const synthesisTextareaRef = useRef(null);
 
   // Unit detail state
   const [selectedCtx, setSelectedCtx]       = useState(null); // { units, index }
@@ -150,6 +154,27 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
     setSynthesisError('');
     setConfirmClearSynthesis(false);
   }, [confirmClearSynthesis, category.id]);
+
+  const handleSynthesisCopy = useCallback(async () => {
+    if (!synthesis) return;
+    try {
+      await navigator.clipboard.writeText(synthesis);
+      clearTimeout(synthesisCopyTimerRef.current);
+      setSynthesisCopied(true);
+      synthesisCopyTimerRef.current = setTimeout(() => setSynthesisCopied(false), 1500);
+    } catch { /* clipboard unavailable */ }
+  }, [synthesis]);
+
+  const handleSynthesisSave = useCallback(async (text) => {
+    setSynthesis(text);
+    setIsEditingSynthesis(false);
+    await setSynthesisCacheEntry(category.id, {
+      question: customQ.trim() || DEFAULT_SYNTHESIS_PROMPT,
+      answer: text,
+      computedAt: Date.now(),
+      unitCount: units.length,
+    });
+  }, [category.id, customQ, units.length]);
 
   // ── Unit navigation ──────────────────────────────────────────────────────────
 
@@ -295,15 +320,37 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
           {(synthesis || synthesisLoading || synthesisError) && (
             <div className="category-view__response">
               {!synthesisLoading && (
-                <button
-                  type="button"
-                  className={`category-view__response-clear unit-detail__delete${confirmClearSynthesis ? ' unit-detail__delete--confirm' : ''}`}
-                  onClick={handleClearSynthesis}
-                  onBlur={() => setConfirmClearSynthesis(false)}
-                  aria-label="Clear synthesis"
-                >
-                  {confirmClearSynthesis ? 'Confirm?' : <TrashIcon />}
-                </button>
+                <div className="category-view__response-actions">
+                  <button
+                    type="button"
+                    className={`category-view__response-clear unit-detail__delete${confirmClearSynthesis ? ' unit-detail__delete--confirm' : ''}`}
+                    onClick={handleClearSynthesis}
+                    onBlur={() => setConfirmClearSynthesis(false)}
+                    aria-label="Clear synthesis"
+                  >
+                    {confirmClearSynthesis ? 'Confirm?' : <TrashIcon />}
+                  </button>
+                  {!isEditingSynthesis && synthesis && (
+                    <>
+                      <button
+                        type="button"
+                        className="add-unit__copy-btn"
+                        onClick={() => setIsEditingSynthesis(true)}
+                        aria-label="Edit synthesis"
+                      >
+                        <RenameIcon size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        className={`add-unit__copy-btn${synthesisCopied ? ' add-unit__copy-btn--copied' : ''}`}
+                        onClick={handleSynthesisCopy}
+                        aria-label="Copy synthesis"
+                      >
+                        {synthesisCopied ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
+                      </button>
+                    </>
+                  )}
+                </div>
               )}
               {synthesisLoading && !synthesis ? (
                 <div className="forage__response-loading">
@@ -312,6 +359,24 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
                 </div>
               ) : synthesisError ? (
                 <p className="modal__error" style={{ margin: 0 }}>{synthesisError}</p>
+              ) : isEditingSynthesis ? (
+                <textarea
+                  ref={synthesisTextareaRef}
+                  className="category-view__synthesis-textarea"
+                  value={synthesis}
+                  onChange={(e) => {
+                    setSynthesis(e.target.value);
+                    const el = synthesisTextareaRef.current;
+                    if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
+                  }}
+                  onFocus={(e) => {
+                    const el = e.target;
+                    el.style.height = 'auto';
+                    el.style.height = `${el.scrollHeight}px`;
+                  }}
+                  onBlur={(e) => handleSynthesisSave(e.target.value)}
+                  autoFocus
+                />
               ) : (
                 <>
                   <SimpleMarkdown text={synthesis} className="forage__markdown" />
