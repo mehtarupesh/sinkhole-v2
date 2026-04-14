@@ -54,10 +54,10 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
     [allUnits, selectedIds]
   );
 
-  const hasShareableContent = useMemo(
-    () => contextUnits.some((u) => u.type !== 'password' && u.content && !u.encrypted),
-    [contextUnits]
-  );
+  // const hasShareableContent = useMemo(
+  //   () => contextUnits.some((u) => u.type !== 'password' && u.content && !u.encrypted),
+  //   [contextUnits]
+  // );
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -353,7 +353,7 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
         </div>
 
         {/* Share content toggle */}
-        {hasShareableContent && (
+        {/* {hasShareableContent && (
           <button
             className={`forage__content-row${shareContent ? ' forage__content-row--on' : ''}`}
             onClick={() => setShareContent((s) => !s)}
@@ -370,7 +370,7 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
             </div>
             <span className="forage__content-row-badge">{shareContent ? 'On' : 'Off'}</span>
           </button>
-        )}
+        )} */}
 
         {/* Chat input row */}
         <div className="explore__input-row">

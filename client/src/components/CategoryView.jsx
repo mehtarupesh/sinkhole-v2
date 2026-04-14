@@ -16,8 +16,8 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon } from './Icons';
 import { CarouselCard } from './Carousel';
 import { groupByTime } from '../utils/timeGroups';
-import { forageUnits } from '../utils/forage';
-import { getSetting, updateUnit, setCategorization } from '../utils/db';
+import { synthesizeFromUnits } from '../utils/forage';
+import { getSetting, updateUnit, setCategorization, getSynthesisCache, setSynthesisCacheEntry, deleteSynthesisCacheEntry } from '../utils/db';
 import { TRASH_ID, addCategoryIfNew } from '../utils/carouselGroups';
 import SimpleMarkdown from './SimpleMarkdown';
 import NoteTray from './NoteTray';
@@ -29,12 +29,8 @@ import SelectionBar from './SelectionBar';
 import { useSelection } from '../hooks/useSelection';
 import './CategoryView.css';
 
-const SYNTHESIS_CHIPS = [
-  // { key: 'summarize',  label: 'Summarize',     prompt: 'Summarize this collection in 2-3 sentences. Be brief and direct.' },
-  { key: 'keypoints', label: 'Key points',     prompt: 'What are the 3-4 most important points? One line per point.' },
-  { key: 'actions',   label: 'Action items',   prompt: 'List action items only. Maximum 5 bullet points, each one line.' },
-  // { key: 'questions', label: 'Open questions', prompt: 'What questions are unresolved or worth following up? Max 4 bullets.' },
-];
+const DEFAULT_SYNTHESIS_PROMPT =
+  'Summarize concisely the items with one bullet point per item. If multiple items pertain to same topic, create a heading and add bullets under it for each unit. No need to refer to the items';
 
 // ── Client-side stats (no AI, instant) ──────────────────────────────────────
 
@@ -62,12 +58,13 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
   );
 
   // Synthesis state
-  const [activeChip, setActiveChip]         = useState('keypoints');
   const [customQ, setCustomQ]               = useState('');
   const [synthesis, setSynthesis]           = useState('');
   const [synthesisLoading, setSynthesisLoading] = useState(false);
   const [shareContent, setShareContent]     = useState(false);
   const [synthesisError, setSynthesisError] = useState('');
+  const [cacheUnitCount, setCacheUnitCount] = useState(null);
+  const [confirmClearSynthesis, setConfirmClearSynthesis] = useState(false);
 
   // Unit detail state
   const [selectedCtx, setSelectedCtx]       = useState(null); // { units, index }
@@ -82,16 +79,36 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
 
   const swipeStart = useRef(null);
 
+  // ── Load cache on open, auto-run if no cache and enough items ────────────────
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCache() {
+      const cache = await getSynthesisCache();
+      const entry = cache[category.id];
+      if (cancelled) return;
+      if (entry) {
+        setSynthesis(entry.answer);
+        setCustomQ(entry.question);
+        setCacheUnitCount(entry.unitCount);
+      } else {
+        setCustomQ(DEFAULT_SYNTHESIS_PROMPT);
+      }
+    }
+    loadCache();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category.id]);
+
   const hasShareableContent = useMemo(
     () => units.some((u) => u.content && !u.encrypted),
     [units]
   );
 
-  const currentQuestion = customQ.trim() ||
-    SYNTHESIS_CHIPS.find((c) => c.key === activeChip)?.prompt ||
-    SYNTHESIS_CHIPS[0].prompt;
+  const currentQuestion = customQ.trim() || DEFAULT_SYNTHESIS_PROMPT;
 
   const stats = useMemo(() => computeStats(units), [units]);
+  const newItemsSinceSynthesis = cacheUnitCount !== null ? units.length - cacheUnitCount : 0;
 
   // ── Synthesis ────────────────────────────────────────────────────────────────
 
@@ -102,31 +119,37 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
     setSynthesisError('');
     try {
       const apiKey = await getSetting('gemini_key');
-      const stream = await forageUnits({ units, question, shareContent: sc, apiKey });
+      const stream = await synthesizeFromUnits({ units, question, shareContent: sc, apiKey });
       let text = '';
       for await (const chunk of stream) {
         text += chunk.text ?? '';
         setSynthesis(text);
       }
+      const unitCount = units.length;
+      await setSynthesisCacheEntry(category.id, { question, answer: text, computedAt: Date.now(), unitCount });
+      setCacheUnitCount(unitCount);
     } catch (e) {
       setSynthesisError(e.message ?? 'Synthesis failed.');
     } finally {
       setSynthesisLoading(false);
     }
-  }, [units, shareContent]);
+  }, [units, shareContent, category.id]);
 
-  const handleChipClick = useCallback((key) => {
-    setActiveChip(key);
-    const chip = SYNTHESIS_CHIPS.find((c) => c.key === key);
-    setCustomQ(chip.prompt);
-    runSynthesis(chip.prompt);
-  }, [runSynthesis]);
 
   const handleCustomRun = useCallback(() => {
     if (!customQ.trim()) return;
-    setActiveChip('');
     runSynthesis(customQ.trim());
   }, [customQ, runSynthesis]);
+
+  const handleClearSynthesis = useCallback(async () => {
+    if (!confirmClearSynthesis) { setConfirmClearSynthesis(true); return; }
+    await deleteSynthesisCacheEntry(category.id);
+    setSynthesis('');
+    // setCustomQ('');
+    setCacheUnitCount(null);
+    setSynthesisError('');
+    setConfirmClearSynthesis(false);
+  }, [confirmClearSynthesis, category.id]);
 
   // ── Unit navigation ──────────────────────────────────────────────────────────
 
@@ -240,32 +263,10 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
               </div>
             )}
           </div>
-          <button
-            className="category-view__explore-btn"
-            onClick={() => setShowExplore(true)}
-            type="button"
-          >
-            Forage ✦
-          </button>
         </div>
 
         {/* Synthesis section */}
         <div className="category-view__synthesis">
-          {/* Quick-prompt chips */}
-          <div className="category-view__chips">
-            {SYNTHESIS_CHIPS.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                className={`forage__quick-chip${activeChip === c.key && !customQ ? ' forage__quick-chip--active' : ''}`}
-                onClick={() => handleChipClick(c.key)}
-                disabled={synthesisLoading}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-
           {/* Custom question row */}
           <div className="category-view__custom-row">
             <NoteTray
@@ -293,6 +294,17 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
           {/* Response */}
           {(synthesis || synthesisLoading || synthesisError) && (
             <div className="category-view__response">
+              {!synthesisLoading && (
+                <button
+                  type="button"
+                  className={`category-view__response-clear unit-detail__delete${confirmClearSynthesis ? ' unit-detail__delete--confirm' : ''}`}
+                  onClick={handleClearSynthesis}
+                  onBlur={() => setConfirmClearSynthesis(false)}
+                  aria-label="Clear synthesis"
+                >
+                  {confirmClearSynthesis ? 'Confirm?' : <TrashIcon />}
+                </button>
+              )}
               {synthesisLoading && !synthesis ? (
                 <div className="forage__response-loading">
                   <span className="note-field__spinner" />
@@ -304,13 +316,29 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
                 <>
                   <SimpleMarkdown text={synthesis} className="forage__markdown" />
                   {synthesisLoading && <span className="forage__cursor" aria-hidden="true">▋</span>}
+                  {!synthesisLoading && (
+                    <div className="category-view__response-footer">
+                      {newItemsSinceSynthesis > 0 && (
+                        <p className="category-view__stale-hint">
+                          ✦ {newItemsSinceSynthesis} new item{newItemsSinceSynthesis !== 1 ? 's' : ''} since last synthesis
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        className="category-view__chat-link"
+                        onClick={() => setShowExplore(true)}
+                      >
+                        Chat ✦
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
           )}
 
           {/* Share content toggle — subtle, below response */}
-          {hasShareableContent && (synthesis || synthesisError) && (
+          {/* {hasShareableContent && (synthesis || synthesisError) && (
             <button
               className={`category-view__share-toggle${shareContent ? ' category-view__share-toggle--on' : ''}`}
               type="button"
@@ -323,7 +351,7 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
             >
               ✦ {shareContent ? 'Content included · tap to use metadata only' : 'Metadata only · tap to include content'}
             </button>
-          )}
+          )} */}
         </div>
 
         {/* Units grid */}

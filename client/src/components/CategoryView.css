@@ -14,9 +14,6 @@
   margin-top: 2px;
 }
 
-.category-view__header > .category-view__explore-btn {
-  margin-top: 2px;
-}
 
 .category-view__back {
   flex-shrink: 0;
@@ -51,26 +48,6 @@
   flex-shrink: 0;
 }
 
-.category-view__explore-btn {
-  flex-shrink: 0;
-  padding: 6px 14px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-dim);
-  font-size: var(--text-xs);
-  font-family: inherit;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
-}
-
-.category-view__explore-btn:hover {
-  background: var(--color-surface-hi);
-  color: var(--color-text);
-  border-color: rgba(255, 255, 255, 0.14);
-}
 
 /* Stats subtitle (inside header) */
 .category-view__stats {
@@ -162,11 +139,55 @@
 
 /* Synthesis response */
 .category-view__response {
-  padding: 10px 12px;
+  position: relative;
+  padding: 10px 28px 10px 12px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--color-surface-hi);
   border-radius: var(--radius-md);
   animation: forage-response-in 0.2s ease;
+}
+
+.category-view__response-clear {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+}
+
+/* Footer row inside synthesis response — stale hint + chat link */
+.category-view__response-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 8px;
+}
+
+/* Staleness hint — shown inside response box when cached synthesis predates new items */
+.category-view__stale-hint {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: #d97706;
+  flex: 1;
+}
+
+/* "Chat ✦" link inside synthesis response — progressive path to multi-turn */
+.category-view__chat-link {
+  flex-shrink: 0;
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-faint);
+  font-size: var(--text-xs);
+  font-family: inherit;
+  cursor: pointer;
+  transition: color var(--transition-speed);
+}
+
+.category-view__chat-link:hover {
+  color: var(--color-muted);
 }
 
 /* Share content toggle — subtle text link style */

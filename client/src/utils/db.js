@@ -178,6 +178,24 @@ export async function setCategorization(groups) {
   return setSetting('categorization', groups);
 }
 
+// ── Synthesis cache ───────────────────────────────────────────────────────────
+
+export async function getSynthesisCache() {
+  return (await getSetting('synthesis_cache')) ?? {};
+}
+
+export async function setSynthesisCacheEntry(categoryId, { question, answer, computedAt, unitCount }) {
+  const cache = await getSynthesisCache();
+  cache[categoryId] = { question, answer, computedAt, unitCount };
+  await setSetting('synthesis_cache', cache);
+}
+
+export async function deleteSynthesisCacheEntry(categoryId) {
+  const cache = await getSynthesisCache();
+  delete cache[categoryId];
+  await setSetting('synthesis_cache', cache);
+}
+
 /**
  * Merges categorization metadata [{ id, title }] from a peer or import file.
  * - Same title → remap peer's id to local id (title is cross-device identity).

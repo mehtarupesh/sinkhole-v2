@@ -10,7 +10,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { CloseIcon, CheckIcon } from './Icons';
 import { getSetting, addUnit } from '../utils/db';
-import { forageUnits } from '../utils/forage';
+import { synthesizeFromUnits } from '../utils/forage';
 import NoteTray from './NoteTray';
 import { CarouselCard } from './Carousel';
 import SimpleMarkdown from './SimpleMarkdown';
@@ -53,7 +53,7 @@ export default function ForageModal({ category, allUnits, onClose, onSaveUnit })
     setSaveState('');
     try {
       const apiKey = await getSetting('gemini_key');
-      const stream = await forageUnits({ units: categoryUnits, question: q, shareContent, apiKey });
+      const stream = await synthesizeFromUnits({ units: categoryUnits, question: q, shareContent, apiKey });
       let text = '';
       for await (const chunk of stream) {
         text += chunk.text ?? '';

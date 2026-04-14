@@ -20,6 +20,31 @@ function extractImageData(content, mimeType) {
   return { data: content, mimeType: mimeType || 'image/jpeg' };
 }
 
+const fmtDate = (d) => d
+  ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  : 'unknown';
+
+function buildUnitMeta(units) {
+  return units.map((u, i) =>
+    `Item ${i + 1}: type=${u.type}, saved=${fmtDate(u.createdAt)}, note="${u.quote || '(no note)'}"`
+  ).join('\n');
+}
+
+function buildContentParts(units) {
+  const parts = [];
+  units.forEach((u, i) => {
+    if (u.encrypted && isEncryptedContent(u.content)) return;
+    if (u.type === 'image' && u.content) {
+      parts.push({ text: `\nItem ${i + 1} image (note: "${u.quote || ''}"):` });
+      const { data, mimeType } = extractImageData(u.content, u.mimeType);
+      parts.push({ inlineData: { mimeType, data } });
+    } else {
+      parts.push({ text: `\nItem ${i + 1} full text: ${u.content}` });
+    }
+  });
+  return parts;
+}
+
 /**
  * Ask a question about a collection of units using the Gemini streaming API.
  *
@@ -34,38 +59,18 @@ function extractImageData(content, mimeType) {
  * @param {string}   apiKey       - Gemini API key
  * @returns {Promise<AsyncIterable>} streaming response
  */
-export async function forageUnits({ units, question, shareContent, apiKey }) {
+export async function synthesizeFromUnits({ units, question, shareContent, apiKey }) {
   if (!units.length) throw new Error('No units to forage.');
   if (!question.trim()) throw new Error('Ask a question first.');
   if (!apiKey) throw new Error('No Gemini API key. Add one in Settings ⚙');
 
   const ai = new GoogleGenAI({ apiKey });
 
-  // Build multimodal parts array
-  const parts = [];
-
-  // Metadata header — always sent
-  const metaLines = units.map((u, i) =>
-    `Item ${i + 1}: type=${u.type}, note="${u.quote || '(no note)'}"`
-  );
-  parts.push({
-    text: `Collection of ${units.length} item${units.length !== 1 ? 's' : ''}:\n${metaLines.join('\n')}\n\nQuestion: ${question}`,
-  });
-
-  // Content — only when shareContent=true
-  if (shareContent) {
-    units.forEach((u, i) => {
-      if (u.type === 'password' || !u.content || isEncryptedContent(u.content)) return;
-
-      if (u.type === 'image') {
-        parts.push({ text: `\nItem ${i + 1} image (note: "${u.quote || ''}"):` });
-        const { data, mimeType } = extractImageData(u.content, u.mimeType);
-        parts.push({ inlineData: { mimeType, data } });
-      } else {
-        parts.push({ text: `\nItem ${i + 1} full text: ${u.content}` });
-      }
-    });
-  }
+  const plural = units.length !== 1 ? 's' : '';
+  const parts = [
+    { text: `Collection of ${units.length} item${plural}:\n${buildUnitMeta(units)}\n\nQuestion: ${question}` },
+    ...buildContentParts(units),
+  ];
 
   return ai.models.generateContentStream({
     model: 'gemini-3-flash-preview',
@@ -99,27 +104,11 @@ export async function chatWithUnits({ units, messages, shareContent, apiKey }) {
 
   const ai = new GoogleGenAI({ apiKey });
 
-  // Context parts — injected into the first user message only
-  const contextParts = [];
-  const metaLines = units.map((u, i) =>
-    `Item ${i + 1}: type=${u.type}, note="${u.quote || '(no note)'}"`
-  );
-  contextParts.push({
-    text: `Context — ${units.length} saved item${units.length !== 1 ? 's' : ''}:\n${metaLines.join('\n')}\n`,
-  });
-
-  if (shareContent) {
-    units.forEach((u, i) => {
-      if (u.type === 'password' || !u.content || isEncryptedContent(u.content)) return;
-      if (u.type === 'image') {
-        contextParts.push({ text: `\nItem ${i + 1} image (note: "${u.quote || ''}"):` });
-        const { data, mimeType } = extractImageData(u.content, u.mimeType);
-        contextParts.push({ inlineData: { mimeType, data } });
-      } else {
-        contextParts.push({ text: `\nItem ${i + 1} full text: ${u.content}` });
-      }
-    });
-  }
+  const plural = units.length !== 1 ? 's' : '';
+  const contextParts = [
+    { text: `Context — ${units.length} saved item${plural}:\n${buildUnitMeta(units)}\n` },
+    ...buildContentParts(units),
+  ];
 
   // Multi-turn contents: context is injected into the first user turn
   const contents = messages.map((msg, i) => ({

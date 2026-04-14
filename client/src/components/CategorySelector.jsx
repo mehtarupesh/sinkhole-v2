@@ -112,7 +112,7 @@ export default function CategorySelector({
             onClick={onSuggest}
             disabled={suggestState === 'loading'}
           >
-            ✦ suggest
+            Suggest ✦
           </button>
         )}
       </div>
