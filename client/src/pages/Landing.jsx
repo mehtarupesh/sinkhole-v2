@@ -7,7 +7,7 @@ import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, C
 import { getAllUnits, updateUnit, deleteTrashUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder, getTombstones, setSetting, touchUnit, pruneAccessOrder, pruneTombstones } from '../utils/db';
 import { getCleanupCandidates } from '../utils/cleanupCandidates';
 import { runMigrations } from '../utils/migrations';
-import { buildRecentCarousel, withMiscGroup, MISC_ID, TRASH_ID,pruneEmptyCategories } from '../utils/carouselGroups';
+import { buildRecentCarousel, withMiscGroup, MISC_ID, TRASH_ID, pruneEmptyCategories, addCategoryIfNew } from '../utils/carouselGroups';
 import AddUnitModal from '../components/AddUnitModal';
 import MoveToCategoryModal from '../components/MoveToCategoryModal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
@@ -96,7 +96,7 @@ export default function Landing() {
     }
     if (newCategory) {
       setStoredGroups((prev) => {
-        const groups = [...(prev ?? []), { id: newCategory.id, title: newCategory.title }];
+        const groups = addCategoryIfNew(prev, newCategory);
         setCategorization(groups);
         return groups;
       });
@@ -140,7 +140,7 @@ export default function Landing() {
     reloadUnits();
     if (newCategory && newCategory.id !== TRASH_ID) {
       setStoredGroups((prev) => {
-        const groups = [...(prev ?? []), { id: newCategory.id, title: newCategory.title }];
+        const groups = addCategoryIfNew(prev, newCategory);
         setCategorization(groups);
         return groups;
       });
@@ -273,7 +273,7 @@ export default function Landing() {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
     if (newCategory && newCategory.id !== TRASH_ID) {
       setStoredGroups((prev) => {
-        const groups = [...(prev ?? []), { id: newCategory.id, title: newCategory.title }];
+        const groups = addCategoryIfNew(prev, newCategory);
         setCategorization(groups);
         return groups;
       });
@@ -613,7 +613,7 @@ export default function Landing() {
             reloadUnits();
             if (newCategory && newCategory.id !== TRASH_ID) {
               setStoredGroups((prev) => {
-                const groups = [...(prev ?? []), { id: newCategory.id, title: newCategory.title }];
+                const groups = addCategoryIfNew(prev, newCategory);
                 setCategorization(groups);
                 return groups;
               });

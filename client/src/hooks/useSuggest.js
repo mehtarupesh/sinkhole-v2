@@ -1,9 +1,7 @@
 import { useState, useRef } from 'react';
 import { getSetting } from '../utils/db';
 import { suggestCategory } from '../utils/suggestCategory';
-
-const slugify = (str) =>
-  str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+import { slugify } from '../utils/carouselGroups';
 
 /**
  * Manages the AI category-suggestion state machine.

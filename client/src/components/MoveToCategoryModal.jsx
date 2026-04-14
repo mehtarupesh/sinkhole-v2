@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { CloseIcon } from './Icons';
 import CategoryField from './CategoryField';
-import { MISC_ID, MISC_TITLE } from '../utils/carouselGroups';
-
-const slugify = (str) =>
-  str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+import { MISC_ID, MISC_TITLE, slugify } from '../utils/carouselGroups';
 
 /**
  * Confirmation modal for bulk "Move to Category".

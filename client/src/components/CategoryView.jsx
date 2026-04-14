@@ -18,7 +18,7 @@ import { CarouselCard } from './Carousel';
 import { groupByTime } from '../utils/timeGroups';
 import { forageUnits } from '../utils/forage';
 import { getSetting, updateUnit, setCategorization } from '../utils/db';
-import { TRASH_ID } from '../utils/carouselGroups';
+import { TRASH_ID, addCategoryIfNew } from '../utils/carouselGroups';
 import SimpleMarkdown from './SimpleMarkdown';
 import NoteTray from './NoteTray';
 import UnitDetail from './UnitDetail';
@@ -442,7 +442,7 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
               await updateUnit(u.id, { categoryId: resolvedId });
             }
             if (newCategory) {
-              setCategorization([...storedGroups, { id: newCategory.id, title: newCategory.title }]);
+              setCategorization(addCategoryIfNew(storedGroups, newCategory));
             }
             onUnitSaved?.();
             clear();

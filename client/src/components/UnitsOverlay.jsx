@@ -3,7 +3,7 @@ import { CloseIcon, SearchIcon, TrashIcon, MoveFolderIcon, ChevronLeftIcon, Chev
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { getAllUnits, updateUnit, getCategorization, setCategorization } from '../utils/db';
 import MoveToCategoryModal from './MoveToCategoryModal';
-import { withMiscGroup, pruneEmptyCategories, MISC_ID, TRASH_ID } from '../utils/carouselGroups';
+import { withMiscGroup, pruneEmptyCategories, MISC_ID, TRASH_ID, addCategoryIfNew } from '../utils/carouselGroups';
 import { groupByTime } from '../utils/timeGroups';
 import { CarouselCard } from './Carousel';
 import UnitDetail from './UnitDetail';
@@ -82,7 +82,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     setUnits((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
     if (newCategory && newCategory.id !== TRASH_ID) {
       setGroups((prev) => {
-        const next = [...prev, { id: newCategory.id, title: newCategory.title }];
+        const next = addCategoryIfNew(prev, newCategory);
         setCategorization(next);
         return next;
       });
@@ -152,7 +152,7 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
     }));
     if (newCategory) {
       setGroups((prev) => {
-        const next = [...prev, { id: newCategory.id, title: newCategory.title }];
+        const next = addCategoryIfNew(prev, newCategory);
         setCategorization(next);
         return next;
       });
