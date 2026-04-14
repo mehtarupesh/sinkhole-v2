@@ -30,10 +30,10 @@ import { useSelection } from '../hooks/useSelection';
 import './CategoryView.css';
 
 const SYNTHESIS_CHIPS = [
-  { key: 'summarize',  label: 'Summarize',     prompt: 'Summarize this collection in 2-3 sentences. Be brief and direct.' },
-  { key: 'actions',   label: 'Action items',   prompt: 'List action items only. Maximum 5 bullet points, each one line.' },
+  // { key: 'summarize',  label: 'Summarize',     prompt: 'Summarize this collection in 2-3 sentences. Be brief and direct.' },
   { key: 'keypoints', label: 'Key points',     prompt: 'What are the 3-4 most important points? One line per point.' },
-  { key: 'questions', label: 'Open questions', prompt: 'What questions are unresolved or worth following up? Max 4 bullets.' },
+  { key: 'actions',   label: 'Action items',   prompt: 'List action items only. Maximum 5 bullet points, each one line.' },
+  // { key: 'questions', label: 'Open questions', prompt: 'What questions are unresolved or worth following up? Max 4 bullets.' },
 ];
 
 // ── Client-side stats (no AI, instant) ──────────────────────────────────────
@@ -62,7 +62,7 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
   );
 
   // Synthesis state
-  const [activeChip, setActiveChip]         = useState('summarize');
+  const [activeChip, setActiveChip]         = useState('keypoints');
   const [customQ, setCustomQ]               = useState('');
   const [synthesis, setSynthesis]           = useState('');
   const [synthesisLoading, setSynthesisLoading] = useState(false);
@@ -118,7 +118,7 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
   const handleChipClick = useCallback((key) => {
     setActiveChip(key);
     const chip = SYNTHESIS_CHIPS.find((c) => c.key === key);
-    setCustomQ(chip.label);
+    setCustomQ(chip.prompt);
     runSynthesis(chip.prompt);
   }, [runSynthesis]);
 
