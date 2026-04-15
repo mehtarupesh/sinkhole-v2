@@ -116,7 +116,11 @@ export default function AddUnitModal({
 
   const handleSuggest = async () => {
     const result = await suggest.runSuggest({
-      content, mimeType, note: quote, type, existingCategories: storedGroups,
+      content: !encrypted ? content : null,
+      mimeType: !encrypted && type === 'image' ? mimeType : null,
+      note: quote,
+      type,
+      existingCategories: storedGroups,
     });
     if (result?.type === 'existing') {
       setCategoryId(result.categoryId);
@@ -129,8 +133,8 @@ export default function AddUnitModal({
     const result = await transcribeAndSuggest(blob, apiKey, {
       type,
       existingCategories: storedGroups,
-      content: suggest.shareContent && !encrypted ? content : null,
-      mimeType: suggest.shareContent && type === 'image' ? mimeType : null,
+      content: !encrypted ? content : null,
+      mimeType:!encrypted && type === 'image' ? mimeType : null,
     });
     const applied = suggest.applyResult(result);
     if (applied.type === 'existing') setCategoryId(applied.categoryId);

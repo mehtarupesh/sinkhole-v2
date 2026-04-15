@@ -87,7 +87,11 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
 
   const handleSuggest = async () => {
     const result = await suggest.runSuggest({
-      content, mimeType, note: quote, type: unit.type, existingCategories: storedGroups,
+      content: !isLocked ? content : null,
+      mimeType: !isLocked && unit.type === 'image' ? mimeType : null,
+      note: quote,
+      type: unit.type,
+      existingCategories: storedGroups,
     });
     if (result?.type === 'existing') setCategoryId(result.categoryId);
     else if (result?.type === 'new' || result?.type === 'none') setCategoryId('');

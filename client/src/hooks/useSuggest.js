@@ -34,9 +34,7 @@ export function useSuggest() {
   const blinkTimerRef = useRef(null);
 
   const runSuggest = async ({ content, mimeType, note, type, existingCategories }) => {
-    const willShareNote = !!note?.trim();
-
-    if (!shareContent && !willShareNote) {
+    if (!content?.trim() && !note?.trim()) {
       setSuggestState('needs-selection');
       clearTimeout(blinkTimerRef.current);
       blinkTimerRef.current = setTimeout(() => setSuggestState('idle'), 2500);
@@ -49,9 +47,9 @@ export function useSuggest() {
       if (!apiKey) throw new Error('no-key');
 
       const result = await suggestCategory({
-        content: shareContent && content ? content : null,
+        content: content?.trim() ? content : null,
         mimeType,
-        quote: willShareNote ? note : null,
+        quote: note?.trim() ? note : null,
         type,
         existingCategories: existingCategories ?? [],
       }, apiKey);
