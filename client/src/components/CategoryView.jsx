@@ -299,6 +299,7 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
               value={customQ}
               onChange={setCustomQ}
               onSubmit={handleCustomRun}
+              onTranscribed={(text) => runSynthesis(text)}
               disabled={synthesisLoading}
               placeholder="Custom question…"
               defaultMode="text-hero"
@@ -381,24 +382,26 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
                 <>
                   <SimpleMarkdown text={synthesis} className="forage__markdown" />
                   {synthesisLoading && <span className="forage__cursor" aria-hidden="true">▋</span>}
-                  {!synthesisLoading && (
-                    <div className="category-view__response-footer">
-                      {newItemsSinceSynthesis > 0 && (
-                        <p className="category-view__stale-hint">
-                          ✦ {newItemsSinceSynthesis} new item{newItemsSinceSynthesis !== 1 ? 's' : ''} since last synthesis
-                        </p>
-                      )}
-                      <button
-                        type="button"
-                        className="category-view__chat-link"
-                        onClick={() => setShowExplore(true)}
-                      >
-                        Chat ✦
-                      </button>
-                    </div>
-                  )}
                 </>
               )}
+            </div>
+          )}
+
+          {/* Chat button — always visible below response, never buried in scroll */}
+          {synthesis && !synthesisLoading && !isEditingSynthesis && (
+            <div className="category-view__chat-bar">
+              {newItemsSinceSynthesis > 0 && (
+                <p className="category-view__stale-hint">
+                  ✦ {newItemsSinceSynthesis} new item{newItemsSinceSynthesis !== 1 ? 's' : ''} since last synthesis
+                </p>
+              )}
+              <button
+                type="button"
+                className="category-view__chat-btn"
+                onClick={() => setShowExplore(true)}
+              >
+                Chat ✦
+              </button>
             </div>
           )}
 
