@@ -394,7 +394,7 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
           )}
 
           {/* Chat button — always visible below response, never buried in scroll */}
-          {synthesis && !synthesisLoading && !isEditingSynthesis && (
+          {!synthesisLoading && !isEditingSynthesis && (
             <div className="category-view__chat-bar">
               <button
                 type="button"
