@@ -285,6 +285,11 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
                 {stats.monthStat && (
                   <span className="category-view__stat">{stats.monthStat}</span>
                 )}
+                {newItemsSinceSynthesis > 0 && (
+                  <span className="category-view__stat category-view__stat--stale">
+                    ✦ {newItemsSinceSynthesis} new since last synthesis
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -390,11 +395,6 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
           {/* Chat button — always visible below response, never buried in scroll */}
           {synthesis && !synthesisLoading && !isEditingSynthesis && (
             <div className="category-view__chat-bar">
-              {newItemsSinceSynthesis > 0 && (
-                <p className="category-view__stale-hint">
-                  ✦ {newItemsSinceSynthesis} new item{newItemsSinceSynthesis !== 1 ? 's' : ''} since last synthesis
-                </p>
-              )}
               <button
                 type="button"
                 className="category-view__chat-btn"

@@ -68,6 +68,10 @@
   color: var(--color-faint);
 }
 
+.category-view__stat--stale {
+  color: #d97706;
+}
+
 /* Synthesis section — overlaps the scroll area so cards slide behind it */
 .category-view__synthesis {
   flex-shrink: 0;
@@ -113,23 +117,24 @@
 
 .category-view__run-btn {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 62px;
+  height: 62px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface-hi);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-dim);
-  font-size: 14px;
+  background: rgba(245, 166, 35, 0.08);
+  border: 1px solid rgba(245, 166, 35, 0.30);
+  border-radius: 50%;
+  color: #f5a623;
+  font-size: 22px;
   cursor: pointer;
-  transition: background var(--transition-speed), color var(--transition-speed);
+  transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .category-view__run-btn:hover:not(:disabled) {
-  background: var(--color-border);
-  color: var(--color-text);
+  background: rgba(245, 166, 35, 0.14);
+  border-color: rgba(245, 166, 35, 0.50);
+  box-shadow: 0 0 14px rgba(245, 166, 35, 0.18);
 }
 
 .category-view__run-btn:disabled {
