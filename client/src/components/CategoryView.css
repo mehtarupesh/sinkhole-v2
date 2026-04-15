@@ -68,10 +68,6 @@
   color: var(--color-faint);
 }
 
-.category-view__stat--stale {
-  color: #d97706;
-}
-
 /* Synthesis section — overlaps the scroll area so cards slide behind it */
 .category-view__synthesis {
   flex-shrink: 0;
@@ -173,12 +169,13 @@
   /* sits inside .category-view__response-actions — no longer absolute */
 }
 
-/* Staleness hint — shown above the chat button */
+/* Staleness hint — sits below the NoteTray row, right-aligned under the ✦ button */
 .category-view__stale-hint {
   margin: 0;
   font-size: var(--text-xs);
   color: #d97706;
-  text-align: center;
+  text-align: right;
+  padding-right: 2px;
 }
 
 /* Chat bar — sits below the scrollable response, always visible */

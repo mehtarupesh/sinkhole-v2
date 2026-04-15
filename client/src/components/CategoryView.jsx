@@ -285,11 +285,6 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
                 {stats.monthStat && (
                   <span className="category-view__stat">{stats.monthStat}</span>
                 )}
-                {newItemsSinceSynthesis > 0 && (
-                  <span className="category-view__stat category-view__stat--stale">
-                    ✦ {newItemsSinceSynthesis} new since last synthesis
-                  </span>
-                )}
               </div>
             )}
           </div>
@@ -321,6 +316,12 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
               </button>
             )}
           </div>
+
+          {newItemsSinceSynthesis > 0 && (
+            <p className="category-view__stale-hint">
+              ✦ {newItemsSinceSynthesis} new item{newItemsSinceSynthesis !== 1 ? 's' : ''} since last synthesis
+            </p>
+          )}
 
           {/* Response */}
           {(synthesis || synthesisLoading || synthesisError) && (
