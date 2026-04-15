@@ -58,6 +58,32 @@
   flex-shrink: 0;
 }
 
+/* iOS paste CTA — prominent affordance shown when sheet opens empty */
+.sheet__paste-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 20px 0;
+  padding: 13px 16px;
+  background: var(--color-surface);
+  border: 1.5px dashed var(--color-border-hi);
+  border-radius: var(--radius-md);
+  color: var(--color-dim);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed);
+  width: calc(100% - 40px);
+  flex-shrink: 0;
+}
+
+.sheet__paste-cta:active {
+  background: var(--color-surface-hi);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--color-text);
+}
+
 /* Content area — scrolls internally, fills available space */
 .sheet__content {
   flex: 1 1 auto;
@@ -494,14 +520,11 @@
   background: rgba(74, 222, 128, 0.08);
 }
 
-/* Button tray floated inside textarea wrapper */
-.add-unit__content-wrap .add-unit__textarea-btns {
+/* Floated inside textarea wrapper */
+.add-unit__content-wrap .add-unit__copy-btn {
   position: absolute;
   top: 8px;
   right: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 /* ── Snippet view-mode (markdown rendered) ── */

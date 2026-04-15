@@ -4,7 +4,7 @@
  * and useDrop — or null if the clipboard is empty or access is denied.
  */
 // iPad on iOS 13+ reports 'MacIntel' with touch points
-function isIOS() {
+export function isIOS() {
   return /iP(hone|ad|od)/i.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }

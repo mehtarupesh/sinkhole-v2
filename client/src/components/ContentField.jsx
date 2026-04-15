@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ImageTypeIcon, CameraIcon, CopyIcon, CheckIcon, RenameIcon, PasteIcon } from './Icons';
+import { ImageTypeIcon, CameraIcon, CopyIcon, CheckIcon, RenameIcon } from './Icons';
 import ImageLightbox from './ImageLightbox';
 import SimpleMarkdown from './SimpleMarkdown';
 
@@ -18,7 +18,6 @@ import SimpleMarkdown from './SimpleMarkdown';
 export default function ContentField({
   type, content, fileName, mimeType,
   onTextChange, onFileSelected,
-  onPasteFromClipboard,
   disabled,
 }) {
   const [showPassword, setShowPassword] = useState(false);
@@ -102,29 +101,16 @@ export default function ContentField({
                 disabled={disabled}
                 autoFocus
               />
-              <div className="add-unit__textarea-btns">
-                {onPasteFromClipboard && !content && (
-                  <button
-                    type="button"
-                    className="add-unit__copy-btn"
-                    onClick={onPasteFromClipboard}
-                    aria-label="Paste from clipboard"
-                    title="Paste from clipboard"
-                  >
-                    <PasteIcon size={14} />
-                  </button>
-                )}
-                {content && (
-                  <button
-                    type="button"
-                    className={`add-unit__copy-btn${copied ? ' add-unit__copy-btn--copied' : ''}`}
-                    onClick={handleCopy}
-                    aria-label="Copy to clipboard"
-                  >
-                    {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
-                  </button>
-                )}
-              </div>
+              {content && (
+                <button
+                  type="button"
+                  className={`add-unit__copy-btn${copied ? ' add-unit__copy-btn--copied' : ''}`}
+                  onClick={handleCopy}
+                  aria-label="Copy to clipboard"
+                >
+                  {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+                </button>
+              )}
             </>
           )}
         </div>

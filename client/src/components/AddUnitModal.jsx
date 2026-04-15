@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon } from './Icons';
+import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, PasteIcon } from './Icons';
 import { addUnit, touchUnit } from '../utils/db';
 import { useSuggest } from '../hooks/useSuggest';
-import { readClipboard } from '../utils/readClipboard';
+import { readClipboard, isIOS } from '../utils/readClipboard';
 import ContentField from './ContentField';
 import NoteTray from './NoteTray';
 import CategorySelector from './CategorySelector';
@@ -57,6 +57,7 @@ export default function AddUnitModal({
   const hasNote     = !!quote.trim();
   const canAutoSuggest =
     !saving && (hasContent || hasNote) && suggest.suggestState !== 'loading';
+  const showPasteCta = isIOS() && !hasContent && !saving;
 
   // ── Effects ──────────────────────────────────────────────────────────────
 
@@ -244,6 +245,18 @@ export default function AddUnitModal({
           </div>
         )}
 
+        {/* iOS paste CTA — shown when sheet opens empty */}
+        {showPasteCta && (
+          <button
+            type="button"
+            className="sheet__paste-cta"
+            onClick={handlePasteFromClipboard}
+          >
+            <PasteIcon size={18} />
+            <span>Paste from clipboard</span>
+          </button>
+        )}
+
         {/* Content — scrollable */}
         <div className="sheet__content">
           <ContentField
@@ -255,7 +268,6 @@ export default function AddUnitModal({
             onFileSelected={({ content: c, fileName: fn, mimeType: mt }) => {
               setContent(c); setFileName(fn); setMimeType(mt); setError('');
             }}
-            onPasteFromClipboard={handlePasteFromClipboard}
             disabled={saving}
           />
         </div>
