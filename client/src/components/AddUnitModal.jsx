@@ -286,7 +286,7 @@ export default function AddUnitModal({
         />
 
         {/* Category chips — horizontal scroll */}
-        <div className="sheet__categories">
+        {(content.trim() || quote.trim()) && <div className="sheet__categories">
           <CategorySelector
             groups={storedGroups}
             categoryId={categoryId}
@@ -296,7 +296,7 @@ export default function AddUnitModal({
             canSuggest={canAutoSuggest}
             disabled={saving}
           />
-        </div>
+        </div>}
 
         {/* Actions */}
         <div className="sheet__actions">
