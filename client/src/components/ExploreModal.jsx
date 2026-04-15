@@ -59,9 +59,14 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
   //   [contextUnits]
   // );
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom only when a new message is added, not during streaming updates
+  const messageCountRef = useRef(messages.length);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const prev = messageCountRef.current;
+    messageCountRef.current = messages.length;
+    if (messages.length > prev) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   // Focus edit textarea when entering edit mode and auto-size to content
@@ -379,6 +384,7 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
             value={input}
             onChange={setInput}
             onSubmit={handleSend}
+            onTranscribed={(text) => doSend(text)}
             disabled={loading}
             placeholder="Ask something…"
           />

@@ -33,6 +33,7 @@ export default function NoteTray({
   value,
   onChange,
   onSubmit,
+  onTranscribed,
   className = '',
   disabled = false,
   transcribeFn,
@@ -148,6 +149,7 @@ export default function NoteTray({
           if (!apiKey) throw new Error('No Gemini key — add it in Settings.');
           const transcript = await (transcribeFn ?? transcribeAudio)(blob, apiKey);
           onChange(transcript);
+          onTranscribed?.(transcript);
           setRecState('idle');
         } catch (err) {
           setLocalError(err.message || 'Transcription failed.');
