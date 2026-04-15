@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { readClipboard } from '../utils/readClipboard';
 import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon, BroomIcon } from '../components/Icons';
 import { getAllUnits, updateUnit, deleteTrashUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder, getTombstones, setSetting, touchUnit, pruneAccessOrder, pruneTombstones } from '../utils/db';
 import { getCleanupCandidates } from '../utils/cleanupCandidates';
@@ -472,7 +471,7 @@ export default function Landing() {
       ) : (
         <div className="landing__actions-wrap">
           <div className="landing__actions">
-            <button type="button" className="btn-icon" onClick={async () => openAddUnit((await readClipboard()) ?? {})} title="Add" aria-label="Add">
+            <button type="button" className="btn-icon" onClick={() => openAddUnit({})} title="Add" aria-label="Add">
               <PlusIcon />
             </button>
             <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">

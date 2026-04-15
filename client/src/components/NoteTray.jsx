@@ -25,7 +25,7 @@ const MAX_REC_SECS = 60;
 const BARS = 28;
 
 function isTouchDevice() {
-  return true; //typeof window !== 'undefined' &&
+  return typeof window !== 'undefined' &&
     window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 }
 

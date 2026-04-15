@@ -33,16 +33,27 @@
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
   background: #0f0f0f;
   color: var(--color-text);
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
+  /* Prevent rubber-band / bounce scrolling on iOS */
+  overscroll-behavior: none;
+  /* Prevent tap highlight on mobile */
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 
 /* ── App footer ── */

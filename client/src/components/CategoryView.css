@@ -145,6 +145,13 @@
   border: 1px solid var(--color-surface-hi);
   border-radius: var(--radius-md);
   animation: forage-response-in 0.2s ease;
+  max-height: 40vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.category-view__response::-webkit-scrollbar {
+  display: none;
 }
 
 .category-view__response-actions {

@@ -494,11 +494,14 @@
   background: rgba(74, 222, 128, 0.08);
 }
 
-/* Floated inside textarea wrapper */
-.add-unit__content-wrap .add-unit__copy-btn {
+/* Button tray floated inside textarea wrapper */
+.add-unit__content-wrap .add-unit__textarea-btns {
   position: absolute;
   top: 8px;
   right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 /* ── Snippet view-mode (markdown rendered) ── */

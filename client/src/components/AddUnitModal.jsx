@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon } from './Icons';
 import { addUnit, touchUnit } from '../utils/db';
 import { useSuggest } from '../hooks/useSuggest';
+import { readClipboard } from '../utils/readClipboard';
 import ContentField from './ContentField';
 import NoteTray from './NoteTray';
 import CategorySelector from './CategorySelector';
@@ -136,6 +137,21 @@ export default function AddUnitModal({
     return result.transcript;
   }, [type, storedGroups, suggest]);
 
+  // ── Paste from clipboard (iOS) ────────────────────────────────────────────
+  const handlePasteFromClipboard = useCallback(async () => {
+    const clip = await readClipboard();
+    if (!clip) return;
+    if (clip.type === 'image') {
+      setType('image');
+      setContent(clip.content);
+      setFileName(clip.fileName ?? '');
+      setMimeType(clip.mimeType ?? '');
+    } else {
+      setType('snippet');
+      setContent(clip.content);
+    }
+  }, []);
+
   // ── Save ─────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!hasContent && !quote.trim()) {
@@ -239,6 +255,7 @@ export default function AddUnitModal({
             onFileSelected={({ content: c, fileName: fn, mimeType: mt }) => {
               setContent(c); setFileName(fn); setMimeType(mt); setError('');
             }}
+            onPasteFromClipboard={handlePasteFromClipboard}
             disabled={saving}
           />
         </div>

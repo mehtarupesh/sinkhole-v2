@@ -1,11 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
 import { isEncryptedContent } from './crypto';
 
-const SYSTEM_PROMPT = `You are helping a user forage through their personal stash of saved information in an app called 1Burrow.
-The user saves snippets, images, links, and notes with short context notes.
-Answer the user's question using the provided items. If any item contains a URL, fetch and read it to give a complete answer.
-Be concise and specific. Use simple markdown: **bold** for key info, bullet lists for multiple items, ## for section headers only when needed.
-If you cannot answer from the provided items, say so briefly.`;
+const SYSTEM_PROMPT = `You are Personal Assistant whose job is to help the user consume pieces of information they have entered over time. The user will provide list of text/images with per-item notes for each. If any item contains a URL, fetch and read it to give a complete answer.
+Use simple markdown: **bold** for key info, bullet lists for multiple items, ## for section headers only when needed`;
 
 /**
  * Extract base64 data and mimeType from a stored image content string.
@@ -24,22 +21,25 @@ const fmtDate = (d) => d
   ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   : 'unknown';
 
-function buildUnitMeta(units) {
-  return units.map((u, i) =>
-    `Item ${i + 1}: type=${u.type}, saved=${fmtDate(u.createdAt)}, note="${u.quote || '(no note)'}"`
-  ).join('\n');
-}
+// function buildUnitMeta(units) {
+//   return units.map((u, i) =>
+//     `Item ${i + 1}: type=${u.type}, saved=${fmtDate(u.createdAt)}, note="${u.quote || '(no note)'}"`
+//   ).join('\n');
+// }
 
 function buildContentParts(units) {
   const parts = [];
+  // Add today's date ISO format
+  const today = new Date().toISOString();
+  parts.push({ text: `Today's date: ${today}\n` });
   units.forEach((u, i) => {
     if (u.encrypted && isEncryptedContent(u.content)) return;
     if (u.type === 'image' && u.content) {
-      parts.push({ text: `\nItem ${i + 1} image (note: "${u.quote || ''}"):` });
+      parts.push({ text: `\nItem ${i + 1}, saved ${fmtDate(u.createdAt)}, (note: "${u.quote || ''}"):` });
       const { data, mimeType } = extractImageData(u.content, u.mimeType);
       parts.push({ inlineData: { mimeType, data } });
     } else {
-      parts.push({ text: `\nItem ${i + 1} full text: ${u.content}` });
+      parts.push({ text: `\nItem ${i + 1}, saved ${fmtDate(u.createdAt)}, (note: "${u.quote || ''}"): ${u.content}` });
     }
   });
   return parts;
@@ -68,8 +68,9 @@ export async function synthesizeFromUnits({ units, question, shareContent, apiKe
 
   const plural = units.length !== 1 ? 's' : '';
   const parts = [
-    { text: `Collection of ${units.length} item${plural}:\n${buildUnitMeta(units)}\n\nQuestion: ${question}` },
+    { text: `Collection of ${units.length} item${plural}\n` },
     ...buildContentParts(units),
+    { text: `\n\nTASK: ${question}` },
   ];
 
   return ai.models.generateContentStream({
@@ -83,7 +84,7 @@ export async function synthesizeFromUnits({ units, question, shareContent, apiKe
   });
 }
 
-const EXPLORE_SYSTEM_PROMPT = `You are a personal assistant helping a user explore their saved information in 1Burrow.
+const EXPLORE_SYSTEM_PROMPT = `${SYSTEM_PROMPT}
 Help them think through ideas, understand concepts, find connections, and brainstorm.
 Be conversational but concise. Use simple markdown: **bold** for key info, bullet lists for multiple items.
 If you cannot answer from the provided items, say so briefly and offer what you can.`;
@@ -106,7 +107,7 @@ export async function chatWithUnits({ units, messages, shareContent, apiKey }) {
 
   const plural = units.length !== 1 ? 's' : '';
   const contextParts = [
-    { text: `Context — ${units.length} saved item${plural}:\n${buildUnitMeta(units)}\n` },
+    { text: `Context — ${units.length} saved item${plural}:\n` },
     ...buildContentParts(units),
   ];
 

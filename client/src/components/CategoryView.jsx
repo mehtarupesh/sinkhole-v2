@@ -30,7 +30,7 @@ import { useSelection } from '../hooks/useSelection';
 import './CategoryView.css';
 
 const DEFAULT_SYNTHESIS_PROMPT =
-  'Summarize concisely the items with one bullet point per item. If multiple items pertain to same topic, create a heading and add bullets under it for each unit. No need to refer to the items';
+  'Summarize Action Items and Key Points';
 
 // ── Client-side stats (no AI, instant) ──────────────────────────────────────
 
