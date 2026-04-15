@@ -12,7 +12,6 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { CloseIcon, CheckIcon, TrashIcon, RenameIcon, CopyIcon } from './Icons';
 import { getSetting, addUnit } from '../utils/db';
 import { chatWithUnits } from '../utils/forage';
-import { CarouselCard } from './Carousel';
 import NoteTray from './NoteTray';
 import SimpleMarkdown from './SimpleMarkdown';
 import './ExploreModal.css';
@@ -25,7 +24,6 @@ function buildInitialMessages(synthesis) {
 }
 
 export default function ExploreModal({ category, allUnits, synthesis, onClose, onSaveUnit }) {
-  const [selectedIds, setSelectedIds]       = useState(() => new Set(allUnits.map((u) => u.id)));
   const [shareContent, setShareContent]     = useState(true);
   const [messages, setMessages]             = useState(() => buildInitialMessages(synthesis));
   const [input, setInput]                   = useState('');
@@ -48,16 +46,6 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
 
   const messagesEndRef  = useRef(null);
   const editTextareaRef = useRef(null);
-
-  const contextUnits = useMemo(
-    () => allUnits.filter((u) => selectedIds.has(u.id)),
-    [allUnits, selectedIds]
-  );
-
-  // const hasShareableContent = useMemo(
-  //   () => contextUnits.some((u) => u.type !== 'password' && u.content && !u.encrypted),
-  //   [contextUnits]
-  // );
 
   // Scroll to bottom only when a new message is added, not during streaming updates
   const messageCountRef = useRef(messages.length);
@@ -93,22 +81,11 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
     return () => document.removeEventListener('keydown', handler);
   }, [onClose, editingId, deleteConfirmId, showCloseConfirm]);
 
-  // ── Unit selection ───────────────────────────────────────────────────────────
-
-  const toggleUnit = useCallback((id) => {
-    setSelectedIds((prev) => {
-      if (prev.size === 1 && prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }, []);
-
   // ── Send ─────────────────────────────────────────────────────────────────────
 
   const doSend = useCallback(async (text) => {
     if (!text || loading) return;
-    if (contextUnits.length === 0) { setError('Select at least one item.'); return; }
+    if (allUnits.length === 0) { setError('No items in context.'); return; }
 
     const userMsg     = { id: crypto.randomUUID(), role: 'user', text };
     const assistantId = crypto.randomUUID();
@@ -127,7 +104,7 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
     try {
       const apiKey = await getSetting('gemini_key');
       const stream = await chatWithUnits({
-        units: contextUnits,
+        units: allUnits,
         messages: historyForApi,
         shareContent,
         apiKey,
@@ -146,7 +123,7 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, contextUnits, shareContent]);
+  }, [loading, messages, allUnits, shareContent]);
 
   const handleSend = useCallback(() => {
     const text = input.trim();
@@ -245,26 +222,6 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
           <button className="btn-close" onClick={() => setShowCloseConfirm(true)} aria-label="Close">
             <CloseIcon />
           </button>
-        </div>
-
-        {/* Unit selection strip */}
-        <div className="explore__strip-wrap">
-          <div className="carousel__row explore__strip">
-            {allUnits.map((u) => (
-              <div
-                key={u.id}
-                className={`explore__unit-wrap${selectedIds.has(u.id) ? '' : ' explore__unit-wrap--dim'}`}
-              >
-                <CarouselCard unit={u} onClick={() => toggleUnit(u.id)} selected={false} />
-                <div className={`explore__unit-dot${selectedIds.has(u.id) ? ' explore__unit-dot--on' : ''}`} aria-hidden="true" />
-              </div>
-            ))}
-          </div>
-          <p className="explore__context-meta">
-            {contextUnits.length === allUnits.length
-              ? `All ${allUnits.length} item${allUnits.length !== 1 ? 's' : ''} in context`
-              : `${contextUnits.length} of ${allUnits.length} in context · tap to toggle`}
-          </p>
         </div>
 
         {/* Messages */}

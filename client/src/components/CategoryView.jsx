@@ -76,10 +76,19 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
   // Explore modal
   const [showExplore, setShowExplore]       = useState(false);
 
-  // Selection / action bar
+  // Selection / action bar (data management)
   const { selected, isSelecting, toggle, enterWith, selectAll, clear } = useSelection();
   const [pendingDelete, setPendingDelete]   = useState(null); // { title, units, onConfirm }
   const [moveCtx, setMoveCtx]               = useState(null); // { units: Unit[] } | null
+
+  // AI selection mode (long-press Chat / Synthesize → pick items → Continue)
+  const { selected: aiSelected, isSelecting: isAiSelecting, toggle: aiToggle, selectAll: aiSelectAll, clear: aiClear } = useSelection();
+  const [aiMode, setAiMode]                 = useState(null); // 'chat' | 'synthesize'
+  const [aiExploreUnits, setAiExploreUnits] = useState(null); // filtered units passed to ExploreModal
+
+  // Long-press refs for Chat / Synthesize buttons
+  const aiLongPressRef      = useRef(null);
+  const aiLongPressFiredRef = useRef(false);
 
   const swipeStart = useRef(null);
 
@@ -114,24 +123,43 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
   const stats = useMemo(() => computeStats(units), [units]);
   const newItemsSinceSynthesis = cacheUnitCount !== null ? units.length - cacheUnitCount : 0;
 
+  // ── AI selection long-press ──────────────────────────────────────────────────
+
+  const startAiLongPress = useCallback((mode) => {
+    if (synthesisLoading) return;
+    aiLongPressFiredRef.current = false;
+    aiLongPressRef.current = setTimeout(() => {
+      aiLongPressFiredRef.current = true;
+      clear();                                  // exit data-management selection
+      setAiMode(mode);
+      aiSelectAll(units.map((u) => u.id));      // pre-select everything
+    }, 400);
+  }, [synthesisLoading, clear, aiSelectAll, units]);
+
+  const cancelAiLongPress = useCallback(() => clearTimeout(aiLongPressRef.current), []);
+
   // ── Synthesis ────────────────────────────────────────────────────────────────
 
-  const runSynthesis = useCallback(async (question, sc = shareContent) => {
-    if (!units.length) return;
+  // targetUnits defaults to all units; subset synthesis skips cache update
+  const runSynthesis = useCallback(async (question, sc = shareContent, targetUnits = units) => {
+    if (!targetUnits.length) return;
     setSynthesisLoading(true);
     setSynthesis('');
     setSynthesisError('');
     try {
       const apiKey = await getSetting('gemini_key');
-      const stream = await synthesizeFromUnits({ units, question, shareContent: sc, apiKey });
+      const stream = await synthesizeFromUnits({ units: targetUnits, question, shareContent: sc, apiKey });
       let text = '';
       for await (const chunk of stream) {
         text += chunk.text ?? '';
         setSynthesis(text);
       }
-      const unitCount = units.length;
-      await setSynthesisCacheEntry(category.id, { question, answer: text, computedAt: Date.now(), unitCount });
-      setCacheUnitCount(unitCount);
+      const isSubset = targetUnits.length < units.length;
+      if (!isSubset) {
+        const unitCount = targetUnits.length;
+        await setSynthesisCacheEntry(category.id, { question, answer: text, computedAt: Date.now(), unitCount });
+        setCacheUnitCount(unitCount);
+      }
     } catch (e) {
       setSynthesisError(e.message ?? 'Synthesis failed.');
     } finally {
@@ -308,7 +336,13 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
               <button
                 className="category-view__run-btn"
                 type="button"
-                onClick={handleCustomRun}
+                onPointerDown={() => startAiLongPress('synthesize')}
+                onPointerUp={cancelAiLongPress}
+                onPointerLeave={cancelAiLongPress}
+                onClick={() => {
+                  if (aiLongPressFiredRef.current) return;
+                  handleCustomRun();
+                }}
                 disabled={synthesisLoading}
                 aria-label="Run"
               >
@@ -399,7 +433,13 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
               <button
                 type="button"
                 className="category-view__chat-btn"
-                onClick={() => setShowExplore(true)}
+                onPointerDown={() => startAiLongPress('chat')}
+                onPointerUp={cancelAiLongPress}
+                onPointerLeave={cancelAiLongPress}
+                onClick={() => {
+                  if (aiLongPressFiredRef.current) return;
+                  setShowExplore(true);
+                }}
               >
                 Chat ✦
               </button>
@@ -438,9 +478,17 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
                       <CarouselCard
                         key={unit.id}
                         unit={unit}
-                        selected={selected.has(unit.id)}
-                        onClick={() => isSelecting ? toggle(unit.id) : setSelectedCtx({ units: visuallyOrdered, index: i >= 0 ? i : 0 })}
-                        onLongPress={() => enterWith(unit.id)}
+                        selected={isAiSelecting ? aiSelected.has(unit.id) : selected.has(unit.id)}
+                        onClick={() => {
+                          if (isAiSelecting) { aiToggle(unit.id); return; }
+                          if (isSelecting) { toggle(unit.id); return; }
+                          setSelectedCtx({ units: visuallyOrdered, index: i >= 0 ? i : 0 });
+                        }}
+                        onLongPress={() => {
+                          if (isAiSelecting) { aiToggle(unit.id); return; }
+                          aiClear(); setAiMode(null);
+                          enterWith(unit.id);
+                        }}
                       />
                     );
                   })}
@@ -457,6 +505,31 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
             onSelectAll={() => selectAll(units.map((u) => u.id))}
             onClear={clear}
             actions={unitActions}
+          />
+        )}
+
+        {isAiSelecting && (
+          <SelectionBar
+            count={aiSelected.size}
+            total={units.length}
+            onSelectAll={() => aiSelectAll(units.map((u) => u.id))}
+            onClear={() => { aiClear(); setAiMode(null); }}
+            actions={[{
+              icon: 'Continue',
+              label: 'Continue',
+              onClick: () => {
+                const selectedUnits = units.filter((u) => aiSelected.has(u.id));
+                if (!selectedUnits.length) { aiClear(); setAiMode(null); return; }
+                if (aiMode === 'chat') {
+                  setAiExploreUnits(selectedUnits);
+                  setShowExplore(true);
+                } else {
+                  runSynthesis(currentQuestion, shareContent, selectedUnits);
+                }
+                aiClear();
+                setAiMode(null);
+              },
+            }]}
           />
         )}
       </div>
@@ -514,9 +587,9 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
       {showExplore && (
         <ExploreModal
           category={category}
-          allUnits={units}
+          allUnits={aiExploreUnits ?? units}
           synthesis={synthesis}
-          onClose={() => setShowExplore(false)}
+          onClose={() => { setShowExplore(false); setAiExploreUnits(null); }}
           onSaveUnit={onUnitSaved}
         />
       )}
