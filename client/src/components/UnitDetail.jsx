@@ -13,7 +13,7 @@ const TYPE_ICONS = {
   image: ImageTypeIcon,
 };
 
-export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGroups = [] }) {
+export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGroups = [], accessOrder = [] }) {
   const [content,  setContent]  = useState(unit.content);
   const [fileName, setFileName] = useState(unit.fileName || '');
   const [mimeType, setMimeType] = useState(unit.mimeType || '');
@@ -249,6 +249,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
           onSuggest={handleSuggest}
           canSuggest={canAutoSuggest}
           disabled={saving}
+          accessOrder={accessOrder}
         />
       </div>
 

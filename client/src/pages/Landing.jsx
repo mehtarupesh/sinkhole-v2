@@ -192,6 +192,12 @@ export default function Landing() {
     [storedGroups]
   );
 
+  // Groups for CategorySelector: displayGroups (carry uids for recency sorting) minus Trash and Misc.
+  const selectorGroups = useMemo(
+    () => displayGroups.filter((g) => g.id !== TRASH_ID && g.id !== MISC_ID),
+    [displayGroups]
+  );
+
   const forageCategory = useMemo(() => {
     if (!showForageModal || catSel.selected.size !== 1) return null;
     const id = [...catSel.selected][0];
@@ -491,7 +497,8 @@ export default function Landing() {
         <AddUnitModal
           onClose={closeAddUnit}
           onSaved={handleAddUnitSaved}
-          storedGroups={selectableGroups}
+          storedGroups={selectorGroups}
+          accessOrder={accessOrder}
           initialType={addUnitInitial.type}
           initialContent={addUnitInitial.content}
           initialFileName={addUnitInitial.fileName}
@@ -517,7 +524,8 @@ export default function Landing() {
                 onBack={closeDetail}
                 onSaved={handleUnitSaved}
                 onDelete={handleUnitDelete}
-                storedGroups={selectableGroups}
+                storedGroups={selectorGroups}
+                accessOrder={accessOrder}
               />
             </div>
             <div className="unit-detail-nav" data-testid="unit-detail-nav">

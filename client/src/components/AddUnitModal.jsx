@@ -18,6 +18,7 @@ export default function AddUnitModal({
   onClose,
   onSaved,
   storedGroups = [],
+  accessOrder = [],
   initialType     = 'image',
   initialContent  = '',
   initialFileName = '',
@@ -299,6 +300,7 @@ export default function AddUnitModal({
             onSuggest={handleSuggest}
             canSuggest={canAutoSuggest}
             disabled={saving}
+            accessOrder={accessOrder}
           />
         </div>}
 

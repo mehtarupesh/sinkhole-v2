@@ -38,7 +38,8 @@ export async function suggestCategory({ content, mimeType, quote, type, existing
   const hasExisting = existingCategories?.length > 0;
 
   // Build the text prompt
-  const itemLines = [`Type: ${type}`];
+  const itemLines = [];
+  itemLines.push(`Type: ${content ? type : 'snippet'}`);
   if (quote) itemLines.push(`Context note: ${quote}`);
   if (content && !isFile) itemLines.push(`Content: ${content}`);
 

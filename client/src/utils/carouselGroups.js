@@ -79,6 +79,39 @@ export function withMiscGroup(units, storedGroups) {
 }
 
 /**
+ * Sorts groups by recency of access, using accessOrder (array of { uid } objects).
+ * Most recently accessed category first; MISC and TRASH always last.
+ * Groups without uids (or with no match in accessOrder) fall to the end.
+ *
+ * @param {{ id:string, title:string, uids?:string[] }[]} groups
+ * @param {{ uid:string }[]} accessOrder - most-recently-accessed first
+ * @returns {{ id:string, title:string, uids?:string[] }[]}
+ */
+export function sortGroupsByRecency(groups, accessOrder = []) {
+  // Build uid → categoryId map
+  const uidToCat = new Map();
+  for (const g of groups) {
+    for (const uid of (g.uids ?? [])) uidToCat.set(uid, g.id);
+  }
+
+  // Score each category: index of its first uid in accessOrder (lower = more recent)
+  const rankMap = new Map();
+  for (let i = 0; i < accessOrder.length; i++) {
+    const catId = uidToCat.get(accessOrder[i].uid);
+    if (catId && !rankMap.has(catId)) rankMap.set(catId, i);
+  }
+
+  const PINNED_IDS = new Set([MISC_ID, TRASH_ID]);
+
+  return [...groups].sort((a, b) => {
+    const aPinned = PINNED_IDS.has(a.id);
+    const bPinned = PINNED_IDS.has(b.id);
+    if (aPinned !== bPinned) return aPinned ? 1 : -1;
+    return (rankMap.get(a.id) ?? Infinity) - (rankMap.get(b.id) ?? Infinity);
+  });
+}
+
+/**
  * Builds the "Recent" carousel: the RECENT_MAX most recently added units,
  * newest-first. Returns null when there are no units.
  *

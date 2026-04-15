@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import CategoryField from './CategoryField';
-import { TRASH_ID } from '../utils/carouselGroups';
+import { TRASH_ID, sortGroupsByRecency } from '../utils/carouselGroups';
 
 /**
  * Category selector — pill trigger that opens a bottom-sheet modal.
@@ -18,6 +18,7 @@ export default function CategorySelector({
   onSuggest,
   canSuggest,
   disabled,
+  accessOrder = [],
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const ghostEditRef = useRef(null);
@@ -35,7 +36,10 @@ export default function CategorySelector({
     clearGhost,
   } = suggest;
 
-  const visibleGroups = groups.filter((g) => g.id !== TRASH_ID);
+  const visibleGroups = sortGroupsByRecency(
+    groups.filter((g) => g.id !== TRASH_ID),
+    accessOrder,
+  );
   const selectedGroup = visibleGroups.find((g) => g.id === categoryId);
   // Ghost from AI/manual add counts as a selection for display purposes
   const displayGroup = selectedGroup ?? newCategory;

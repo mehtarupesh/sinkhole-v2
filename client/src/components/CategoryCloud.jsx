@@ -6,7 +6,7 @@
  * Long-pressing a bubble enters category selection mode.
  */
 import { useLongPress } from '../hooks/useLongPress';
-import { MISC_ID, TRASH_ID } from '../utils/carouselGroups';
+import { MISC_ID, TRASH_ID, sortGroupsByRecency } from '../utils/carouselGroups';
 
 // Extracted so useLongPress can be called at the top level of each pill component
 function CategoryPill({ g, fontSize, opacity, selected, onClick, onLongPress }) {
@@ -38,13 +38,13 @@ export default function CategoryCloud({ storedGroups, onCategoryClick, selected,
 
   if (visibleGroups.length === 0) return null;
 
-  // Build uid → categoryId map from groups (groups already carry their uid lists)
+  const sorted = sortGroupsByRecency(visibleGroups, accessOrder);
+
+  // Build rankMap for size/opacity scaling (most-recently-accessed = largest)
   const uidToCat = new Map();
   for (const g of visibleGroups) {
     for (const uid of g.uids) uidToCat.set(uid, g.id);
   }
-
-  // Score each category: index of its first uid in accessOrder (lower = more recent)
   const rankMap = new Map();
   for (let i = 0; i < accessOrder.length; i++) {
     const catId = uidToCat.get(accessOrder[i].uid);
@@ -52,15 +52,6 @@ export default function CategoryCloud({ storedGroups, onCategoryClick, selected,
   }
 
   const PINNED_IDS = new Set([MISC_ID, TRASH_ID]);
-
-  // Sort: most recently accessed first; Trash & Unclassified always last
-  const sorted = [...visibleGroups].sort((a, b) => {
-    const aPinned = PINNED_IDS.has(a.id);
-    const bPinned = PINNED_IDS.has(b.id);
-    if (aPinned !== bPinned) return aPinned ? 1 : -1;
-    return (rankMap.get(a.id) ?? Infinity) - (rankMap.get(b.id) ?? Infinity);
-  });
-
   const maxRank = Math.max(...rankMap.values(), 1);
 
   const isMobile = window.innerWidth <= 640;
