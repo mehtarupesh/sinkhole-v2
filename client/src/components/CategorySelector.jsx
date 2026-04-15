@@ -1,15 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import CategoryField from './CategoryField';
 import { TRASH_ID } from '../utils/carouselGroups';
 
 /**
- * Compact category selector — single-line trigger pill that expands
- * into a wrapping chip panel when tapped.
+ * Category selector — pill trigger that opens a bottom-sheet modal.
  *
- * Trigger row:  [Empire of Things ▾]  [✦ suggest category]
- * Expanded:     panel with all chips (wrapping) + ghost chip flow
- *
- * Props: same as before — no parent changes required.
+ * Trigger row:  [Empire of Things ▾]
+ * Modal:        header with [+] left · "Category" center · [Suggest ✦] right
+ *               body with all chips (wrapping) + ghost chip
  */
 export default function CategorySelector({
   groups,
@@ -21,7 +20,6 @@ export default function CategorySelector({
   disabled,
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const panelRef = useRef(null);
   const ghostEditRef = useRef(null);
 
   const {
@@ -40,22 +38,30 @@ export default function CategorySelector({
   const visibleGroups = groups.filter((g) => g.id !== TRASH_ID);
   const selectedGroup = visibleGroups.find((g) => g.id === categoryId);
 
-  // Open panel when AI suggests a new category so user can see it
+  // Open modal when AI suggests a new category so user can see it
   useEffect(() => {
     if (newCategory || editingGhost) setIsOpen(true);
   }, [newCategory, editingGhost]);
 
-  // Close on outside click
+  // Intercept Escape in capture phase so it closes THIS modal, not the parent.
+  // Capture fires before bubble, so stopPropagation prevents AddUnitModal /
+  // UnitDetail / CategoryView / UnitsOverlay from seeing the event at all.
+  // When the ghost input is active we can't let the event reach it (capture
+  // stops propagation to DOM children too), so we call commitGhostEdit directly.
   useEffect(() => {
     if (!isOpen) return;
-    const onPointerDown = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) {
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      if (editingGhost) {
+        commitGhostEdit(''); // mirrors ghost input's own Escape → dismiss
+      } else {
         setIsOpen(false);
       }
     };
-    document.addEventListener('pointerdown', onPointerDown, { capture: true });
-    return () => document.removeEventListener('pointerdown', onPointerDown, { capture: true });
-  }, [isOpen]);
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => window.removeEventListener('keydown', onKey, { capture: true });
+  }, [isOpen, editingGhost, commitGhostEdit]);
 
   const handleExistingChipChange = (id) => {
     onCategoryChange(id);
@@ -63,80 +69,77 @@ export default function CategorySelector({
     setIsOpen(false);
   };
 
-  const handlePillClick = () => {
-    if (!disabled) setIsOpen((v) => !v);
-  };
+  const handleClose = () => setIsOpen(false);
 
   const showAddChip = !disabled && !newCategory && !editingGhost;
   const showGhostRow = !!newCategory || editingGhost;
 
-  return (
-    <div className="cat-picker" ref={panelRef}>
+  const modal = isOpen && createPortal(
+    <div
+      className="overlay overlay--sheet cat-picker-overlay"
+      onClick={handleClose}
+    >
+      <div
+        className="cat-picker-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Drag handle (mobile) */}
+        <div className="sheet__handle" />
 
-      {/* ── Trigger row ── */}
-      <div className="cat-picker__row">
-        <button
-          type="button"
-          className={`cat-picker__pill${selectedGroup ? ' cat-picker__pill--active' : ''}`}
-          onClick={handlePillClick}
-          disabled={disabled || suggestState === 'loading'}
-          aria-expanded={isOpen}
-          aria-label={selectedGroup ? `Category: ${selectedGroup.title}` : 'Select category'}
-        >
-          {selectedGroup ? selectedGroup.title : 'Category'}
-          <span className="cat-picker__pill-caret">{isOpen ? '▴' : '▾'}</span>
-        </button>
+        {/* Header: + | Category | Suggest */}
+        <div className="cat-picker-modal__header">
+          {showAddChip ? (
+            <button
+              type="button"
+              className="cat-picker-modal__add-btn"
+              onClick={startAddManual}
+              aria-label="Add new category"
+            >
+              +
+            </button>
+          ) : (
+            <div className="cat-picker-modal__add-btn-placeholder" />
+          )}
 
-        {/* Status inline with row */}
-        {suggestState === 'loading' && (
-          <span className="auto-suggest-status cat-picker__inline-status">Thinking…</span>
-        )}
-        {suggestState === 'done' && !newCategory && categoryId && (
-          <span className="auto-suggest-status auto-suggest-status--done cat-picker__inline-status">✓</span>
-        )}
-        {suggestState === 'error' && (
-          <span className="auto-suggest-status auto-suggest-status--error cat-picker__inline-status">Couldn't suggest</span>
-        )}
-        {suggestState === 'no-key' && (
-          <span className="auto-suggest-status auto-suggest-status--error cat-picker__inline-status">Add Gemini key in Settings ⚙</span>
-        )}
-        {suggestState === 'needs-selection' && (
-          <span className="auto-suggest-status auto-suggest-status--warn cat-picker__inline-status">Speak or type a note first</span>
-        )}
+          <span className="cat-picker-modal__title">Category</span>
 
-        {/* Suggest button — same row, no second line */}
-        {canSuggest && (
-          <button
-            type="button"
-            className="auto-suggest-trigger cat-picker__suggest-btn"
-            onClick={onSuggest}
-            disabled={suggestState === 'loading'}
-          >
-            Suggest ✦
-          </button>
-        )}
-      </div>
+          <div className="cat-picker-modal__header-right">
+            {suggestState === 'loading' && (
+              <span className="auto-suggest-status cat-picker__inline-status">Thinking…</span>
+            )}
+            {suggestState === 'done' && !newCategory && categoryId && (
+              <span className="auto-suggest-status auto-suggest-status--done cat-picker__inline-status">✓</span>
+            )}
+            {suggestState === 'error' && (
+              <span className="auto-suggest-status auto-suggest-status--error cat-picker__inline-status">Couldn't suggest</span>
+            )}
+            {suggestState === 'no-key' && (
+              <span className="auto-suggest-status auto-suggest-status--error cat-picker__inline-status">Add Gemini key in Settings ⚙</span>
+            )}
+            {suggestState === 'needs-selection' && (
+              <span className="auto-suggest-status auto-suggest-status--warn cat-picker__inline-status">Add a note first</span>
+            )}
+            {canSuggest && (
+              <button
+                type="button"
+                className="auto-suggest-trigger cat-picker-modal__suggest-btn"
+                onClick={onSuggest}
+                disabled={suggestState === 'loading'}
+              >
+                Suggest ✦
+              </button>
+            )}
+          </div>
+        </div>
 
-      {/* ── Expanded panel ── */}
-      {isOpen && (
-        <div className="cat-picker__panel">
+        {/* Chips body */}
+        <div className="cat-picker-modal__body">
           <CategoryField
             groups={visibleGroups}
             value={categoryId}
             onChange={handleExistingChipChange}
             disabled={disabled || suggestState === 'loading'}
           />
-
-          {showAddChip && (
-            <button
-              type="button"
-              className="auto-suggest-add-chip"
-              onClick={startAddManual}
-              aria-label="Add new category"
-            >
-              +
-            </button>
-          )}
 
           {/* Ghost chip */}
           {showGhostRow && (
@@ -185,8 +188,32 @@ export default function CategorySelector({
             </div>
           )}
         </div>
-      )}
+      </div>
+    </div>,
+    document.body
+  );
 
-    </div>
+  return (
+    <>
+      <div className="cat-picker">
+        <div className="cat-picker__row">
+          <button
+            type="button"
+            className={`cat-picker__pill${selectedGroup ? ' cat-picker__pill--active' : ''}`}
+            onClick={() => { if (!disabled) setIsOpen(true); }}
+            disabled={disabled}
+            aria-label={selectedGroup ? `Category: ${selectedGroup.title}` : 'Select category'}
+          >
+            {selectedGroup ? selectedGroup.title : 'Category'}
+            <span className="cat-picker__pill-caret">▾</span>
+          </button>
+
+          {suggestState === 'loading' && (
+            <span className="auto-suggest-status cat-picker__inline-status">Thinking…</span>
+          )}
+        </div>
+      </div>
+      {modal}
+    </>
   );
 }

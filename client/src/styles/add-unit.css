@@ -1001,6 +1001,113 @@
   padding-bottom: 4px;
 }
 
+/* ── Category picker modal (bottom sheet) ── */
+
+.cat-picker-overlay {
+  z-index: 200; /* above add-unit sheet at 100 */
+}
+
+.cat-picker-modal {
+  width: 100%;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 55dvh;
+  animation: sheetIn 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cat-picker-modal {
+    max-width: 400px;
+    border-radius: var(--radius-lg);
+    border-bottom: 1px solid var(--color-border);
+    max-height: 50dvh;
+    animation: none;
+  }
+}
+
+.cat-picker-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--color-surface-hi);
+}
+
+.cat-picker-modal__title {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-dim);
+}
+
+.cat-picker-modal__add-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  color: var(--color-faint);
+  font-size: 16px;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color var(--transition-speed), border-color var(--transition-speed);
+  flex-shrink: 0;
+}
+
+.cat-picker-modal__add-btn:hover {
+  color: var(--color-dim);
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+.cat-picker-modal__add-btn-placeholder {
+  width: 26px;
+  flex-shrink: 0;
+}
+
+.cat-picker-modal__header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Suggest button inside modal header — override auto-suggest-trigger margin */
+.cat-picker-modal__suggest-btn {
+  margin-bottom: 0 !important;
+}
+
+.cat-picker-modal__body {
+  padding: 14px 16px 24px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Chips wrap inside modal */
+.cat-picker-modal__body .category-field {
+  padding: 0;
+  padding-bottom: 0;
+}
+
+.cat-picker-modal__body .category-field__chips {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  padding-bottom: 0;
+}
+
+/* Ghost row spacing inside modal */
+.cat-picker-modal__body .auto-suggest-ghost-row {
+  margin-top: 10px;
+  width: 100%;
+}
+
 /* ── Auto-suggest ── */
 
 .auto-suggest-wrap {
