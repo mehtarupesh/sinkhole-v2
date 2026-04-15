@@ -37,11 +37,8 @@ export default function CategorySelector({
 
   const visibleGroups = groups.filter((g) => g.id !== TRASH_ID);
   const selectedGroup = visibleGroups.find((g) => g.id === categoryId);
-
-  // Open modal when AI suggests a new category so user can see it
-  useEffect(() => {
-    if (newCategory || editingGhost) setIsOpen(true);
-  }, [newCategory, editingGhost]);
+  // Ghost from AI/manual add counts as a selection for display purposes
+  const displayGroup = selectedGroup ?? newCategory;
 
   // Intercept Escape in capture phase so it closes THIS modal, not the parent.
   // Capture fires before bubble, so stopPropagation prevents AddUnitModal /
@@ -199,12 +196,12 @@ export default function CategorySelector({
         <div className="cat-picker__row">
           <button
             type="button"
-            className={`cat-picker__pill${selectedGroup ? ' cat-picker__pill--active' : ''}`}
+            className={`cat-picker__pill${displayGroup ? ' cat-picker__pill--active' : ''}`}
             onClick={() => { if (!disabled) setIsOpen(true); }}
             disabled={disabled}
-            aria-label={selectedGroup ? `Category: ${selectedGroup.title}` : 'Select category'}
+            aria-label={displayGroup ? `Category: ${displayGroup.title}` : 'Select category'}
           >
-            {selectedGroup ? selectedGroup.title : 'Category'}
+            {displayGroup ? displayGroup.title : 'Category'}
             <span className="cat-picker__pill-caret">▾</span>
           </button>
 
