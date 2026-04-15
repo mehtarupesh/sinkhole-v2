@@ -1,0 +1,114 @@
+{
+  "categories": [
+    {
+      "id": "1burrow-setup",
+      "title": "1burrow setup",
+      "updatedAt": 1776291172419,
+      "uids": [
+        "mo0lwkbm-p6rkyzo",
+        "mo0lx8be-7qm1u0i",
+        "mo0lxkay-rc02ajk"
+      ]
+    },
+    {
+      "id": "1burrow-tips",
+      "title": "1burrow tips",
+      "updatedAt": 1776291357101
+    },
+    {
+      "id": "trash",
+      "title": "Trash",
+      "updatedAt": 1776291363112
+    }
+  ],
+  "units": [
+    {
+      "uid": "mo0lwkbm-p6rkyzo",
+      "type": "image",
+      "content": "",
+      "encrypted": false,
+      "categoryId": "1burrow-setup",
+      "quote": "Setup your own AI key",
+      "createdAt": 1776291177442,
+      "id": 1,
+      "updatedAt": 1776291239358
+    },
+    {
+      "uid": "mo0lx8be-7qm1u0i",
+      "type": "image",
+      "content": "",
+      "encrypted": false,
+      "categoryId": "1burrow-setup",
+      "quote": "Install app to home-screen (Android)",
+      "createdAt": 1776291208538,
+      "id": 2,
+      "updatedAt": 1776291239359
+    },
+    {
+      "uid": "mo0lxkay-rc02ajk",
+      "type": "image",
+      "content": "",
+      "encrypted": false,
+      "categoryId": "1burrow-setup",
+      "quote": "Install app to home-screen (IOS)",
+      "createdAt": 1776291224074,
+      "id": 3,
+      "updatedAt": 1776291239360
+    },
+    {
+      "uid": "mo0ly9p6-7cq7tw3",
+      "type": "image",
+      "content": "",
+      "encrypted": false,
+      "categoryId": "1burrow-tips",
+      "quote": "Stash by Sharing",
+      "createdAt": 1776291256986,
+      "id": 4,
+      "updatedAt": 1776291359639
+    },
+    {
+      "uid": "mo0lyyr7-4tm2go4",
+      "type": "image",
+      "content": "",
+      "encrypted": false,
+      "categoryId": "1burrow-tips",
+      "quote": "Give context > auto-categorize",
+      "createdAt": 1776291289459,
+      "id": 5,
+      "updatedAt": 1776291359641
+    },
+    {
+      "uid": "mo0lzhek-pd2tq7g",
+      "type": "image",
+      "content": "",
+      "encrypted": false,
+      "categoryId": "1burrow-tips",
+      "quote": "Forage categories",
+      "createdAt": 1776291313628,
+      "id": 6,
+      "updatedAt": 1776291359642
+    },
+    {
+      "uid": "mo0lzqa4-vneyoin",
+      "type": "image",
+      "content": "",
+      "encrypted": false,
+      "categoryId": "1burrow-tips",
+      "quote": "Quick Summary",
+      "createdAt": 1776291325132,
+      "id": 7,
+      "updatedAt": 1776291359642
+    },
+    {
+      "uid": "mo0lzwsl-q2zl8js",
+      "type": "image",
+      "content": "",
+      "encrypted": false,
+      "categoryId": "1burrow-tips",
+      "quote": "Deep dive",
+      "createdAt": 1776291333573,
+      "id": 8,
+      "updatedAt": 1776291359643
+    }
+  ]
+}

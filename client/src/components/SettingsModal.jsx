@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { CloseIcon } from './Icons';
-import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, mergeUnits, mergeCategorization, mergeAccessOrder, mergeTombstones } from '../utils/db';
+import { CloseIcon, TrashIcon } from './Icons';
+import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, ucDump, clearDB, mergeUnits, mergeCategorization, mergeAccessOrder, mergeTombstones } from '../utils/db';
+import { loadDemoIfFresh } from '../utils/demo';
 
 const TYPE_LABELS = { snippet: 'text', image: 'img' };
 
@@ -126,6 +127,45 @@ export default function SettingsModal({ onClose }) {
       setImportStatus('Import failed.');
     }
     setImporting(false);
+  }
+
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  async function handleUcDump() {
+    try {
+      const dump = await ucDump();
+      const ts = new Date().toISOString().replace(/[:.]/g, '-');
+      const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `uc-dump-${ts}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      setError('UC Dump failed.');
+    }
+  }
+
+  async function handleLoadDemo() {
+    try {
+      await loadDemoIfFresh();
+      window.location.reload();
+    } catch {
+      setError('Load demo failed.');
+    }
+  }
+
+  async function handleClearDB() {
+    try {
+      await clearDB();
+      window.location.reload();
+    } catch (e) {
+      setError(e.message ?? 'Clear failed.');
+      setConfirmClear(false);
+    }
   }
 
   return (
@@ -258,6 +298,41 @@ export default function SettingsModal({ onClose }) {
             )}
           </div>
         )}
+
+        <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} />
+
+        {/* ── Dev tools ── */}
+        <p className="modal__hint" style={{ marginBottom: 8 }}>Dev tools</p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            className="connect-btn add-unit__save-btn"
+            onClick={handleUcDump}
+          >
+            UC Dump
+          </button>
+          <button
+            type="button"
+            className="connect-btn add-unit__save-btn"
+            onClick={handleLoadDemo}
+          >
+            Load Demo
+          </button>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+          <button
+            type="button"
+            className={`unit-detail__delete${confirmClear ? ' unit-detail__delete--confirm' : ''}`}
+            onClick={() => { if (!confirmClear) { setConfirmClear(true); } else { handleClearDB(); } }}
+            onBlur={() => setConfirmClear(false)}
+            style={{ flexShrink: 0 }}
+          >
+            {confirmClear ? 'Confirm?' : <TrashIcon />}
+          </button>
+          <p className="modal__hint" style={{ margin: 0 }}>
+            {confirmClear ? 'This will wipe all data and reload.' : 'Clear DB — fresh start'}
+          </p>
+        </div>
 
       </div>
     </div>

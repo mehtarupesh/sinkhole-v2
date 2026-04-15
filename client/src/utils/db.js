@@ -355,6 +355,25 @@ export async function dumpDB() {
   return { version: DB_VERSION, exportedAt: Date.now(), units, settings };
 }
 
+/** Dumps only categories + units — the format used by demo.json and UC iteration. */
+export async function ucDump() {
+  const [units, categories] = await Promise.all([getAllUnits(), getCategorization()]);
+  return { categories: categories ?? [], units };
+}
+
+/** Deletes the entire sinkhole-db. Call window.location.reload() after. */
+export function clearDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.deleteDatabase(DB_NAME);
+    req.onsuccess = () => resolve();
+    req.onerror = ({ target: { error } }) => reject(error);
+    // onblocked fires when this tab's own connection is still open.
+    // Reloading closes the connection and the deletion completes — resolve so
+    // the caller can proceed with the reload.
+    req.onblocked = () => resolve();
+  });
+}
+
 /**
  * Merges units from a peer or import file into the local store.
  * - New units (unknown uid) are inserted.
