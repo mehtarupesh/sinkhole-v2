@@ -51,7 +51,7 @@ function computeStats(units) {
   return { lastAdded, monthStat };
 }
 
-export default function CategoryView({ category, allUnits, storedGroups, onClose, onUnitSaved }) {
+export default function CategoryView({ category, allUnits, storedGroups, accessOrder = [], onClose, onUnitSaved }) {
   const units = useMemo(
     () => allUnits.filter((u) => category.uids.includes(u.uid)),
     [allUnits, category.uids]
@@ -480,6 +480,7 @@ export default function CategoryView({ category, allUnits, storedGroups, onClose
                   setSelectedCtx(null);
                 }}
                 storedGroups={storedGroups}
+                accessOrder={accessOrder}
               />
             </div>
             <div className="unit-detail-nav" data-testid="unit-detail-nav">

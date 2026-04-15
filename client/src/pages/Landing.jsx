@@ -615,7 +615,8 @@ export default function Landing() {
         <CategoryView
           category={displayGroups.find((g) => g.id === categoryViewCtx.category.id) ?? categoryViewCtx.category}
           allUnits={units}
-          storedGroups={selectableGroups}
+          storedGroups={selectorGroups}
+          accessOrder={accessOrder}
           onClose={async () => { setCategoryViewCtx(null); setAccessOrder(await getAccessOrder()); }}
           onUnitSaved={(updated, newCategory) => {
             reloadUnits();

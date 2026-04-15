@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { CloseIcon, SearchIcon, TrashIcon, MoveFolderIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
-import { getAllUnits, updateUnit, getCategorization, setCategorization } from '../utils/db';
+import { getAllUnits, updateUnit, getCategorization, setCategorization, getAccessOrder } from '../utils/db';
 import MoveToCategoryModal from './MoveToCategoryModal';
 import { withMiscGroup, pruneEmptyCategories, MISC_ID, TRASH_ID, addCategoryIfNew } from '../utils/carouselGroups';
 import { groupByTime } from '../utils/timeGroups';
@@ -14,6 +14,7 @@ import SelectionBar from './SelectionBar';
 export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const [units, setUnits] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [accessOrder, setAccessOrder] = useState([]);
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedCtx, setSelectedCtx] = useState(null); // { units, index }
@@ -26,9 +27,10 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   const [moveCtx, setMoveCtx] = useState(null); // { units: Unit[] } | null
 
   useEffect(() => {
-    Promise.all([getAllUnits(), getCategorization()]).then(([all, g]) => {
+    Promise.all([getAllUnits(), getCategorization(), getAccessOrder()]).then(([all, g, order]) => {
       setUnits(all.slice().reverse());
       setGroups(pruneEmptyCategories(g || [], all));
+      setAccessOrder(order);
     });
   }, []);
 
@@ -91,6 +93,12 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
   }, []);
 
   const allGroups = useMemo(() => withMiscGroup(units, groups), [units, groups]);
+
+  // Groups for CategorySelector: carry uids for recency sorting, exclude Trash and Misc.
+  const selectorGroups = useMemo(
+    () => allGroups.filter((g) => g.id !== TRASH_ID && g.id !== MISC_ID),
+    [allGroups]
+  );
 
   const q = query.toLowerCase();
 
@@ -306,7 +314,8 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
               onBack={() => setSelectedCtx(null)}
               onSaved={handleSaved}
               onDelete={handleDelete}
-              storedGroups={groups}
+              storedGroups={selectorGroups}
+              accessOrder={accessOrder}
             />
           </div>
           <div className="unit-detail-nav" data-testid="unit-detail-nav">
