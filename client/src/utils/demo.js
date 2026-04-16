@@ -17,7 +17,7 @@ export async function loadDemoIfFresh() {
 
   let data;
   try {
-    const res = await fetch('/demo.json');
+    const res = await fetch(`${import.meta.env.BASE_URL}demo.json`);
     if (!res.ok) return; // no demo.json present, skip silently
     data = await res.json();
   } catch {
