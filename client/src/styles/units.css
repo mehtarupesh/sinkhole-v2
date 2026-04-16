@@ -26,6 +26,20 @@
   margin-right: -24px;
 }
 
+/* Note tray breaks out — its own 20px padding provides the inset */
+.units-panel .note-tray {
+  margin-left: -24px;
+  margin-right: -24px;
+}
+
+/* Actions row breaks out and uses matching 20px inset */
+.units-panel .add-unit__actions {
+  margin-left: -24px;
+  margin-right: -24px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
 /* Snippet: minimal left breathing room; tight right padding — buttons sit at panel edge */
 .units-panel .snippet__markdown {
   padding-left: 12px;

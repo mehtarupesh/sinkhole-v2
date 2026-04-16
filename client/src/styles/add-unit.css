@@ -145,7 +145,7 @@
 /* ── Note Tray ── */
 .note-tray {
   flex-shrink: 0;
-  padding: 12px 20px 8px;
+  padding: 16px 20px 12px;
   border-top: 1px solid var(--color-surface);
 }
 
@@ -181,8 +181,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 12px;
-  padding-bottom: 8px;
+  padding-top: 18px;
+  padding-bottom: 14px;
   border-top: none;
 }
 
@@ -248,7 +248,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: 20px;
   width: 100%;
 }
 
@@ -318,7 +318,7 @@
 .note-tray__row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 /* Small mic button in text-hero row — secondary input toggle, not primary action */
@@ -368,8 +368,8 @@
   font-family: inherit;
   resize: none;
   field-sizing: content;
-  min-height: 30px;
-  max-height: 100px;
+  min-height: 44px;
+  max-height: 120px;
   line-height: 1.55;
   padding: 8px 10px 8px 12px;
   overflow-y: auto;
