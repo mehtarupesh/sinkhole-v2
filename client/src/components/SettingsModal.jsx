@@ -30,11 +30,39 @@ function PreviewCard({ unit }) {
   );
 }
 
+function useInstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState(() => window.__installPrompt ?? null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+    if (isStandalone) { setIsInstalled(true); return; }
+
+    // Pick up prompt if it fired before this component mounted
+    if (window.__installPrompt) setDeferredPrompt(window.__installPrompt);
+
+    const handler = (e) => { e.preventDefault(); window.__installPrompt = e; setDeferredPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', () => { setIsInstalled(true); setDeferredPrompt(null); window.__installPrompt = null; });
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  return { deferredPrompt, isInstalled };
+}
+
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+}
+
 export default function SettingsModal({ onClose }) {
   const [keyDraft, setKeyDraft] = useState('');
   const [hasKey, setHasKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+  const { deferredPrompt, isInstalled } = useInstallPrompt();
 
   const [preview, setPreview] = useState(null); // { newUnits, skipped }
   const [importStatus, setImportStatus] = useState('');
@@ -195,6 +223,13 @@ export default function SettingsModal({ onClose }) {
       window.location.reload();
     } catch {
       setError('Load demo failed.');
+    }
+  }
+
+  async function handleInstall() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
     }
   }
 
@@ -373,6 +408,39 @@ export default function SettingsModal({ onClose }) {
         )}
 
         <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} />
+
+        {/* ── Install ── */}
+        {!isInstalled && (
+          <>
+            {isIOS() ? (
+              <>
+                <button
+                  type="button"
+                  className="connect-btn add-unit__save-btn"
+                  onClick={() => setShowIOSInstructions((v) => !v)}
+                >
+                  Add to Home Screen
+                </button>
+                {showIOSInstructions && (
+                  <ol className="modal__hint" style={{ marginTop: 10, paddingLeft: 18, lineHeight: 1.8 }}>
+                    <li>Tap the <strong>Share</strong> button in Safari (box with arrow)</li>
+                    <li>Scroll down and tap <strong>Add to Home Screen</strong></li>
+                    <li>Tap <strong>Add</strong> to confirm</li>
+                  </ol>
+                )}
+              </>
+            ) : deferredPrompt ? (
+              <button
+                type="button"
+                className="connect-btn add-unit__save-btn"
+                onClick={handleInstall}
+              >
+                Install app
+              </button>
+            ) : null}
+            <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} />
+          </>
+        )}
 
         {/* ── Dev tools ── */}
         <p className="modal__hint" style={{ marginBottom: 8 }}>Dev tools</p>
