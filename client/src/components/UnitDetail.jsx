@@ -172,6 +172,8 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
           <span className="add-unit__type-icon add-unit__type-icon--active">
             {TypeIcon && <TypeIcon />}
           </span>
+        </div>
+        <div className="modal__header-actions">
           <button
             type="button"
             className={`add-unit__type-icon add-unit__encrypt-toggle${isLocked ? ' add-unit__type-icon--active add-unit__encrypt-toggle--on' : ''}`}
@@ -182,8 +184,6 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
           >
             <LockTypeIcon />
           </button>
-        </div>
-        <div className="modal__header-actions">
           <button
             type="button"
             className={`unit-detail__delete${confirmDelete ? ' unit-detail__delete--confirm' : ''}`}

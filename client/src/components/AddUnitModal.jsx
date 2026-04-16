@@ -223,16 +223,16 @@ export default function AddUnitModal({
                 <Icon />
               </button>
             ))}
-            <button
-              type="button"
-              className={`add-unit__type-icon add-unit__encrypt-toggle${encrypted ? ' add-unit__type-icon--active add-unit__encrypt-toggle--on' : ''}`}
-              onClick={() => setEncrypted((v) => !v)}
-              aria-label="Toggle encryption"
-              title="Encrypt"
-            >
-              <LockTypeIcon />
-            </button>
           </div>
+          <button
+            type="button"
+            className={`add-unit__type-icon add-unit__encrypt-toggle${encrypted ? ' add-unit__type-icon--active add-unit__encrypt-toggle--on' : ''}`}
+            onClick={() => setEncrypted((v) => !v)}
+            aria-label="Toggle encryption"
+            title="Encrypt"
+          >
+            <LockTypeIcon />
+          </button>
         </div>
 
         {/* Type-switch confirmation banner */}
