@@ -22,6 +22,8 @@ import SelectionBar from '../components/SelectionBar';
 import CleanupModal from '../components/CleanupModal';
 import CategoryView from '../components/CategoryView';
 import { useSelection } from '../hooks/useSelection';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
+import InstallBanner from '../components/InstallBanner';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -47,6 +49,8 @@ export default function Landing() {
   const [cardForageCtx, setCardForageCtx] = useState(null); // { units: Unit[], category } | null
   const [showCleanupModal, setShowCleanupModal] = useState(false);
   const [categoryViewCtx, setCategoryViewCtx] = useState(null); // { category } | null
+
+  const { showAndroid, showIOS, install, dismiss } = useInstallPrompt();
 
   const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal || moveCtx !== null || cardForageCtx !== null || showCleanupModal || categoryViewCtx !== null;
 
@@ -295,6 +299,13 @@ export default function Landing() {
 
   return (
     <div className={`landing${isDragging ? ' landing--dragging' : ''}${hasUnits ? ' landing--has-units' : ''}`}>
+      {(showAndroid || showIOS) && (
+        <InstallBanner
+          type={showAndroid ? 'android' : 'ios'}
+          onInstall={install}
+          onDismiss={dismiss}
+        />
+      )}
       {isDragging && <div className="drop-hint">Drop to add</div>}
 
       {toast && (
