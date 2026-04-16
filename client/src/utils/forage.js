@@ -81,6 +81,20 @@ async function generatePaidTier(ai, systemPrompt, contents) {
     },
   });
 }
+
+// test fucmtion which takes all units and runs synthesis prompt with PAID tier
+export async function testPaidTier(units, question, apiKey) {
+  const ai = new GoogleGenAI({ apiKey });
+  const plural = units.length !== 1 ? 's' : '';
+  const parts = [
+    { text: `Collection of ${units.length} item${plural}\n` },
+    ...await buildContentParts(units, false),
+    { text: `\n\nTASK: ${question}` },
+  ];
+  const contents = [{ role: 'user', parts }];
+  return generatePaidTier(ai, SYSTEM_PROMPT, contents);
+}
+
 /**
  * Ask a question about a collection of units using the Gemini streaming API.
  *
@@ -96,6 +110,7 @@ async function generatePaidTier(ai, systemPrompt, contents) {
  * @returns {Promise<AsyncIterable>} streaming response
  */
 export async function synthesizeFromUnits({ units, question, shareContent, apiKey }) {
+  console.log('synthesizeFromUnits', units, question, shareContent, apiKey);
   if (!units.length) throw new Error('No units to forage.');
   if (!question.trim()) throw new Error('Ask a question first.');
   if (!apiKey) throw new Error('No Gemini API key. Add one in Settings ⚙');

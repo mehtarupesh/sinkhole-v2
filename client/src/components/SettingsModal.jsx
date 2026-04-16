@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { CloseIcon, TrashIcon } from './Icons';
 import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, ucDump, clearDB, mergeUnits, mergeCategorization, mergeAccessOrder, mergeTombstones } from '../utils/db';
 import { loadDemoIfFresh } from '../utils/demo';
-import { synthesizeFromUnits } from '../utils/forage';
+import { synthesizeFromUnits, testPaidTier } from '../utils/forage';
 
 const TYPE_LABELS = { snippet: 'text', image: 'img' };
 
@@ -76,21 +76,29 @@ export default function SettingsModal({ onClose }) {
     setTestLoading(true);
     setTestResult('');
     setTestError('');
+    const [units, apiKey] = await Promise.all([getAllUnits(), getSetting('gemini_key')]);
+
     try {
-      const [units, apiKey] = await Promise.all([getAllUnits(), getSetting('gemini_key')]);
-      const stream = await synthesizeFromUnits({ units, question: 'Summarize', shareContent: true, apiKey });
+      const stream = await testPaidTier(units, 'Summarize', apiKey);
       let text = '';
       for await (const chunk of stream) {
         text += chunk.text ?? '';
-        setTestResult(text);
       }
+      setTestResult("Test passed");
       await setSetting('gemini_key_tier', 'paid');
     } catch (e) {
-      const msg = e.message ?? 'Test failed.';
-      if (msg.toLowerCase().includes('exceeded') && msg.toLowerCase().includes('quota')) {
-        await setSetting('gemini_key_tier', 'free').catch(() => {});
+      console.log('e', e);
+      try {
+        const stream = await synthesizeFromUnits({ units, question: 'Summarize', shareContent: true, apiKey });
+        let text = '';
+        for await (const chunk of stream) {
+          text += chunk.text ?? '';
+        }
+        setTestResult("Test passed");
+        await setSetting('gemini_key_tier', 'free').catch(() => {});  
+      } catch (e) {
+        setTestError(e.message ?? 'Test failed.');
       }
-      setTestError(msg);
     }
     setTestLoading(false);
   }
