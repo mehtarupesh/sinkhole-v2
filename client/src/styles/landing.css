@@ -291,56 +291,6 @@
   opacity: 1;
 }
 
-/* ── Install banner ── */
-.install-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--color-panel);
-  border-bottom: 1px solid var(--color-border);
-  font-size: var(--text-sm);
-  color: var(--color-dim);
-
-  /* Only show on touch/mobile */
-  @media (hover: hover) and (pointer: fine) {
-    display: none;
-  }
-}
-
-.install-banner__text {
-  flex: 1;
-  line-height: 1.4;
-}
-
-.install-banner__cta {
-  flex-shrink: 0;
-  padding: 5px 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text);
-  font-size: var(--text-xs);
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.install-banner__close {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  color: var(--color-faint);
-  cursor: pointer;
-  padding: 2px;
-  display: flex;
-  align-items: center;
-}
-
 /* ── Drop hint ── */
 .landing--dragging::after {
   content: '';
