@@ -181,7 +181,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 16px;
+  padding-top: 12px;
   padding-bottom: 8px;
   border-top: none;
 }
@@ -253,40 +253,43 @@
 }
 
 /* Each side column matches width so orb stays visually centered */
-.note-tray__swipe-left,
+.note-tray__swipe-col,
 .note-tray__mic-stage-right {
   flex: 1;
   display: flex;
   align-items: center;
 }
 
-.note-tray__mic-stage-right {
+.note-tray__swipe-col {
   justify-content: center;
+  padding-left: 8px;
 }
 
-/* Tap-to-type affordance */
-.note-tray__swipe-left {
-  flex-direction: column;
-  align-items: center;
+.note-tray__mic-stage-right {
   justify-content: center;
-  gap: 3px;
+  padding-right: 8px;
+}
+
+/* Tap-to-type affordance — bare text link, clearly secondary */
+.note-tray__swipe-left {
   background: none;
   border: none;
-  padding: 8px;
+  padding: 4px 0;
   cursor: pointer;
-  color: var(--color-muted);
-  transition: color 0.2s;
+  color: var(--color-faint);
+  font-size: 13px;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.12);
+  text-underline-offset: 3px;
+  transition: color 0.2s, text-decoration-color 0.2s;
 }
 
 .note-tray__swipe-left:hover {
-  color: var(--color-dim);
-}
-
-.note-tray__swipe-label {
-  font-size: 10px;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  font-family: inherit;
+  color: var(--color-muted);
+  text-decoration-color: rgba(255, 255, 255, 0.25);
 }
 
 
@@ -314,20 +317,20 @@
 
 .note-tray__row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
 }
 
-/* Small mic button in text-hero row */
+/* Small mic button in text-hero row — secondary input toggle, not primary action */
 .note-tray__mic-btn {
   flex-shrink: 0;
-  width: 62px;
-  height: 62px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: rgba(245, 166, 35, 0.08);
-  border: 1px solid rgba(245, 166, 35, 0.30);
+  background: rgba(245, 166, 35, 0.05);
+  border: 1px solid rgba(245, 166, 35, 0.18);
   color: #f5a623;
-  box-shadow: 0 0 18px rgba(245, 166, 35, 0.12);
+  box-shadow: none;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -335,10 +338,15 @@
   transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
+.note-tray__mic-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
 .note-tray__mic-btn:not(:disabled):hover {
-  background: rgba(245, 166, 35, 0.14);
-  border-color: rgba(245, 166, 35, 0.50);
-  box-shadow: 0 0 14px rgba(245, 166, 35, 0.18);
+  background: rgba(245, 166, 35, 0.10);
+  border-color: rgba(245, 166, 35, 0.35);
+  box-shadow: 0 0 8px rgba(245, 166, 35, 0.12);
 }
 
 .note-tray__mic-btn--busy {
@@ -347,11 +355,13 @@
   animation: none;
 }
 
-/* Growing textarea */
+/* Growing textarea — amber left-border "quote block" signals this is the user's voice */
 .note-tray__input {
   flex: 1;
-  background: none;
+  background: rgba(245, 166, 35, 0.025);
   border: none;
+  border-left: 2px solid rgba(245, 166, 35, 0.22);
+  border-radius: 0 8px 8px 0;
   outline: none;
   color: var(--color-text);
   font-size: 14px;
@@ -361,12 +371,19 @@
   min-height: 30px;
   max-height: 100px;
   line-height: 1.55;
-  padding: 5px 0;
+  padding: 8px 10px 8px 12px;
   overflow-y: auto;
+  transition: border-color var(--transition-speed), background var(--transition-speed);
+}
+
+.note-tray__input:focus {
+  border-left-color: rgba(245, 166, 35, 0.45);
+  background: rgba(245, 166, 35, 0.04);
 }
 
 .note-tray__input::placeholder {
   color: var(--color-faint);
+  font-style: italic;
 }
 
 .note-tray__input--has-value {
@@ -379,32 +396,48 @@
   font-style: normal;
 }
 
-/* ✦ action button (suggest / send / run) at right end of NoteTray row */
+/* ✦ action button (suggest / send / run) — primary action, most prominent in the row */
 .note-tray__action-btn {
   flex-shrink: 0;
-  width: 62px;
-  height: 62px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(245, 166, 35, 0.08);
-  border: 1px solid rgba(245, 166, 35, 0.30);
+  background: rgba(245, 166, 35, 0.13);
+  border: 1px solid rgba(245, 166, 35, 0.35);
   border-radius: 50%;
   color: #f5a623;
-  font-size: 22px;
+  font-size: 18px;
   cursor: pointer;
   transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .note-tray__action-btn:hover:not(:disabled) {
-  background: rgba(245, 166, 35, 0.14);
-  border-color: rgba(245, 166, 35, 0.50);
-  box-shadow: 0 0 14px rgba(245, 166, 35, 0.18);
+  background: rgba(245, 166, 35, 0.20);
+  border-color: rgba(245, 166, 35, 0.55);
+  box-shadow: 0 0 14px rgba(245, 166, 35, 0.20);
 }
 
 .note-tray__action-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: default;
+}
+
+/* In mic-hero, ✦ steps back — ghost/quiet since nothing is typed yet */
+.note-tray__mic-stage-right .note-tray__action-btn {
+  width: 44px;
+  height: 44px;
+  font-size: 19px;
+  background: none;
+  border-color: rgba(245, 166, 35, 0.14);
+  box-shadow: none;
+}
+
+.note-tray__mic-stage-right .note-tray__action-btn:hover:not(:disabled) {
+  background: rgba(245, 166, 35, 0.08);
+  border-color: rgba(245, 166, 35, 0.30);
+  box-shadow: none;
 }
 
 /* ✦ share button in text-hero row */

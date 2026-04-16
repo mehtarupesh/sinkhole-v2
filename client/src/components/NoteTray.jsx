@@ -230,15 +230,16 @@ export default function NoteTray({
         <div className="note-tray__mic-stage">
 
           {/* Left: tap-to-type affordance */}
-          <button
-            type="button"
-            className="note-tray__swipe-left"
-            onClick={switchToTextMode}
-            aria-label="Tap to type a note"
-          >
-            <PencilIcon />
-            <span className="note-tray__swipe-label">tap to type</span>
-          </button>
+          <div className="note-tray__swipe-col">
+            <button
+              type="button"
+              className="note-tray__swipe-left"
+              onClick={switchToTextMode}
+              aria-label="Type a note instead"
+            >
+              type instead
+            </button>
+          </div>
 
           {/* Center: orb + hint stacked together */}
           <div className="note-tray__center-col">
