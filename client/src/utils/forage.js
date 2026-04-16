@@ -28,7 +28,7 @@ const fmtDate = (d) => d
 //   ).join('\n');
 // }
 
-const MODEL_FREE = 'gemini-2.5-flash';
+const MODEL_FREE = 'gemini-2.5-flash-lite';
 const MODEL_PAID = 'gemini-3-flash-preview';
 
 async function getModel() {
@@ -47,7 +47,7 @@ async function buildContentParts(units, skipImages = false) {
     if (u.encrypted && isEncryptedContent(u.content)) return;
     if (u.type === 'image' && u.content) {
       parts.push({ text: `\nItem ${i + 1}, saved ${fmtDate(u.createdAt)}, (note: "${u.quote || ''}"):` });
-     if (!skipImages) {
+     if (true) {
       const { data, mimeType } = extractImageData(u.content, u.mimeType);
       parts.push({ inlineData: { mimeType, data } });
      } 
@@ -110,7 +110,7 @@ export async function testPaidTier(units, question, apiKey) {
  * @returns {Promise<AsyncIterable>} streaming response
  */
 export async function synthesizeFromUnits({ units, question, shareContent, apiKey }) {
-  console.log('synthesizeFromUnits', units, question, shareContent, apiKey);
+  // console.log('synthesizeFromUnits', units, question, shareContent, apiKey);
   if (!units.length) throw new Error('No units to forage.');
   if (!question.trim()) throw new Error('Ask a question first.');
   if (!apiKey) throw new Error('No Gemini API key. Add one in Settings ⚙');

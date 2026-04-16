@@ -77,9 +77,11 @@ export default function SettingsModal({ onClose }) {
     setTestResult('');
     setTestError('');
     const [units, apiKey] = await Promise.all([getAllUnits(), getSetting('gemini_key')]);
-
+    // take first 10 units of type image
+    const imageUnits = units.filter((u) => u.type === 'image').slice(0, 10);
+    console.log('imageUnits', imageUnits);
     try {
-      const stream = await testPaidTier(units, 'Summarize', apiKey);
+      const stream = await testPaidTier(imageUnits, 'Summarize', apiKey);
       let text = '';
       for await (const chunk of stream) {
         text += chunk.text ?? '';
@@ -89,7 +91,7 @@ export default function SettingsModal({ onClose }) {
     } catch (e) {
       console.log('e', e);
       try {
-        const stream = await synthesizeFromUnits({ units, question: 'Summarize', shareContent: true, apiKey });
+        const stream = await synthesizeFromUnits({ units: imageUnits, question: 'Summarize', shareContent: true, apiKey });
         let text = '';
         for await (const chunk of stream) {
           text += chunk.text ?? '';
@@ -97,7 +99,8 @@ export default function SettingsModal({ onClose }) {
         setTestResult("Test passed");
         await setSetting('gemini_key_tier', 'free').catch(() => {});  
       } catch (e) {
-        setTestError(e.message ?? 'Test failed.');
+        await setSetting('gemini_key_tier', 'error').catch(() => {});
+        setTestError('Test failed.');
       }
     }
     setTestLoading(false);
