@@ -15,8 +15,6 @@ export default function CategorySelector({
   categoryId,
   onCategoryChange,
   suggest,
-  onSuggest,
-  canSuggest,
   disabled,
   accessOrder = [],
 }) {
@@ -104,33 +102,7 @@ export default function CategorySelector({
 
           <span className="cat-picker-modal__title">Category</span>
 
-          <div className="cat-picker-modal__header-right">
-            {suggestState === 'loading' && (
-              <span className="auto-suggest-status cat-picker__inline-status">Thinking…</span>
-            )}
-            {suggestState === 'done' && !newCategory && categoryId && (
-              <span className="auto-suggest-status auto-suggest-status--done cat-picker__inline-status">✓</span>
-            )}
-            {suggestState === 'error' && (
-              <span className="auto-suggest-status auto-suggest-status--error cat-picker__inline-status">Couldn't suggest</span>
-            )}
-            {suggestState === 'no-key' && (
-              <span className="auto-suggest-status auto-suggest-status--error cat-picker__inline-status">Add Gemini key in Settings ⚙</span>
-            )}
-            {suggestState === 'needs-selection' && (
-              <span className="auto-suggest-status auto-suggest-status--warn cat-picker__inline-status">Add a note first</span>
-            )}
-            {canSuggest && (
-              <button
-                type="button"
-                className="auto-suggest-trigger cat-picker-modal__suggest-btn"
-                onClick={onSuggest}
-                disabled={suggestState === 'loading'}
-              >
-                Suggest ✦
-              </button>
-            )}
-          </div>
+          <div className="cat-picker-modal__add-btn-placeholder" />
         </div>
 
         {/* Chips body */}

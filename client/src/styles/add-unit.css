@@ -96,7 +96,7 @@
 
 /* Category area — horizontal chip scroll */
 .sheet__categories {
-  padding: 12px 20px 0;
+  padding: 12px 20px;
   flex-shrink: 0;
 }
 
@@ -261,7 +261,7 @@
 }
 
 .note-tray__mic-stage-right {
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 /* Tap-to-type affordance */
@@ -377,6 +377,34 @@
 .note-tray__input--has-value:focus {
   color: var(--color-text);
   font-style: normal;
+}
+
+/* ✦ action button (suggest / send / run) at right end of NoteTray row */
+.note-tray__action-btn {
+  flex-shrink: 0;
+  width: 62px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 166, 35, 0.08);
+  border: 1px solid rgba(245, 166, 35, 0.30);
+  border-radius: 50%;
+  color: #f5a623;
+  font-size: 22px;
+  cursor: pointer;
+  transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.note-tray__action-btn:hover:not(:disabled) {
+  background: rgba(245, 166, 35, 0.14);
+  border-color: rgba(245, 166, 35, 0.50);
+  box-shadow: 0 0 14px rgba(245, 166, 35, 0.18);
+}
+
+.note-tray__action-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* ✦ share button in text-hero row */
@@ -898,6 +926,7 @@
 .cat-picker__row {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
 }

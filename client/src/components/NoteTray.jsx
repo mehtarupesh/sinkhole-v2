@@ -25,6 +25,7 @@ const MAX_REC_SECS = 60;
 const BARS = 28;
 
 function isTouchDevice() {
+  return true;
   return typeof window !== 'undefined' &&
     window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 }
@@ -42,6 +43,7 @@ export default function NoteTray({
   hasContent = false,
   placeholder = 'add a note…',
   defaultMode = isTouchDevice() ? 'mic-hero' : 'text-hero',
+  actionBtn = null,
 }) {
   const [mode, setMode] = useState(() => defaultMode);
   const [exitingMic, setExitingMic] = useState(false);
@@ -254,8 +256,8 @@ export default function NoteTray({
             </p>
           </div>
 
-          {/* Right: empty column — keeps orb visually centered */}
-          <div className="note-tray__mic-stage-right" />
+          {/* Right: action button (or empty column to keep orb centered) */}
+          <div className="note-tray__mic-stage-right">{actionBtn}</div>
         </div>
 
         {localError && <p className="modal__error" style={{ margin: '4px 0 0', textAlign: 'center' }}>{localError}</p>}
@@ -298,19 +300,7 @@ export default function NoteTray({
           rows={1}
         />
 
-        {/* share-content toggle — disabled for now
-        {hasContent && (
-          <button
-            type="button"
-            className="note-tray__share-btn"
-            onClick={onShareToggle}
-            disabled={disabled}
-            title={shareContent ? 'Sharing content with AI' : 'Share content with AI'}
-          >
-            <span className={`note-tray__sparkle${shareContent ? ' note-tray__sparkle--on' : ''}`}>✦</span>
-          </button>
-        )}
-        */}
+        {actionBtn}
       </div>
 
       {localError && <p className="modal__error" style={{ margin: '4px 0 0' }}>{localError}</p>}

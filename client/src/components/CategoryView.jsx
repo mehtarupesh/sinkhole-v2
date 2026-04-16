@@ -331,24 +331,24 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
               disabled={synthesisLoading}
               placeholder="Custom question…"
               defaultMode="text-hero"
+              actionBtn={customQ.trim() ? (
+                <button
+                  type="button"
+                  className="note-tray__action-btn"
+                  onPointerDown={() => startAiLongPress('synthesize')}
+                  onPointerUp={cancelAiLongPress}
+                  onPointerLeave={cancelAiLongPress}
+                  onClick={() => {
+                    if (aiLongPressFiredRef.current) return;
+                    handleCustomRun();
+                  }}
+                  disabled={synthesisLoading}
+                  aria-label="Run"
+                >
+                  {synthesisLoading ? '…' : '✦'}
+                </button>
+              ) : undefined}
             />
-            {customQ.trim() && (
-              <button
-                className="category-view__run-btn"
-                type="button"
-                onPointerDown={() => startAiLongPress('synthesize')}
-                onPointerUp={cancelAiLongPress}
-                onPointerLeave={cancelAiLongPress}
-                onClick={() => {
-                  if (aiLongPressFiredRef.current) return;
-                  handleCustomRun();
-                }}
-                disabled={synthesisLoading}
-                aria-label="Run"
-              >
-                {synthesisLoading ? '…' : '✦'}
-              </button>
-            )}
           </div>
 
           {newItemsSinceSynthesis > 0 && (

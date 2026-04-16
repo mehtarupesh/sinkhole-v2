@@ -288,21 +288,30 @@ export default function AddUnitModal({
           shareContent={suggest.shareContent}
           onShareToggle={() => suggest.setShareContent((v) => !v)}
           hasContent={hasContent}
+          actionBtn={
+            <button
+              type="button"
+              className="note-tray__action-btn"
+              onClick={handleSuggest}
+              disabled={!canAutoSuggest}
+              aria-label="Suggest category"
+            >
+              {suggest.suggestState === 'loading' ? '…' : '✦'}
+            </button>
+          }
         />
 
-        {/* Category chips — horizontal scroll */}
-        {(content.trim() || quote.trim()) && <div className="sheet__categories">
+        {/* Category chips — always visible, disabled when no content yet */}
+        <div className="sheet__categories">
           <CategorySelector
             groups={storedGroups}
             categoryId={categoryId}
             onCategoryChange={setCategoryId}
             suggest={suggest}
-            onSuggest={handleSuggest}
-            canSuggest={canAutoSuggest}
-            disabled={saving}
+            disabled={saving || (!hasContent && !hasNote)}
             accessOrder={accessOrder}
           />
-        </div>}
+        </div>
 
         {/* Actions */}
         <div className="sheet__actions">

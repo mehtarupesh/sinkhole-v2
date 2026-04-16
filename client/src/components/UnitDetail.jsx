@@ -39,8 +39,9 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   // ── Derived ──────────────────────────────────────────────────────────────────
   const hasContent = unit.type === 'image' ? !!content : !isLocked && !!content.trim();
   const hasNote    = !!quote.trim();
+  const contentOrNoteChanged = content !== unit.content || quote !== (unit.quote || '');
   const canAutoSuggest =
-    !saving && !isLocked && (hasContent || hasNote) && suggest.suggestState !== 'loading';
+    !saving && !isLocked && (hasContent || hasNote) && suggest.suggestState !== 'loading' && contentOrNoteChanged;
 
   // Record access — fire and forget, no await
   useEffect(() => { if (unit.uid) touchUnit(unit.uid); }, [unit.uid]);
@@ -239,20 +240,6 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
 
       {error && <p className="modal__error">{error}</p>}
 
-      {/* Category selector */}
-      <div className="sheet__categories" style={{ padding: '8px 0 0' }}>
-        <CategorySelector
-          groups={storedGroups}
-          categoryId={categoryId}
-          onCategoryChange={setCategoryId}
-          suggest={suggest}
-          onSuggest={handleSuggest}
-          canSuggest={canAutoSuggest}
-          disabled={saving}
-          accessOrder={accessOrder}
-        />
-      </div>
-
       {/* Note tray */}
       <NoteTray
         value={quote}
@@ -262,7 +249,30 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
         shareContent={suggest.shareContent}
         onShareToggle={() => suggest.setShareContent((v) => !v)}
         hasContent={hasContent}
+        actionBtn={
+          <button
+            type="button"
+            className="note-tray__action-btn"
+            onClick={handleSuggest}
+            disabled={!canAutoSuggest}
+            aria-label="Suggest category"
+          >
+            {suggest.suggestState === 'loading' ? '…' : '✦'}
+          </button>
+        }
       />
+
+      {/* Category selector — always visible, disabled when locked/no content */}
+      <div className="sheet__categories">
+        <CategorySelector
+          groups={storedGroups}
+          categoryId={categoryId}
+          onCategoryChange={setCategoryId}
+          suggest={suggest}
+          disabled={saving || isLocked}
+          accessOrder={accessOrder}
+        />
+      </div>
 
       <div className="add-unit__actions">
         <button

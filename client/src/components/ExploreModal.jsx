@@ -344,16 +344,18 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
             onTranscribed={(text) => doSend(text)}
             disabled={loading}
             placeholder="Ask something…"
+            actionBtn={
+              <button
+                type="button"
+                className="note-tray__action-btn"
+                onClick={handleSend}
+                disabled={!canSend}
+                aria-label="Send"
+              >
+                {loading ? '…' : '✦'}
+              </button>
+            }
           />
-          <button
-            className={`explore__send-btn${!canSend ? ' explore__send-btn--disabled' : ''}`}
-            onClick={handleSend}
-            disabled={!canSend}
-            type="button"
-            aria-label="Send"
-          >
-            {loading ? '…' : '✦'}
-          </button>
         </div>
 
         {/* Close confirmation overlay */}
