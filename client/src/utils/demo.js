@@ -20,10 +20,10 @@ export async function loadDemoIfFresh() {
     const res = await fetch(`${import.meta.env.BASE_URL}demo.json`);
     if (!res.ok) return; // no demo.json present, skip silently
     data = await res.json();
-  } catch {
-    return; // parse error or network, skip silently
+  } catch (e) {
+    console.error('Error loading demo data', e);
+    throw e;
   }
-
   const { categories = [], units = [] } = data;
   if (categories.length === 0 && units.length === 0) return;
 
