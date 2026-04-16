@@ -480,9 +480,9 @@ export default function Landing() {
             <button type="button" className="btn-icon" onClick={() => openAddUnit({})} title="Add" aria-label="Add">
               <PlusIcon />
             </button>
-            <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
+            {/* <button type="button" className="btn-icon" onClick={() => navigate('/connect')} title="Connect" aria-label="Connect">
               <ConnectIcon />
-            </button>
+            </button> */}
             <button type="button" className="btn-icon" onClick={() => setShowUnitsOverlay(true)} title="Saved" aria-label="Saved">
               <SearchIcon />
             </button>
