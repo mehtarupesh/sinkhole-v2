@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { isEncryptedContent } from './crypto';
+import { getSetting } from './db';
 
 const SYSTEM_PROMPT = `You are Personal Assistant whose job is to help the user consume pieces of information they have entered over time. The user will provide list of text/images with per-item notes for each. If any item contains a URL, fetch and read it to give a complete answer.
 Use simple markdown: **bold** for key info, bullet lists for multiple items, ## for section headers only when needed`;
@@ -27,7 +28,17 @@ const fmtDate = (d) => d
 //   ).join('\n');
 // }
 
-function buildContentParts(units) {
+const MODEL_FREE = 'gemini-2.5-flash';
+const MODEL_PAID = 'gemini-3-flash-preview';
+
+async function getModel() {
+  const tier = await getSetting('gemini_key_tier').catch(() => null);
+  const isPaid = tier === 'paid';
+  console.log('isPaid', isPaid);
+  return isPaid ? MODEL_PAID : MODEL_FREE;
+}
+
+async function buildContentParts(units, skipImages = false) {
   const parts = [];
   // Add today's date ISO format
   const today = new Date().toISOString();
@@ -36,8 +47,10 @@ function buildContentParts(units) {
     if (u.encrypted && isEncryptedContent(u.content)) return;
     if (u.type === 'image' && u.content) {
       parts.push({ text: `\nItem ${i + 1}, saved ${fmtDate(u.createdAt)}, (note: "${u.quote || ''}"):` });
+     if (!skipImages) {
       const { data, mimeType } = extractImageData(u.content, u.mimeType);
       parts.push({ inlineData: { mimeType, data } });
+     } 
     } else {
       parts.push({ text: `\nItem ${i + 1}, saved ${fmtDate(u.createdAt)}, (note: "${u.quote || ''}"): ${u.content}` });
     }
@@ -45,6 +58,29 @@ function buildContentParts(units) {
   return parts;
 }
 
+async function generateFreeTier(ai, systemPrompt, contents) {
+  return ai.models.generateContentStream({
+    model: MODEL_FREE,
+    contents,
+    config: {
+      systemInstruction: systemPrompt,
+      // thinkingConfig: { thinkingLevel: 'MINIMAL' },
+      tools: [{ urlContext: {} }, { googleSearch: {} }],
+    },
+  });
+}
+
+async function generatePaidTier(ai, systemPrompt, contents) {
+  return ai.models.generateContentStream({
+    model: MODEL_PAID,
+    contents,
+    config: {
+      systemInstruction: systemPrompt,
+      thinkingConfig: { thinkingLevel: 'MINIMAL' },
+      tools: [{ urlContext: {} }, { googleSearch: {} }],
+    },
+  });
+}
 /**
  * Ask a question about a collection of units using the Gemini streaming API.
  *
@@ -66,22 +102,21 @@ export async function synthesizeFromUnits({ units, question, shareContent, apiKe
 
   const ai = new GoogleGenAI({ apiKey });
 
+  const model = await getModel();
   const plural = units.length !== 1 ? 's' : '';
   const parts = [
     { text: `Collection of ${units.length} item${plural}\n` },
-    ...buildContentParts(units),
+    ...await buildContentParts(units, model === MODEL_FREE ? true : false),
     { text: `\n\nTASK: ${question}` },
   ];
 
-  return ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
-    contents: [{ role: 'user', parts }],
-    config: {
-      tools: [{ urlContext: {} }, { googleSearch: {} }],
-      systemInstruction: SYSTEM_PROMPT,
-      thinkingConfig: { thinkingLevel: 'MINIMAL' },
-    },
-  });
+  const contents = [{ role: 'user', parts }];
+
+  if (model === MODEL_FREE) {
+    return generateFreeTier(ai, SYSTEM_PROMPT, contents);
+  } else {
+    return generatePaidTier(ai, SYSTEM_PROMPT, contents);
+  }
 }
 
 const EXPLORE_SYSTEM_PROMPT = `${SYSTEM_PROMPT}
@@ -105,10 +140,11 @@ export async function chatWithUnits({ units, messages, shareContent, apiKey }) {
 
   const ai = new GoogleGenAI({ apiKey });
 
+  const model = await getModel();
   const plural = units.length !== 1 ? 's' : '';
   const contextParts = [
     { text: `Context — ${units.length} saved item${plural}:\n` },
-    ...buildContentParts(units),
+    ...await buildContentParts(units, model === MODEL_FREE ? true : false),
   ];
 
   // Multi-turn contents: context is injected into the first user turn
@@ -119,13 +155,9 @@ export async function chatWithUnits({ units, messages, shareContent, apiKey }) {
       : [{ text: msg.text }],
   }));
 
-  return ai.models.generateContentStream({
-    model: 'gemini-3-flash-preview',
-    contents,
-    config: {
-      systemInstruction: EXPLORE_SYSTEM_PROMPT,
-      thinkingConfig: { thinkingLevel: 'MINIMAL' },
-      tools: [{ urlContext: {} }, { googleSearch: {} }],
-    },
-  });
+  if (model === MODEL_FREE) {
+    return generateFreeTier(ai, EXPLORE_SYSTEM_PROMPT, contents);
+  } else {
+    return generatePaidTier(ai, EXPLORE_SYSTEM_PROMPT, contents);
+  }
 }

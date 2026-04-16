@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { CloseIcon, TrashIcon } from './Icons';
 import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, ucDump, clearDB, mergeUnits, mergeCategorization, mergeAccessOrder, mergeTombstones } from '../utils/db';
 import { loadDemoIfFresh } from '../utils/demo';
+import { synthesizeFromUnits } from '../utils/forage';
 
 const TYPE_LABELS = { snippet: 'text', image: 'img' };
 
@@ -64,6 +65,34 @@ export default function SettingsModal({ onClose }) {
     } catch {
       setError('Failed to remove key.');
     }
+  }
+
+  const [testResult, setTestResult] = useState('');
+  const [testError, setTestError] = useState('');
+  const [testLoading, setTestLoading] = useState(false);
+  const [showFullTest, setShowFullTest] = useState(false);
+
+  async function handleTestKey() {
+    setTestLoading(true);
+    setTestResult('');
+    setTestError('');
+    try {
+      const [units, apiKey] = await Promise.all([getAllUnits(), getSetting('gemini_key')]);
+      const stream = await synthesizeFromUnits({ units, question: 'Summarize', shareContent: true, apiKey });
+      let text = '';
+      for await (const chunk of stream) {
+        text += chunk.text ?? '';
+        setTestResult(text);
+      }
+      await setSetting('gemini_key_tier', 'paid');
+    } catch (e) {
+      const msg = e.message ?? 'Test failed.';
+      if (msg.toLowerCase().includes('exceeded') && msg.toLowerCase().includes('quota')) {
+        await setSetting('gemini_key_tier', 'free').catch(() => {});
+      }
+      setTestError(msg);
+    }
+    setTestLoading(false);
   }
 
   async function handleExport() {
@@ -193,13 +222,46 @@ export default function SettingsModal({ onClose }) {
         {hasKey ? (
           <>
             <p style={{ fontSize: 13, color: '#737373', marginBottom: 12 }}>Key saved ✓</p>
-            <button
-              type="button"
-              className="unit-detail__delete"
-              onClick={handleDelete}
-            >
-              Remove key
-            </button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="connect-btn add-unit__save-btn"
+                onClick={handleTestKey}
+                disabled={testLoading}
+              >
+                {testLoading ? '…' : 'Test key'}
+              </button>
+              <button
+                type="button"
+                className="unit-detail__delete"
+                onClick={handleDelete}
+              >
+                Remove key
+              </button>
+            </div>
+            {(testResult || testError) && (
+              <p
+                className="modal__hint"
+                style={{ marginTop: 8, cursor: testResult.length > 120 ? 'pointer' : 'default', userSelect: 'none' }}
+                onClick={() => testResult.length > 120 && setShowFullTest(true)}
+              >
+                {testError
+                  ? <span style={{ color: '#ef4444' }}>{testError.slice(0, 120)}{testError.length > 120 ? '…' : ''}</span>
+                  : <>{testResult.slice(0, 120)}{testResult.length > 120 ? <span style={{ color: '#737373' }}> … (tap to expand)</span> : null}</>
+                }
+              </p>
+            )}
+            {showFullTest && (
+              <div className="overlay" onClick={() => setShowFullTest(false)}>
+                <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+                  <div className="modal__header">
+                    <span className="modal__title">Test result</span>
+                    <button type="button" className="btn-close" onClick={() => setShowFullTest(false)} aria-label="Close"><CloseIcon /></button>
+                  </div>
+                  <p style={{ fontSize: 13, color: '#a3a3a3', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{testResult || testError}</p>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <>
