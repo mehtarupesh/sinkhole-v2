@@ -13,7 +13,7 @@
  *   onUnitSaved  fn(updated, newCategory?)   reload trigger for Landing
  */
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon, CopyIcon, CheckIcon, RenameIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon, CopyIcon, CheckIcon } from './Icons';
 import { CarouselCard } from './Carousel';
 import { groupByTime } from '../utils/timeGroups';
 import { synthesizeFromUnits } from '../utils/forage';
@@ -372,24 +372,14 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
                     {confirmClearSynthesis ? 'Confirm?' : <TrashIcon />}
                   </button>
                   {!isEditingSynthesis && synthesis && (
-                    <>
-                      <button
-                        type="button"
-                        className="add-unit__copy-btn"
-                        onClick={() => setIsEditingSynthesis(true)}
-                        aria-label="Edit synthesis"
-                      >
-                        <RenameIcon size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        className={`add-unit__copy-btn${synthesisCopied ? ' add-unit__copy-btn--copied' : ''}`}
-                        onClick={handleSynthesisCopy}
-                        aria-label="Copy synthesis"
-                      >
-                        {synthesisCopied ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      className={`add-unit__copy-btn${synthesisCopied ? ' add-unit__copy-btn--copied' : ''}`}
+                      onClick={handleSynthesisCopy}
+                      aria-label="Copy synthesis"
+                    >
+                      {synthesisCopied ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
+                    </button>
                   )}
                 </div>
               )}
@@ -419,10 +409,17 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
                   autoFocus
                 />
               ) : (
-                <>
+                <div
+                  className="snippet__tap-to-edit"
+                  onClick={() => setIsEditingSynthesis(true)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Tap to edit"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsEditingSynthesis(true); }}
+                >
                   <SimpleMarkdown text={synthesis} className="forage__markdown" />
                   {synthesisLoading && <span className="forage__cursor" aria-hidden="true">▋</span>}
-                </>
+                </div>
               )}
             </div>
           )}
