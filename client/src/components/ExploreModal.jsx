@@ -9,7 +9,7 @@
  *   onSaveUnit fn()                called after a response is saved as a unit
  */
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { CloseIcon, CheckIcon, TrashIcon, RenameIcon, CopyIcon } from './Icons';
+import { CloseIcon, CheckIcon, TrashIcon, CopyIcon } from './Icons';
 import { getSetting, addUnit } from '../utils/db';
 import { chatWithUnits } from '../utils/forage';
 import NoteTray from './NoteTray';
@@ -64,7 +64,7 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
       el.style.height = 'auto';
       el.style.height = `${el.scrollHeight}px`;
       el.focus();
-      el.select();
+      el.setSelectionRange(0, 0);
     }
   }, [editingId]);
 
@@ -244,9 +244,27 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
                 />
               ) : (
                 msg.role === 'user' ? (
-                  <p className="explore__message-user-text">{msg.text}</p>
+                  <div
+                    className="snippet__tap-to-edit"
+                    onClick={() => startEdit(msg.id, msg.text)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Tap to edit"
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') startEdit(msg.id, msg.text); }}
+                  >
+                    <p className="explore__message-user-text">{msg.text}</p>
+                  </div>
                 ) : msg.text ? (
-                  <SimpleMarkdown text={msg.text} className="forage__markdown" />
+                  <div
+                    className="snippet__tap-to-edit"
+                    onClick={() => startEdit(msg.id, msg.text)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Tap to edit"
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') startEdit(msg.id, msg.text); }}
+                  >
+                    <SimpleMarkdown text={msg.text} className="forage__markdown" />
+                  </div>
                 ) : (
                   <div className="forage__response-loading">
                     <span className="note-field__spinner" />
@@ -263,16 +281,6 @@ export default function ExploreModal({ category, allUnits, synthesis, onClose, o
               {/* Message actions (shown when not streaming this message) */}
               {!(loading && msg.role === 'assistant' && !msg.text) && msg.text && editingId !== msg.id && (
                 <div className="explore__message-actions">
-                  {/* Edit */}
-                  <button
-                    type="button"
-                    className="explore__msg-action"
-                    onClick={() => startEdit(msg.id, msg.text)}
-                    aria-label="Edit"
-                  >
-                    <RenameIcon size={12} />
-                  </button>
-
                   {/* Copy */}
                   <button
                     type="button"
