@@ -48,7 +48,7 @@ export async function suggestCategory({ content, mimeType, quote, type, existing
     : '';
 
   const categorySection = hasExisting
-    ? `Existing categories:\n${JSON.stringify(existingCategories.map((c) => ({ id: c.id, title: c.title })), null, 2)}\n\nReturn the id of the best match, or empty string if none fit well.`
+    ? `Existing categories:\n${JSON.stringify(existingCategories.map((c) => ({ id: c.id, title: c.title })), null, 2)}\n\nReturn the id of the BROADEST match, or empty string if none fit well.`
     : `No categories exist yet. Always return a suggestedTitle.`;
 
   const textPrompt = `You help organize items in a personal stash app called "1Burrow".
@@ -58,7 +58,7 @@ ${itemLines.join('\n')}
 
 ${categorySection}
 
-${styleHint}If suggesting a new title, keep it 2-3 words, concise, in the user's voice.`;
+${styleHint}ONLY IF EXISTING CATEGORIES ARE COMPLETELY UNRELATED - suggest a new title, keep it 2-3 words, concise, in the user's voice.`;
 
   // Build content parts — files go as inlineData so the model can read them
   const parts = [];
