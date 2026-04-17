@@ -41,7 +41,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   const hasNote    = !!quote.trim();
   const contentOrNoteChanged = content !== unit.content || quote !== (unit.quote || '');
   const canAutoSuggest =
-    !saving && !isLocked && (hasContent || hasNote) && suggest.suggestState !== 'loading' && contentOrNoteChanged;
+    !saving && !isLocked && (hasContent || hasNote) && suggest.suggestState !== 'loading' && (contentOrNoteChanged || !categoryId);
 
   // Record access — fire and forget, no await
   useEffect(() => { if (unit.uid) touchUnit(unit.uid); }, [unit.uid]);
