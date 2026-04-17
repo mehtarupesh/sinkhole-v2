@@ -22,6 +22,7 @@ export default function ContentField({
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxKey, setLightboxKey] = useState(0);
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(!content);
 
@@ -176,7 +177,7 @@ export default function ContentField({
               <button
                 type="button"
                 className="add-unit__preview-btn"
-                onClick={() => setShowLightbox(true)}
+                onClick={() => { setShowLightbox(true); setLightboxKey((k) => k + 1); }}
                 aria-label="View full image"
               >
                 <img src={content} alt={fileName} className="add-unit__preview" />
@@ -221,7 +222,7 @@ export default function ContentField({
             onChange={handleFileInputChange}
           />
           {showLightbox && content && mimeType?.startsWith('image/') && (
-            <ImageLightbox src={content} alt={fileName} onClose={() => setShowLightbox(false)} />
+            <ImageLightbox src={content} alt={fileName} onClose={() => setShowLightbox(false)} replayKey={lightboxKey} />
           )}
         </div>
       )}
