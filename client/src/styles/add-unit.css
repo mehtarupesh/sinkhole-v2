@@ -729,8 +729,18 @@
 
 .add-unit__preview {
   max-width: 100%;
+  max-height: 200px;
   border-radius: var(--radius-md);
   object-fit: contain;
+  display: block;
+}
+
+.add-unit__preview-hint {
+  margin: 4px 0 0;
+  font-size: var(--text-2xs);
+  color: var(--color-faint);
+  text-align: center;
+  letter-spacing: 0.03em;
 }
 
 .add-unit__upload-primary {
@@ -765,7 +775,7 @@
 }
 
 .add-unit__upload-secondary {
-  align-self: flex-end;
+  align-self: flex-center;
   background: none;
   border: none;
   color: var(--color-faint);

@@ -172,14 +172,17 @@ export default function ContentField({
             </div>
           )}
           {content && mimeType?.startsWith('image/') && (
-            <button
-              type="button"
-              className="add-unit__preview-btn"
-              onClick={() => setShowLightbox(true)}
-              aria-label="View full image"
-            >
-              <img src={content} alt={fileName} className="add-unit__preview" />
-            </button>
+            <>
+              <button
+                type="button"
+                className="add-unit__preview-btn"
+                onClick={() => setShowLightbox(true)}
+                aria-label="View full image"
+              >
+                <img src={content} alt={fileName} className="add-unit__preview" />
+              </button>
+              <p className="add-unit__preview-hint">Tap to view full image</p>
+            </>
           )}
           {content && !mimeType?.startsWith('image/') && (
             <p className="add-unit__file-name">{fileName}</p>
