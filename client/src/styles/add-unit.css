@@ -590,12 +590,21 @@
 
 /* ── Snippet view-mode (markdown rendered) ── */
 
+.snippet__tap-to-edit {
+  cursor: text;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.snippet__tap-to-edit:hover {
+  background: rgba(255,255,255,0.04);
+}
+
 .snippet__markdown {
   font-size: 15px;
   line-height: 1.6;
   color: var(--color-text);
-  padding: 14px 52px 14px 16px; /* right pad leaves room for buttons */
-  min-height: 76px; /* tall enough to always show both copy + edit buttons */
+  padding: 14px 52px 14px 16px; /* right pad leaves room for copy button */
+  min-height: 48px;
 }
 
 .snippet__markdown p  { margin: 0 0 6px; }

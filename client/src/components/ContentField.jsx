@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ImageTypeIcon, CameraIcon, CopyIcon, CheckIcon, RenameIcon } from './Icons';
+import { ImageTypeIcon, CameraIcon, CopyIcon, CheckIcon } from './Icons';
 import ImageLightbox from './ImageLightbox';
 import SimpleMarkdown from './SimpleMarkdown';
 
@@ -69,7 +69,16 @@ export default function ContentField({
         <div className="add-unit__content-wrap">
           {!isEditing && content ? (
             <>
-              <SimpleMarkdown text={content} className="snippet__markdown" />
+              <div
+                className="snippet__tap-to-edit"
+                onClick={() => !disabled && setIsEditing(true)}
+                role="button"
+                tabIndex={disabled ? -1 : 0}
+                aria-label="Tap to edit"
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsEditing(true); }}
+              >
+                <SimpleMarkdown text={content} className="snippet__markdown" />
+              </div>
               <div className="snippet__view-btns">
                 <button
                   type="button"
@@ -78,14 +87,6 @@ export default function ContentField({
                   aria-label="Copy to clipboard"
                 >
                   {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
-                </button>
-                <button
-                  type="button"
-                  className="add-unit__copy-btn"
-                  onClick={() => setIsEditing(true)}
-                  aria-label="Edit"
-                >
-                  <RenameIcon size={14} />
                 </button>
               </div>
             </>
