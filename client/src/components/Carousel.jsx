@@ -1,9 +1,29 @@
+import { useState, useEffect } from 'react';
 import { useLongPress } from '../hooks/useLongPress';
 import { CheckIcon, LockTypeIcon } from './Icons';
 import Linkify from './Linkify';
 import LinkPreview from './LinkPreview';
 import { MISC_ID } from '../utils/carouselGroups';
 import { isEncryptedContent } from '../utils/crypto';
+
+function GifFirstFrame({ src, alt, className }) {
+  const [staticSrc, setStaticSrc] = useState(null);
+
+  useEffect(() => {
+    if (!src) return;
+    const canvas = document.createElement('canvas');
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      try { setStaticSrc(canvas.toDataURL('image/png')); } catch { /* tainted canvas — fall back to gif */ }
+    };
+    img.src = src;
+  }, [src]);
+
+  return <img src={staticSrc ?? src} alt={alt} className={className} />;
+}
 
 function BadgeIcon() {
   const s = { width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -76,7 +96,10 @@ export function CarouselCard({ unit, onClick, selected = false, onLongPress, cat
       {/* Regular content — hidden when note is the only thing or locked */}
       {!noteOnly && !isLocked && isImage && (
         <div className="bleed-card__media">
-          <img src={unit.content} alt={unit.fileName} className="bleed-card__img" />
+          {unit.mimeType === 'image/gif'
+            ? <GifFirstFrame src={unit.content} alt={unit.fileName} className="bleed-card__img" />
+            : <img src={unit.content} alt={unit.fileName} className="bleed-card__img" />
+          }
         </div>
       )}
 
