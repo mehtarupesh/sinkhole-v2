@@ -8,6 +8,13 @@
 import { useLongPress } from '../hooks/useLongPress';
 import { MISC_ID, TRASH_ID, sortGroupsByRecency } from '../utils/carouselGroups';
 
+// Deterministic pseudo-random in 0..1 from a string — stable across re-renders
+function seededRandom(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+  return Math.abs(Math.sin(h));
+}
+
 // Extracted so useLongPress can be called at the top level of each pill component
 function CategoryPill({ g, fontSize, opacity, selected, onClick, onLongPress }) {
   const pressHandlers = useLongPress({ onClick, onLongPress });
@@ -58,17 +65,41 @@ export default function CategoryCloud({ storedGroups, onCategoryClick, selected,
   const MIN_SIZE = isMobile ? 11 : 12;
   const MAX_SIZE = isMobile ? 16 : 22;
 
+  // Unranked (never-accessed) categories get a random size rather than a flat
+  // minimum. Cap their maximum at the size of the oldest accessed category so
+  // they never visually outrank real access data. Fall back to MAX_SIZE when
+  // nothing has been accessed yet (fresh install / all categories are new).
+  let unrankedCap = MAX_SIZE;
+  if (rankMap.size > 0) {
+    const oldestRank = Math.max(...rankMap.values());
+    const oldestT = 1 - oldestRank / maxRank;
+    unrankedCap = MIN_SIZE + oldestT * (MAX_SIZE - MIN_SIZE);
+  }
+
   return (
     <div className="category-cloud-section">
       <div className="category-cloud-section__line category-cloud-section__line--left" />
       <div className="category-cloud">
-        {sorted.map((g) => {
-          const pinned = PINNED_IDS.has(g.id);
-          const rank = rankMap.get(g.id) ?? Infinity;
-          const t = pinned ? 0 : rank === Infinity ? 0 : 1 - rank / maxRank;
-          const fontSize = MIN_SIZE + t * (MAX_SIZE - MIN_SIZE);
-          const opacity = pinned ? 0.45 : 0.45 + t * 0.55;
-          return (
+        {sorted
+          .map((g) => {
+            const pinned = PINNED_IDS.has(g.id);
+            const rank = rankMap.get(g.id) ?? Infinity;
+            const isUnranked = !pinned && rank === Infinity;
+
+            let fontSize, opacity;
+            if (isUnranked) {
+              const r = seededRandom(g.id);
+              fontSize = MIN_SIZE + r * (unrankedCap - MIN_SIZE);
+              opacity = 0.45 + r * 0.35;
+            } else {
+              const t = pinned ? 0 : 1 - rank / maxRank;
+              fontSize = MIN_SIZE + t * (MAX_SIZE - MIN_SIZE);
+              opacity = pinned ? 0.45 : 0.45 + t * 0.55;
+            }
+            return { g, fontSize, opacity };
+          })
+          .sort((a, b) => b.fontSize - a.fontSize)
+          .map(({ g, fontSize, opacity }) => (
             <CategoryPill
               key={g.id}
               g={g}
@@ -78,8 +109,7 @@ export default function CategoryCloud({ storedGroups, onCategoryClick, selected,
               onClick={() => onCategoryClick?.(g.id)}
               onLongPress={onCategoryLongPress ? () => onCategoryLongPress(g.id) : undefined}
             />
-          );
-        })}
+          ))}
       </div>
       <div className="category-cloud-section__line category-cloud-section__line--right" />
     </div>
