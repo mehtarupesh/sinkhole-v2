@@ -274,6 +274,7 @@ export default function AddUnitModal({
               setContent(c); setFileName(fn); setMimeType(mt); setError('');
             }}
             disabled={saving}
+            caption={quote}
           />
         </div>
 

@@ -234,6 +234,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
               setContent(c); setFileName(fn); setMimeType(mt); setError('');
             }}
             disabled={saving}
+            caption={quote}
           />
         )}
       </div>

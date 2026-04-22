@@ -117,12 +117,37 @@
   background: rgba(255, 255, 255, 0.15);
 }
 
-.lightbox__img {
+.lightbox__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   max-width: 100%;
   max-height: 100%;
+  gap: 12px;
+}
+
+.lightbox__img {
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
   object-fit: contain;
   border-radius: var(--radius-sm);
   cursor: default;
+}
+
+.lightbox__caption {
+  width: 100%;
+  max-width: 600px;
+  background: rgba(245, 166, 35, 0.025);
+  border: none;
+  border-left: 2px solid rgba(245, 166, 35, 0.22);
+  border-radius: 0 8px 8px 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  font-family: inherit;
+  font-style: italic;
+  line-height: 1.55;
+  padding: 8px 10px 8px 12px;
+  margin: 0;
 }
 
 /* ── Shared: icon button ── */

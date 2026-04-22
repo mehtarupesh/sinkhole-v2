@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CloseIcon } from './Icons';
 
-export default function ImageLightbox({ src, alt, onClose, replayKey }) {
+export default function ImageLightbox({ src, alt, caption, onClose, replayKey }) {
   const [imgSrc, setImgSrc] = useState(null);
 
   useEffect(() => {
@@ -36,12 +36,12 @@ export default function ImageLightbox({ src, alt, onClose, replayKey }) {
       <button type="button" className="lightbox__close" onClick={onClose} aria-label="Close">
         <CloseIcon />
       </button>
-      <img
-        src={imgSrc}
-        alt={alt}
-        className="lightbox__img"
-        onClick={(e) => e.stopPropagation()}
-      />
+      <div className="lightbox__content" onClick={(e) => e.stopPropagation()}>
+        <img src={imgSrc} alt={alt} className="lightbox__img" />
+        {caption && (
+          <p className="lightbox__caption">{caption}</p>
+        )}
+      </div>
     </div>
   );
 }

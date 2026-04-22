@@ -16,7 +16,7 @@ import SimpleMarkdown from './SimpleMarkdown';
  *   disabled       bool
  */
 export default function ContentField({
-  type, content, fileName, mimeType,
+  type, content, fileName, mimeType, caption,
   onTextChange, onFileSelected,
   disabled,
 }) {
@@ -222,7 +222,7 @@ export default function ContentField({
             onChange={handleFileInputChange}
           />
           {showLightbox && content && mimeType?.startsWith('image/') && (
-            <ImageLightbox src={content} alt={fileName} onClose={() => setShowLightbox(false)} replayKey={lightboxKey} />
+            <ImageLightbox src={content} alt={fileName} caption={caption} onClose={() => setShowLightbox(false)} replayKey={lightboxKey} />
           )}
         </div>
       )}
