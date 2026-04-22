@@ -126,18 +126,23 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
     const dx = e.changedTouches[0].clientX - gridSwipeStart.current.x;
     const dy = Math.abs(e.changedTouches[0].clientY - gridSwipeStart.current.y);
     gridSwipeStart.current = null;
-    if (dx > 80 && dx > dy * 1.5) onClose();
+    if (dx > 80 && dx > dy * 1.5) { navigator.vibrate?.(10); onClose(); }
   };
 
-  // ── Swipe up on grid mode-bar to enter chat ──────────────────────────────────
+  // ── Swipe right on chat pane to go back to grid ─────────────────────────────
 
-  const handleModeBarTouchStart = (e) => { swipeStartY.current = e.touches[0].clientY; };
+  const chatSwipeStart = useRef(null);
 
-  const handleModeBarTouchEnd = (e) => {
-    if (swipeStartY.current === null) return;
-    const dy = e.changedTouches[0].clientY - swipeStartY.current;
-    swipeStartY.current = null;
-    if (dy < -50) setView('chat');
+  const handleChatTouchStart = (e) => {
+    chatSwipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleChatTouchEnd = (e) => {
+    if (!chatSwipeStart.current) return;
+    const dx = e.changedTouches[0].clientX - chatSwipeStart.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - chatSwipeStart.current.y);
+    chatSwipeStart.current = null;
+    if (dx > 80 && dx > dy * 1.5) { navigator.vibrate?.(10); setView('grid'); setChatUnits(null); }
   };
 
   // ── Bulk actions ─────────────────────────────────────────────────────────────
@@ -255,8 +260,6 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
             {/* Mode bar — tap or swipe up to enter chat */}
             <div
               className="category-view__mode-bar"
-              onTouchStart={handleModeBarTouchStart}
-              onTouchEnd={handleModeBarTouchEnd}
             >
               {newItemsSinceChat > 0 && (
                 <p className="category-view__new-hint">
@@ -274,7 +277,11 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
           </div>
 
           {/* Chat pane */}
-          <div className={`category-view__pane category-view__pane--chat${isChat ? ' is-chat' : ''}`}>
+          <div
+            className={`category-view__pane category-view__pane--chat${isChat ? ' is-chat' : ''}`}
+            onTouchStart={handleChatTouchStart}
+            onTouchEnd={handleChatTouchEnd}
+          >
             <div className="category-view__chat-back">
               <button
                 type="button"

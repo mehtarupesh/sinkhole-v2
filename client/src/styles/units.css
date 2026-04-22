@@ -1,7 +1,16 @@
 /* ── Units detail overlay (landing page carousel click) ── */
 .units-overlay {
-  align-items: center;
+  align-items: flex-start;
+  padding-top: 24px;
   background: rgba(0, 0, 0, 0.85);
+}
+
+/* On desktop/mouse: center the panel vertically like a regular modal */
+@media (hover: hover) and (pointer: fine) {
+  .units-overlay {
+    align-items: center;
+    padding-top: 24px;
+  }
 }
 
 .units-panel {
@@ -16,8 +25,8 @@
   gap: 12px;
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: 85vh;
-  max-height: 85dvh;
+  max-height: calc(100vh - 120px);
+  max-height: calc(100dvh - 120px);
 }
 
 /* ── Full-width content (image / snippet body breaks out of panel padding) ── */
@@ -346,19 +355,28 @@
   max-width: 520px;
 }
 
+/* Fixed at the bottom of the viewport so it never shifts with card height */
 .unit-detail-nav {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 101;
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: var(--color-surface-hi);
-  border: 1px solid var(--color-border);
+  gap: 8px;
+  background: rgba(22, 22, 24, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  padding: 4px 6px;
+  padding: 8px 12px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
 }
 
 .unit-detail-nav .btn-icon {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: none;
   background: none;
@@ -366,19 +384,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.8);
   transition: background var(--transition-speed), color var(--transition-speed);
 }
 
+.unit-detail-nav .btn-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
 .unit-detail-nav .btn-icon:hover:not(:disabled) {
-  background: var(--color-border);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
 }
 
 .unit-detail-nav__count {
-  font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.5);
-  min-width: 44px;
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  min-width: 52px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }

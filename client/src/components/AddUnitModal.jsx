@@ -91,7 +91,7 @@ export default function AddUnitModal({
     const dx =  e.changedTouches[0].clientX - swipeStart.current.x;
     const dy = Math.abs(e.changedTouches[0].clientY - swipeStart.current.y);
     swipeStart.current = null;
-    if (dx > 80 && dx > dy * 1.5) onClose();
+    if (dx > 80 && dx > dy * 1.5) { navigator.vibrate?.(10); onClose(); }
   };
 
   // ── Type switch ───────────────────────────────────────────────────────────

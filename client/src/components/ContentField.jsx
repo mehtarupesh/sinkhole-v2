@@ -174,6 +174,7 @@ export default function ContentField({
           )}
           {content && mimeType?.startsWith('image/') && (
             <>
+              <p className="add-unit__preview-hint">Tap to view full image</p>
               <button
                 type="button"
                 className="add-unit__preview-btn"
@@ -182,7 +183,6 @@ export default function ContentField({
               >
                 <img src={content} alt={fileName} className="add-unit__preview" />
               </button>
-              <p className="add-unit__preview-hint">Tap to view full image</p>
             </>
           )}
           {content && !mimeType?.startsWith('image/') && (
@@ -195,7 +195,7 @@ export default function ContentField({
                 className="add-unit__change-file"
                 onClick={() => fileRef.current?.click()}
               >
-                Choose Different File
+                Choose File
               </button>
               <button
                 type="button"
