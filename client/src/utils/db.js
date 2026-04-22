@@ -196,6 +196,25 @@ export async function deleteSynthesisCacheEntry(categoryId) {
   await setSetting('synthesis_cache', cache);
 }
 
+// ── Chat cache ────────────────────────────────────────────────────────────────
+// { [categoryId]: { messages: [{ id, role, text, savedAsUnit }], unitCount, updatedAt } }
+
+export async function getChatCache() {
+  return (await getSetting('chat_cache')) ?? {};
+}
+
+export async function setChatCacheEntry(categoryId, { messages, unitCount, updatedAt }) {
+  const cache = await getChatCache();
+  cache[categoryId] = { messages, unitCount, updatedAt };
+  await setSetting('chat_cache', cache);
+}
+
+export async function deleteChatCacheEntry(categoryId) {
+  const cache = await getChatCache();
+  delete cache[categoryId];
+  await setSetting('chat_cache', cache);
+}
+
 /**
  * Merges categorization metadata [{ id, title }] from a peer or import file.
  * - Same title → remap peer's id to local id (title is cross-device identity).

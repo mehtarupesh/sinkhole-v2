@@ -4,18 +4,10 @@
 .category-view__header {
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: 10px;
-  padding: 12px 16px 12px 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--color-surface);
-  flex-shrink: 0;
-}
-
-.category-view__header > .btn-icon {
-  margin-top: 2px;
-}
-
-
-.category-view__back {
   flex-shrink: 0;
 }
 
@@ -48,8 +40,7 @@
   flex-shrink: 0;
 }
 
-
-/* Stats subtitle (inside header) */
+/* Stats subtitle */
 .category-view__stats {
   display: flex;
   flex-wrap: wrap;
@@ -68,128 +59,89 @@
   color: var(--color-faint);
 }
 
-/* Synthesis section — overlaps the scroll area so cards slide behind it */
-.category-view__synthesis {
+/* Done button */
+.category-view__done-btn {
   flex-shrink: 0;
-  padding: 12px 20px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: #0f0f0f;
-  position: relative;
-  z-index: 2;
-  margin-bottom: -20px;
-  padding-bottom: 20px;
-}
-
-.category-view__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-/* Custom question row */
-.category-view__custom-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* NoteTray scoped inside custom question row */
-.category-view__custom-row .note-tray {
-  flex: 1;
-  padding: 0;
-  border-top: none;
-}
-
-.category-view__custom-row .note-tray--text-hero {
-  border-top: none;
-  animation: none;
-}
-
-.category-view__custom-row .note-tray--mic-hero {
-  border-top: none;
-}
-
-.category-view__run-btn {
-  flex-shrink: 0;
-  width: 62px;
-  height: 62px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(245, 166, 35, 0.08);
-  border: 1px solid rgba(245, 166, 35, 0.30);
-  border-radius: 50%;
-  color: #f5a623;
-  font-size: 22px;
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  font-weight: 500;
   cursor: pointer;
-  transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed), box-shadow var(--transition-speed);
+  padding: 4px 0;
+  margin-top: 2px;
+  transition: color var(--transition-speed);
 }
 
-.category-view__run-btn:hover:not(:disabled) {
-  background: rgba(245, 166, 35, 0.14);
-  border-color: rgba(245, 166, 35, 0.50);
-  box-shadow: 0 0 14px rgba(245, 166, 35, 0.18);
+.category-view__done-btn:hover {
+  color: var(--color-text);
 }
 
-.category-view__run-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
+/* ── Animated stage ── */
 
-/* Synthesis response */
-.category-view__response {
+.category-view__stage {
+  flex: 1;
   position: relative;
-  padding: 10px 36px 10px 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--color-surface-hi);
-  border-radius: var(--radius-md);
-  animation: forage-response-in 0.2s ease;
-  max-height: 28vh;
-  overflow-y: auto;
-  scrollbar-width: none;
+  overflow: hidden;
 }
 
-.category-view__response::-webkit-scrollbar {
-  display: none;
-}
-
-.category-view__response-actions {
+.category-view__pane {
   position: absolute;
-  top: 6px;
-  right: 8px;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
 }
 
-.category-view__response-clear {
-  /* sits inside .category-view__response-actions — no longer absolute */
+/* Grid pane: visible by default, slides up when chat is active */
+.category-view__pane--grid {
+  transform: translateY(0);
 }
 
-/* Staleness hint — sits below the NoteTray row, right-aligned under the ✦ button */
-.category-view__stale-hint {
+.category-view__pane--grid.is-chat {
+  transform: translateY(-100%);
+}
+
+/* Chat pane: below by default, slides up into view */
+.category-view__pane--chat {
+  transform: translateY(100%);
+}
+
+.category-view__pane--chat.is-chat {
+  transform: translateY(0);
+}
+
+/* Grid pane: make the grid scrollable, push mode bar to bottom */
+.category-view__pane--grid .search-grid-wrap {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* ── Mode bar (bottom of grid pane) ── */
+
+.category-view__mode-bar {
+  flex-shrink: 0;
+  padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: #0f0f0f;
+  border-top: 1px solid var(--color-surface);
+}
+
+.category-view__new-hint {
   margin: 0;
-  font-size: var(--text-xs);
+  font-size: var(--text-2xs);
   color: #d97706;
-  text-align: right;
-  padding-right: 2px;
+  text-align: center;
 }
 
-/* Chat bar — sits below the scrollable response, always visible */
-.category-view__chat-bar {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-}
-
-/* Full-width Chat button */
+/* Chat button — matches existing style */
 .category-view__chat-btn {
   width: 100%;
-  padding: 8px 0;
+  padding: 9px 0;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--color-surface-hi);
   border-radius: var(--radius-md);
@@ -208,45 +160,41 @@
   color: var(--color-text);
 }
 
-/* Share content toggle — subtle text link style */
-.category-view__share-toggle {
-  align-self: flex-start;
+/* ── Chat pane back handle ── */
+
+.category-view__chat-back {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 8px;
+  border-bottom: 1px solid var(--color-border);
+  background: #0f0f0f;
+}
+
+.category-view__chat-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   background: none;
   border: none;
-  color: var(--color-faint);
-  font-size: var(--text-2xs);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
   font-family: inherit;
   cursor: pointer;
-  padding: 2px 0;
-  text-align: left;
+  padding: 0;
   transition: color var(--transition-speed);
 }
 
-.category-view__share-toggle:hover:not(:disabled) {
-  color: var(--color-muted);
-}
-
-.category-view__share-toggle:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.category-view__share-toggle--on {
-  color: var(--color-muted);
-}
-
-/* Synthesis edit textarea */
-.category-view__synthesis-textarea {
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  resize: none;
-  overflow: hidden;
-  font-size: var(--text-sm);
-  font-family: inherit;
+.category-view__chat-back-btn:hover {
   color: var(--color-text);
-  line-height: 1.6;
-  padding: 0;
-  display: block;
+}
+
+.category-view__chat-back-btn svg {
+  flex-shrink: 0;
+}
+
+.category-view__chat-ctx {
+  font-size: var(--text-xs);
+  color: var(--color-faint);
 }

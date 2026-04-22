@@ -1,53 +1,42 @@
 /**
  * CategoryView — full-screen view for a single category.
  *
- * Shows a synthesis header (1-shot AI answer, auto-runs on open) with
- * swappable quick-prompts and a custom question input, followed by the
- * category's units in a time-grouped grid.
+ * Two binary views: 'grid' (browsable cards) and 'chat' (inline AI chat).
+ * Animated spring slide between them. Chat persists via chat_cache.
  *
  * Props:
  *   category     { id, title, uids }
- *   allUnits     Unit[]               all units in the app
- *   storedGroups { id, title }[]      for UnitDetail's category picker
+ *   allUnits     Unit[]
+ *   storedGroups { id, title }[]
+ *   accessOrder  []
  *   onClose      fn
- *   onUnitSaved  fn(updated, newCategory?)   reload trigger for Landing
+ *   onUnitSaved  fn(updated?, newCategory?)
  */
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon, CopyIcon, CheckIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon, AiChatIcon } from './Icons';
 import { CarouselCard } from './Carousel';
 import { groupByTime } from '../utils/timeGroups';
-import { synthesizeFromUnits } from '../utils/forage';
-import { getSetting, updateUnit, setCategorization, getSynthesisCache, setSynthesisCacheEntry, deleteSynthesisCacheEntry } from '../utils/db';
+import { updateUnit, getChatCache, setCategorization } from '../utils/db';
 import { TRASH_ID, addCategoryIfNew } from '../utils/carouselGroups';
-import SimpleMarkdown from './SimpleMarkdown';
-import NoteTray from './NoteTray';
+import CategoryChat from './CategoryChat';
 import UnitDetail from './UnitDetail';
-import ExploreModal from './ExploreModal';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import MoveToCategoryModal from './MoveToCategoryModal';
 import SelectionBar from './SelectionBar';
 import { useSelection } from '../hooks/useSelection';
 import './CategoryView.css';
 
-const DEFAULT_SYNTHESIS_PROMPT =
-  'Summarize Action Items and Key Points';
-
-// ── Client-side stats (no AI, instant) ──────────────────────────────────────
+// ── Stats ─────────────────────────────────────────────────────────────────────
 
 function computeStats(units) {
   if (!units.length) return null;
   const now = Date.now();
-
-  // Last added
-  const latest = Math.max(...units.map((u) => u.createdAt ?? 0));
+  const latest  = Math.max(...units.map((u) => u.createdAt ?? 0));
   const diffDays = Math.floor((now - latest) / 86_400_000);
   const lastAdded = diffDays === 0 ? 'today' : diffDays === 1 ? 'yesterday' : `${diffDays}d ago`;
-
-  // Items added this month (calendar month)
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
   const thisMonth = units.filter((u) => (u.createdAt ?? 0) >= monthStart).length;
   const monthStat = thisMonth > 0 ? `${thisMonth} item${thisMonth !== 1 ? 's' : ''} this month` : null;
-
   return { lastAdded, monthStat };
 }
 
@@ -57,156 +46,41 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
     [allUnits, category.uids]
   );
 
-  // Synthesis state
-  const [customQ, setCustomQ]               = useState('');
-  const [synthesis, setSynthesis]           = useState('');
-  const [synthesisLoading, setSynthesisLoading] = useState(false);
-  const [shareContent, setShareContent]     = useState(false);
-  const [synthesisError, setSynthesisError] = useState('');
-  const [cacheUnitCount, setCacheUnitCount] = useState(null);
-  const [confirmClearSynthesis, setConfirmClearSynthesis] = useState(false);
-  const [isEditingSynthesis, setIsEditingSynthesis] = useState(false);
-  const [synthesisCopied, setSynthesisCopied] = useState(false);
-  const synthesisCopyTimerRef = useRef(null);
-  const synthesisTextareaRef = useRef(null);
+  // View state
+  const [view, setView]           = useState('grid'); // 'grid' | 'chat'
+  const [chatUnits, setChatUnits] = useState(null);   // null = all units, Unit[] = subset
+
+  // New-items-since-last-chat hint
+  const [chatCacheUnitCount, setChatCacheUnitCount] = useState(null);
 
   // Unit detail state
-  const [selectedCtx, setSelectedCtx]       = useState(null); // { units, index }
+  const [selectedCtx, setSelectedCtx] = useState(null); // { units, index }
 
-  // Explore modal
-  const [showExplore, setShowExplore]       = useState(false);
-
-  // Selection / action bar (data management)
+  // Selection / action bar
   const { selected, isSelecting, toggle, enterWith, selectAll, clear } = useSelection();
-  const [pendingDelete, setPendingDelete]   = useState(null); // { title, units, onConfirm }
-  const [moveCtx, setMoveCtx]               = useState(null); // { units: Unit[] } | null
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [moveCtx, setMoveCtx]             = useState(null);
 
-  // AI selection mode (long-press Chat / Synthesize → pick items → Continue)
-  const { selected: aiSelected, isSelecting: isAiSelecting, toggle: aiToggle, selectAll: aiSelectAll, clear: aiClear } = useSelection();
-  const [aiMode, setAiMode]                 = useState(null); // 'chat' | 'synthesize'
-  const [aiExploreUnits, setAiExploreUnits] = useState(null); // filtered units passed to ExploreModal
+  const swipeStartY   = useRef(null);
+  const gridSwipeStart = useRef(null);
 
-  // Long-press refs for Chat / Synthesize buttons
-  const aiLongPressRef      = useRef(null);
-  const aiLongPressFiredRef = useRef(false);
-
-  const swipeStart = useRef(null);
-
-  // ── Load cache on open, auto-run if no cache and enough items ────────────────
+  // ── Load chat cache unitCount on mount ───────────────────────────────────────
 
   useEffect(() => {
     let cancelled = false;
-    async function loadCache() {
-      const cache = await getSynthesisCache();
+    async function load() {
+      const cache = await getChatCache();
       const entry = cache[category.id];
-      if (cancelled) return;
-      if (entry) {
-        setSynthesis(entry.answer);
-        setCustomQ(entry.question);
-        setCacheUnitCount(entry.unitCount);
-      } else {
-        setCustomQ(DEFAULT_SYNTHESIS_PROMPT);
-      }
+      if (!cancelled && entry) setChatCacheUnitCount(entry.unitCount ?? null);
     }
-    loadCache();
+    load();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category.id]);
 
-  const hasShareableContent = useMemo(
-    () => units.some((u) => u.content && !u.encrypted),
-    [units]
-  );
+  const newItemsSinceChat = chatCacheUnitCount !== null ? units.length - chatCacheUnitCount : 0;
 
-  const currentQuestion = customQ.trim() || DEFAULT_SYNTHESIS_PROMPT;
+  // ── Visually ordered units (for prev/next nav) ───────────────────────────────
 
-  const stats = useMemo(() => computeStats(units), [units]);
-  const newItemsSinceSynthesis = cacheUnitCount !== null ? units.length - cacheUnitCount : 0;
-
-  // ── AI selection long-press ──────────────────────────────────────────────────
-
-  const startAiLongPress = useCallback((mode) => {
-    if (synthesisLoading) return;
-    aiLongPressFiredRef.current = false;
-    aiLongPressRef.current = setTimeout(() => {
-      aiLongPressFiredRef.current = true;
-      clear();                                  // exit data-management selection
-      setAiMode(mode);
-      aiSelectAll(units.map((u) => u.id));      // pre-select everything
-    }, 400);
-  }, [synthesisLoading, clear, aiSelectAll, units]);
-
-  const cancelAiLongPress = useCallback(() => clearTimeout(aiLongPressRef.current), []);
-
-  // ── Synthesis ────────────────────────────────────────────────────────────────
-
-  // targetUnits defaults to all units; subset synthesis skips cache update
-  const runSynthesis = useCallback(async (question, sc = shareContent, targetUnits = units) => {
-    if (!targetUnits.length) return;
-    setSynthesisLoading(true);
-    setSynthesis('');
-    setSynthesisError('');
-    try {
-      const apiKey = await getSetting('gemini_key');
-      const stream = await synthesizeFromUnits({ units: targetUnits, question, shareContent: sc, apiKey });
-      let text = '';
-      for await (const chunk of stream) {
-        text += chunk.text ?? '';
-        setSynthesis(text);
-      }
-      const isSubset = targetUnits.length < units.length;
-      if (!isSubset) {
-        const unitCount = targetUnits.length;
-        await setSynthesisCacheEntry(category.id, { question, answer: text, computedAt: Date.now(), unitCount });
-        setCacheUnitCount(unitCount);
-      }
-    } catch (e) {
-      setSynthesisError(e.message ?? 'Synthesis failed.');
-    } finally {
-      setSynthesisLoading(false);
-    }
-  }, [units, shareContent, category.id]);
-
-
-  const handleCustomRun = useCallback(() => {
-    if (!customQ.trim()) return;
-    runSynthesis(customQ.trim());
-  }, [customQ, runSynthesis]);
-
-  const handleClearSynthesis = useCallback(async () => {
-    if (!confirmClearSynthesis) { setConfirmClearSynthesis(true); return; }
-    await deleteSynthesisCacheEntry(category.id);
-    setSynthesis('');
-    // setCustomQ('');
-    setCacheUnitCount(null);
-    setSynthesisError('');
-    setConfirmClearSynthesis(false);
-  }, [confirmClearSynthesis, category.id]);
-
-  const handleSynthesisCopy = useCallback(async () => {
-    if (!synthesis) return;
-    try {
-      await navigator.clipboard.writeText(synthesis);
-      clearTimeout(synthesisCopyTimerRef.current);
-      setSynthesisCopied(true);
-      synthesisCopyTimerRef.current = setTimeout(() => setSynthesisCopied(false), 1500);
-    } catch { /* clipboard unavailable */ }
-  }, [synthesis]);
-
-  const handleSynthesisSave = useCallback(async (text) => {
-    setSynthesis(text);
-    setIsEditingSynthesis(false);
-    await setSynthesisCacheEntry(category.id, {
-      question: customQ.trim() || DEFAULT_SYNTHESIS_PROMPT,
-      answer: text,
-      computedAt: Date.now(),
-      unitCount: units.length,
-    });
-  }, [category.id, customQ, units.length]);
-
-  // ── Unit navigation ──────────────────────────────────────────────────────────
-
-  // Flat list in visual (time-grouped) order — used for prev/next navigation
   const visuallyOrdered = useMemo(
     () => groupByTime(units).flatMap(({ units: g }) => g),
     [units]
@@ -219,16 +93,15 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
   // ── Keyboard ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (showExplore) return;
     const handler = (e) => {
       if (e.key !== 'Escape') return;
-      if (isSelecting)   { clear(); return; }
-      if (selectedCtx)   { setSelectedCtx(null); return; }
+      if (isSelecting)  { clear(); return; }
+      if (selectedCtx)  { setSelectedCtx(null); return; }
       onClose();
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [onClose, selectedCtx, showExplore, isSelecting, clear]);
+  }, [onClose, selectedCtx, isSelecting, clear]);
 
   useEffect(() => {
     if (!selectedCtx) return;
@@ -242,18 +115,29 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
     return () => document.removeEventListener('keydown', handler);
   }, [selectedCtx]);
 
-  // ── Touch swipe to close ─────────────────────────────────────────────────────
+  // ── Swipe right on grid pane to close ───────────────────────────────────────
 
-  const handleTouchStart = (e) => {
-    swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  const handleGridTouchStart = (e) => {
+    gridSwipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
 
-  const handleTouchEnd = (e) => {
-    if (!swipeStart.current) return;
-    const dx = e.changedTouches[0].clientX - swipeStart.current.x;
-    const dy = Math.abs(e.changedTouches[0].clientY - swipeStart.current.y);
-    swipeStart.current = null;
+  const handleGridTouchEnd = (e) => {
+    if (!gridSwipeStart.current) return;
+    const dx = e.changedTouches[0].clientX - gridSwipeStart.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - gridSwipeStart.current.y);
+    gridSwipeStart.current = null;
     if (dx > 80 && dx > dy * 1.5) onClose();
+  };
+
+  // ── Swipe up on grid mode-bar to enter chat ──────────────────────────────────
+
+  const handleModeBarTouchStart = (e) => { swipeStartY.current = e.touches[0].clientY; };
+
+  const handleModeBarTouchEnd = (e) => {
+    if (swipeStartY.current === null) return;
+    const dy = e.changedTouches[0].clientY - swipeStartY.current;
+    swipeStartY.current = null;
+    if (dy < -50) setView('chat');
   };
 
   // ── Bulk actions ─────────────────────────────────────────────────────────────
@@ -269,9 +153,7 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
           title: `Delete ${n} item${n !== 1 ? 's' : ''}?`,
           units: toDelete,
           onConfirm: async () => {
-            for (const u of toDelete) {
-              await updateUnit(u.id, { categoryId: TRASH_ID });
-            }
+            for (const u of toDelete) await updateUnit(u.id, { categoryId: TRASH_ID });
             onUnitSaved?.();
             clear();
             setPendingDelete(null);
@@ -284,24 +166,31 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
       label: 'Move to Category',
       onClick: () => setMoveCtx({ units: units.filter((u) => selected.has(u.id)) }),
     },
+    {
+      icon: <AiChatIcon size={18} />,
+      label: 'Chat',
+      onClick: () => {
+        const sel = units.filter((u) => selected.has(u.id));
+        if (!sel.length) return;
+        setChatUnits(sel);
+        setView('chat');
+        clear();
+      },
+    },
   ];
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
+  const stats     = useMemo(() => computeStats(units), [units]);
   const timeGroups = useMemo(() => groupByTime(units), [units]);
+  const isChat    = view === 'chat';
 
   return (
     <>
-      <div
-        className="search-overlay category-view"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
+      <div className="search-overlay category-view">
+
         {/* Header */}
         <div className="category-view__header">
-          <button className="btn-icon category-view__back" onClick={onClose} aria-label="Back">
-            <ChevronLeftIcon />
-          </button>
           <div className="category-view__title-wrap">
             <div className="category-view__title-row">
               <span className="category-view__title">{category.title}</span>
@@ -316,185 +205,103 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
               </div>
             )}
           </div>
+          <button
+            type="button"
+            className="category-view__done-btn"
+            onClick={onClose}
+          >
+            Done
+          </button>
         </div>
 
-        {/* Synthesis section */}
-        <div className="category-view__synthesis">
-          {/* Custom question row */}
-          <div className="category-view__custom-row">
-            <NoteTray
-              className="category-view__note-tray"
-              value={customQ}
-              onChange={setCustomQ}
-              onSubmit={handleCustomRun}
-              onTranscribed={(text) => runSynthesis(text)}
-              disabled={synthesisLoading}
-              placeholder="Custom question…"
-              defaultMode="text-hero"
-              actionBtn={customQ.trim() ? (
-                <button
-                  type="button"
-                  className="note-tray__action-btn"
-                  onPointerDown={() => startAiLongPress('synthesize')}
-                  onPointerUp={cancelAiLongPress}
-                  onPointerLeave={cancelAiLongPress}
-                  onClick={() => {
-                    if (aiLongPressFiredRef.current) return;
-                    handleCustomRun();
-                  }}
-                  disabled={synthesisLoading}
-                  aria-label="Run"
-                >
-                  {synthesisLoading ? '…' : '✦'}
-                </button>
-              ) : undefined}
-            />
-          </div>
+        {/* Animated stage */}
+        <div className="category-view__stage">
 
-          {newItemsSinceSynthesis > 0 && (
-            <p className="category-view__stale-hint">
-              ✦ {newItemsSinceSynthesis} new item{newItemsSinceSynthesis !== 1 ? 's' : ''} since last synthesis
-            </p>
-          )}
-
-          {/* Response */}
-          {(synthesis || synthesisLoading || synthesisError) && (
-            <div className="category-view__response">
-              {!synthesisLoading && (
-                <div className="category-view__response-actions">
-                  <button
-                    type="button"
-                    className={`category-view__response-clear unit-detail__delete${confirmClearSynthesis ? ' unit-detail__delete--confirm' : ''}`}
-                    onClick={handleClearSynthesis}
-                    onBlur={() => setConfirmClearSynthesis(false)}
-                    aria-label="Clear synthesis"
-                  >
-                    {confirmClearSynthesis ? 'Confirm?' : <TrashIcon />}
-                  </button>
-                  {!isEditingSynthesis && synthesis && (
-                    <button
-                      type="button"
-                      className={`add-unit__copy-btn${synthesisCopied ? ' add-unit__copy-btn--copied' : ''}`}
-                      onClick={handleSynthesisCopy}
-                      aria-label="Copy synthesis"
-                    >
-                      {synthesisCopied ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
-                    </button>
-                  )}
-                </div>
-              )}
-              {synthesisLoading && !synthesis ? (
-                <div className="forage__response-loading">
-                  <span className="note-field__spinner" />
-                  <span>Synthesizing…</span>
-                </div>
-              ) : synthesisError ? (
-                <p className="modal__error" style={{ margin: 0 }}>{synthesisError}</p>
-              ) : isEditingSynthesis ? (
-                <textarea
-                  ref={synthesisTextareaRef}
-                  className="category-view__synthesis-textarea"
-                  value={synthesis}
-                  onChange={(e) => {
-                    setSynthesis(e.target.value);
-                    const el = synthesisTextareaRef.current;
-                    if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
-                  }}
-                  onFocus={(e) => {
-                    const el = e.target;
-                    el.style.height = 'auto';
-                    el.style.height = `${el.scrollHeight}px`;
-                  }}
-                  onBlur={(e) => handleSynthesisSave(e.target.value)}
-                  autoFocus
-                />
+          {/* Grid pane */}
+          <div
+            className={`category-view__pane category-view__pane--grid${isChat ? ' is-chat' : ''}`}
+            onTouchStart={handleGridTouchStart}
+            onTouchEnd={handleGridTouchEnd}
+          >
+            <div className="search-grid-wrap">
+              {units.length === 0 ? (
+                <p className="search-empty">No items</p>
               ) : (
-                <div
-                  className="snippet__tap-to-edit"
-                  onClick={() => setIsEditingSynthesis(true)}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Tap to edit"
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsEditingSynthesis(true); }}
-                >
-                  <SimpleMarkdown text={synthesis} className="forage__markdown" />
-                  {synthesisLoading && <span className="forage__cursor" aria-hidden="true">▋</span>}
-                </div>
+                timeGroups.map(({ label, units: groupUnits }) => (
+                  <div key={label} className="search-time-group">
+                    {label && <h3 className="search-time-label">{label}</h3>}
+                    <div className="search-grid">
+                      {groupUnits.map((unit) => {
+                        const i = visuallyOrdered.indexOf(unit);
+                        return (
+                          <CarouselCard
+                            key={unit.id}
+                            unit={unit}
+                            selected={selected.has(unit.id)}
+                            onClick={() => {
+                              if (isSelecting) { toggle(unit.id); return; }
+                              setSelectedCtx({ units: visuallyOrdered, index: i >= 0 ? i : 0 });
+                            }}
+                            onLongPress={() => enterWith(unit.id)}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))
               )}
             </div>
-          )}
 
-          {/* Chat button — always visible below response, never buried in scroll */}
-          {!synthesisLoading && !isEditingSynthesis && (
-            <div className="category-view__chat-bar">
+            {/* Mode bar — tap or swipe up to enter chat */}
+            <div
+              className="category-view__mode-bar"
+              onTouchStart={handleModeBarTouchStart}
+              onTouchEnd={handleModeBarTouchEnd}
+            >
+              {newItemsSinceChat > 0 && (
+                <p className="category-view__new-hint">
+                  ✦ {newItemsSinceChat} new item{newItemsSinceChat !== 1 ? 's' : ''} since last chat
+                </p>
+              )}
               <button
                 type="button"
                 className="category-view__chat-btn"
-                onPointerDown={() => startAiLongPress('chat')}
-                onPointerUp={cancelAiLongPress}
-                onPointerLeave={cancelAiLongPress}
-                onClick={() => {
-                  if (aiLongPressFiredRef.current) return;
-                  setShowExplore(true);
-                }}
+                onClick={() => setView('chat')}
               >
                 Chat ✦
               </button>
             </div>
-          )}
+          </div>
 
-          {/* Share content toggle — subtle, below response */}
-          {/* {hasShareableContent && (synthesis || synthesisError) && (
-            <button
-              className={`category-view__share-toggle${shareContent ? ' category-view__share-toggle--on' : ''}`}
-              type="button"
-              onClick={() => {
-                const next = !shareContent;
-                setShareContent(next);
-                runSynthesis(currentQuestion, next);
-              }}
-              disabled={synthesisLoading}
-            >
-              ✦ {shareContent ? 'Content included · tap to use metadata only' : 'Metadata only · tap to include content'}
-            </button>
-          )} */}
+          {/* Chat pane */}
+          <div className={`category-view__pane category-view__pane--chat${isChat ? ' is-chat' : ''}`}>
+            <div className="category-view__chat-back">
+              <button
+                type="button"
+                className="category-view__chat-back-btn"
+                onClick={() => { setView('grid'); setChatUnits(null); }}
+              >
+                <ChevronLeftIcon /> Grid
+              </button>
+              {chatUnits ? (
+                <span className="category-view__chat-ctx">{chatUnits.length} selected</span>
+              ) : (
+                <span className="category-view__chat-ctx">{category.title}</span>
+              )}
+            </div>
+            {isChat && (
+              <CategoryChat
+                category={category}
+                units={chatUnits ?? units}
+                onSaveUnit={onUnitSaved}
+                onCacheSaved={(count) => setChatCacheUnitCount(count)}
+              />
+            )}
+          </div>
+
         </div>
 
-        {/* Units grid */}
-        <div className="search-grid-wrap">
-          {units.length === 0 ? (
-            <p className="search-empty">No items</p>
-          ) : (
-            timeGroups.map(({ label, units: groupUnits }) => (
-              <div key={label} className="search-time-group">
-                {label && <h3 className="search-time-label">{label}</h3>}
-                <div className="search-grid">
-                  {groupUnits.map((unit) => {
-                    const i = visuallyOrdered.indexOf(unit);
-                    return (
-                      <CarouselCard
-                        key={unit.id}
-                        unit={unit}
-                        selected={isAiSelecting ? aiSelected.has(unit.id) : selected.has(unit.id)}
-                        onClick={() => {
-                          if (isAiSelecting) { aiToggle(unit.id); return; }
-                          if (isSelecting) { toggle(unit.id); return; }
-                          setSelectedCtx({ units: visuallyOrdered, index: i >= 0 ? i : 0 });
-                        }}
-                        onLongPress={() => {
-                          if (isAiSelecting) { aiToggle(unit.id); return; }
-                          aiClear(); setAiMode(null);
-                          enterWith(unit.id);
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
+        {/* Selection bar */}
         {isSelecting && (
           <SelectionBar
             count={selected.size}
@@ -505,30 +312,6 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
           />
         )}
 
-        {isAiSelecting && (
-          <SelectionBar
-            count={aiSelected.size}
-            total={units.length}
-            onSelectAll={() => aiSelectAll(units.map((u) => u.id))}
-            onClear={() => { aiClear(); setAiMode(null); }}
-            actions={[{
-              icon: 'Continue',
-              label: 'Continue',
-              onClick: () => {
-                const selectedUnits = units.filter((u) => aiSelected.has(u.id));
-                if (!selectedUnits.length) { aiClear(); setAiMode(null); return; }
-                if (aiMode === 'chat') {
-                  setAiExploreUnits(selectedUnits);
-                  setShowExplore(true);
-                } else {
-                  runSynthesis(currentQuestion, shareContent, selectedUnits);
-                }
-                aiClear();
-                setAiMode(null);
-              },
-            }]}
-          />
-        )}
       </div>
 
       {/* Unit detail overlay */}
@@ -580,17 +363,6 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
         </div>
       )}
 
-      {/* Explore modal */}
-      {showExplore && (
-        <ExploreModal
-          category={category}
-          allUnits={aiExploreUnits ?? units}
-          synthesis={synthesis}
-          onClose={() => { setShowExplore(false); setAiExploreUnits(null); }}
-          onSaveUnit={onUnitSaved}
-        />
-      )}
-
       {pendingDelete && (
         <ConfirmDeleteModal
           title={pendingDelete.title}
@@ -606,12 +378,8 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
           groups={storedGroups.filter((g) => g.id !== TRASH_ID)}
           onMove={async (categoryId, newCategory) => {
             const resolvedId = categoryId === 'misc' ? null : categoryId;
-            for (const u of moveCtx.units) {
-              await updateUnit(u.id, { categoryId: resolvedId });
-            }
-            if (newCategory) {
-              setCategorization(addCategoryIfNew(storedGroups, newCategory));
-            }
+            for (const u of moveCtx.units) await updateUnit(u.id, { categoryId: resolvedId });
+            if (newCategory) setCategorization(addCategoryIfNew(storedGroups, newCategory));
             onUnitSaved?.();
             clear();
             setMoveCtx(null);
