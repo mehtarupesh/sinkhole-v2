@@ -425,6 +425,11 @@
   background: #0f0f0f;
 }
 
+/* Edit sheet overlay — sits above the view (z-index relative to viewport, not view stacking context) */
+.unit-edit-overlay {
+  z-index: 102;
+}
+
 /* ── Header: category pill + counter ── */
 .unit-view__header {
   display: flex;
