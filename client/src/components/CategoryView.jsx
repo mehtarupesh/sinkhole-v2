@@ -16,7 +16,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon, AiChatIcon } from './Icons';
 import { CarouselCard } from './Carousel';
 import { groupByTime } from '../utils/timeGroups';
-import { updateUnit, getChatCache, setCategorization } from '../utils/db';
+import { updateUnit, deleteUnit, getChatCache, setCategorization } from '../utils/db';
 import { TRASH_ID, addCategoryIfNew } from '../utils/carouselGroups';
 import CategoryChat from './CategoryChat';
 import AddUnitModal from './AddUnitModal';
@@ -160,7 +160,10 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
           title: `Delete ${n} item${n !== 1 ? 's' : ''}?`,
           units: toDelete,
           onConfirm: async () => {
-            for (const u of toDelete) await updateUnit(u.id, { categoryId: TRASH_ID });
+            for (const u of toDelete) {
+              if (u.categoryId === TRASH_ID) await deleteUnit(u.id);
+              else await updateUnit(u.id, { categoryId: TRASH_ID })
+            };
             onUnitSaved?.();
             clear();
             setPendingDelete(null);
