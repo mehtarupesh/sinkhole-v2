@@ -233,14 +233,14 @@ export default function UnitDetail({
                 Edit
               </button>
               {navTotal > 1 && (
-                <button type="button" className="btn-icon" onClick={onPrev} disabled={!hasPrev} aria-label="Previous">
-                  <ChevronLeftIcon />
-                </button>
-              )}
-              {navTotal > 1 && (
-                <button type="button" className="btn-icon" onClick={onNext} disabled={!hasNext} aria-label="Next">
-                  <ChevronRightIcon />
-                </button>
+                <div className="unit-view__nav-pill">
+                  <button type="button" onClick={onPrev} disabled={!hasPrev} aria-label="Previous">
+                    <ChevronLeftIcon />
+                  </button>
+                  <button type="button" onClick={onNext} disabled={!hasNext} aria-label="Next">
+                    <ChevronRightIcon />
+                  </button>
+                </div>
               )}
               <button type="button" className="unit-view__chat-btn" onClick={() => setChatOpen(true)}>
                 ✦ Chat
