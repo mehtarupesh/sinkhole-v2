@@ -205,6 +205,7 @@ export default function UnitDetail({
                     className="unit-view__image"
                     onClick={() => { setLightboxKey((k) => k + 1); setShowLightbox(true); }}
                   />
+                  <p className="unit-view__image-hint">Tap to view full image</p>
                   {showLightbox && (
                     <ImageLightbox
                       src={content}

@@ -516,6 +516,14 @@
   cursor: zoom-in;
 }
 
+.unit-view__image-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--color-text-muted, #888);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
 .unit-view__text {
   font-size: 16px;
   line-height: 1.65;
