@@ -438,12 +438,12 @@ export default function SettingsModal({ onClose }) {
                 Install app
               </button>
             ) : null}
-            <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} />
+            {/* <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} /> */}
           </>
         )}
 
         {/* ── Dev tools ── */}
-        <p className="modal__hint" style={{ marginBottom: 8 }}>Dev tools</p>
+        {/* <p className="modal__hint" style={{ marginBottom: 8 }}>Dev tools</p>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             type="button"
@@ -459,7 +459,7 @@ export default function SettingsModal({ onClose }) {
           >
             Load Demo
           </button>
-        </div>
+        </div> */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
           <button
             type="button"
@@ -471,7 +471,7 @@ export default function SettingsModal({ onClose }) {
             {confirmClear ? 'Confirm?' : <TrashIcon />}
           </button>
           <p className="modal__hint" style={{ margin: 0 }}>
-            {confirmClear ? 'This will wipe all data and reload.' : 'Clear DB — fresh start'}
+            {confirmClear ? 'This will wipe all data and reload.' : 'Reset to default'}
           </p>
         </div>
 

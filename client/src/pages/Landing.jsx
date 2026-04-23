@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
@@ -108,7 +108,10 @@ export default function Landing() {
 
   // ── Initial load ────────────────────────────────────────────────────────────
 
+  const initRan = useRef(false);
   useEffect(() => {
+    if (initRan.current) return;
+    initRan.current = true;
     runMigrations()
       .then(() => Promise.all([getAllUnits(), ensureTrashCategory(), getAccessOrder(), getTombstones()]))
       .then(([loadedUnits, groups, order, tombstones]) => {
