@@ -350,30 +350,13 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
                 }}
                 storedGroups={storedGroups}
                 accessOrder={accessOrder}
+                hasPrev={hasPrev}
+                hasNext={hasNext}
+                onPrev={() => setSelectedCtx((c) => c && c.index > 0 ? { ...c, index: c.index - 1 } : c)}
+                onNext={() => setSelectedCtx((c) => c && c.index < c.units.length - 1 ? { ...c, index: c.index + 1 } : c)}
+                navIndex={selectedCtx.index}
+                navTotal={selectedCtx.units.length}
               />
-            </div>
-            <div className="unit-detail-nav" data-testid="unit-detail-nav">
-              <button
-                type="button"
-                className="btn-icon"
-                onClick={() => setSelectedCtx((c) => c && c.index > 0 ? { ...c, index: c.index - 1 } : c)}
-                disabled={!hasPrev}
-                aria-label="Previous"
-              >
-                <ChevronLeftIcon />
-              </button>
-              <span className="unit-detail-nav__count">
-                {selectedCtx.index + 1} / {selectedCtx.units.length}
-              </span>
-              <button
-                type="button"
-                className="btn-icon"
-                onClick={() => setSelectedCtx((c) => c && c.index < c.units.length - 1 ? { ...c, index: c.index + 1 } : c)}
-                disabled={!hasNext}
-                aria-label="Next"
-              >
-                <ChevronRightIcon />
-              </button>
             </div>
           </div>
         </div>

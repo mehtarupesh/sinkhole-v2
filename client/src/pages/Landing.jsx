@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { SearchIcon, ConnectIcon, GearIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon, BroomIcon } from '../components/Icons';
+import { SearchIcon, ConnectIcon, GearIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon, BroomIcon } from '../components/Icons';
 import { getAllUnits, updateUnit, deleteTrashUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder, getTombstones, setSetting, touchUnit, pruneAccessOrder, pruneTombstones } from '../utils/db';
 import { getCleanupCandidates } from '../utils/cleanupCandidates';
 import { runMigrations } from '../utils/migrations';
@@ -526,30 +526,13 @@ export default function Landing() {
                 onDelete={handleUnitDelete}
                 storedGroups={selectorGroups}
                 accessOrder={accessOrder}
+                hasPrev={hasPrev}
+                hasNext={hasNext}
+                onPrev={goPrev}
+                onNext={goNext}
+                navIndex={selectedCtx.index}
+                navTotal={selectedCtx.units.length}
               />
-            </div>
-            <div className="unit-detail-nav" data-testid="unit-detail-nav">
-              <button
-                type="button"
-                className="btn-icon"
-                onClick={goPrev}
-                disabled={!hasPrev}
-                aria-label="Previous"
-              >
-                <ChevronLeftIcon />
-              </button>
-              <span className="unit-detail-nav__count">
-                {selectedCtx.index + 1} / {selectedCtx.units.length}
-              </span>
-              <button
-                type="button"
-                className="btn-icon"
-                onClick={goNext}
-                disabled={!hasNext}
-                aria-label="Next"
-              >
-                <ChevronRightIcon />
-              </button>
             </div>
           </div>
         </div>

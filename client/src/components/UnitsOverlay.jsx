@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { CloseIcon, SearchIcon, TrashIcon, MoveFolderIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { CloseIcon, SearchIcon, TrashIcon, MoveFolderIcon } from './Icons';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import { getAllUnits, updateUnit, getCategorization, setCategorization, getAccessOrder } from '../utils/db';
 import MoveToCategoryModal from './MoveToCategoryModal';
@@ -316,30 +316,13 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
               onDelete={handleDelete}
               storedGroups={selectorGroups}
               accessOrder={accessOrder}
+              hasPrev={hasPrev}
+              hasNext={hasNext}
+              onPrev={() => setSelectedCtx((c) => c && c.index > 0 ? { ...c, index: c.index - 1 } : c)}
+              onNext={() => setSelectedCtx((c) => c && c.index < c.units.length - 1 ? { ...c, index: c.index + 1 } : c)}
+              navIndex={selectedCtx.index}
+              navTotal={selectedCtx.units.length}
             />
-          </div>
-          <div className="unit-detail-nav" data-testid="unit-detail-nav">
-            <button
-              type="button"
-              className="btn-icon"
-              onClick={() => setSelectedCtx((c) => c && c.index > 0 ? { ...c, index: c.index - 1 } : c)}
-              disabled={!hasPrev}
-              aria-label="Previous"
-            >
-              <ChevronLeftIcon />
-            </button>
-            <span className="unit-detail-nav__count">
-              {selectedCtx.index + 1} / {selectedCtx.units.length}
-            </span>
-            <button
-              type="button"
-              className="btn-icon"
-              onClick={() => setSelectedCtx((c) => c && c.index < c.units.length - 1 ? { ...c, index: c.index + 1 } : c)}
-              disabled={!hasNext}
-              aria-label="Next"
-            >
-              <ChevronRightIcon />
-            </button>
           </div>
         </div>
       </div>

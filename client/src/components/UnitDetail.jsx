@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon } from './Icons';
+import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import { updateUnit, touchUnit } from '../utils/db';
 import { useSuggest } from '../hooks/useSuggest';
 import ContentField from './ContentField';
 import NoteTray from './NoteTray';
 import CategorySelector from './CategorySelector';
+import SimpleMarkdown from './SimpleMarkdown';
+import UnitChat from './UnitChat';
 import { transcribeAndSuggest } from '../utils/transcribeAndSuggest';
 import { encryptContent, decryptContent, isEncryptedContent } from '../utils/crypto';
 
@@ -13,7 +15,12 @@ const TYPE_ICONS = {
   image: ImageTypeIcon,
 };
 
-export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGroups = [], accessOrder = [] }) {
+export default function UnitDetail({
+  unit, onBack, onSaved, onDelete,
+  storedGroups = [], accessOrder = [],
+  hasPrev = false, hasNext = false, onPrev, onNext,
+  navIndex = 0, navTotal = 1,
+}) {
   const [content,  setContent]  = useState(unit.content);
   const [fileName, setFileName] = useState(unit.fileName || '');
   const [mimeType, setMimeType] = useState(unit.mimeType || '');
@@ -21,15 +28,14 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   const [saveState, setSaveState] = useState(''); // '' | 'saving' | 'done'
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const swipeStart = useRef(null);
   const saving = saveState !== '';
   const initialCategoryId = useRef(unit.categoryId ?? '').current;
   const [categoryId, setCategoryId] = useState(initialCategoryId);
 
   // ── Encryption ───────────────────────────────────────────────────────────────
-  // revealed  = whether the user has chosen to see the content this session
-  //             starts false for encrypted units (content stays hidden until user clicks lock)
-  // isLocked  = !revealed (used for display and to decide whether to encrypt on save)
   const [revealed, setRevealed] = useState(!(unit.encrypted ?? false));
   const isLocked = !revealed;
 
@@ -43,15 +49,10 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
   const canAutoSuggest =
     !saving && !isLocked && (hasContent || hasNote) && suggest.suggestState !== 'loading' && (contentOrNoteChanged || !categoryId);
 
-  // Record access — fire and forget, no await
-  useEffect(() => { if (unit.uid) touchUnit(unit.uid); }, [unit.uid]);
+  const categoryName = storedGroups.find((g) => g.id === categoryId)?.title ?? '';
 
-  // Close on Escape (desktop)
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onBack(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onBack]);
+  // Record access — fire and forget
+  useEffect(() => { if (unit.uid) touchUnit(unit.uid); }, [unit.uid]);
 
   const isDirty =
     content !== unit.content ||
@@ -61,13 +62,27 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
     isLocked !== (unit.encrypted ?? false) ||
     !!suggest.newCategory;
 
+  // ── Swipe right — context-aware ───────────────────────────────────────────────
+  const handleTouchStart = (e) => {
+    swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!swipeStart.current) return;
+    const dx = e.changedTouches[0].clientX - swipeStart.current.x;
+    const dy = Math.abs(e.changedTouches[0].clientY - swipeStart.current.y);
+    swipeStart.current = null;
+    if (dx > 80 && dx > dy * 1.5) {
+      navigator.vibrate?.(10);
+      if (chatOpen) { setChatOpen(false); return; }
+      if (isEditing) { setIsEditing(false); return; }
+      onBack();
+    }
+  };
+
   // ── Lock toggle ───────────────────────────────────────────────────────────────
-  // Clicking the lock flips visibility.
-  // Revealing for the first time: decrypt ciphertext → plaintext in state.
-  // Re-hiding: just flip revealed=false; content stays plaintext in state until Save re-encrypts.
   const handleEncryptToggle = async () => {
     if (isLocked) {
-      // Reveal: decrypt lazily if content is still ciphertext
       if (isEncryptedContent(content)) {
         try {
           const plain = await decryptContent(content);
@@ -79,13 +94,11 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
       }
       setRevealed(true);
     } else {
-      // Hide again
       setRevealed(false);
     }
   };
 
   // ── AI suggest helpers ────────────────────────────────────────────────────────
-
   const handleSuggest = async () => {
     const result = await suggest.runSuggest({
       content: !isLocked ? content : null,
@@ -119,9 +132,6 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
         ? suggest.newCategory.id
         : (categoryId || null);
 
-      // isLocked drives what gets stored:
-      // - locked (hidden): keep/make ciphertext; encrypted=true
-      // - revealed (visible): store plaintext; encrypted=false
       let finalContent = content;
       if (isLocked && !isEncryptedContent(content)) {
         finalContent = await encryptContent(content);
@@ -152,18 +162,95 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
 
   const TypeIcon = TYPE_ICONS[unit.type] ?? SnippetTypeIcon;
 
-  const handleTouchStart = (e) => {
-    swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  };
+  // ── View mode ─────────────────────────────────────────────────────────────────
+  if (!isEditing) {
+    return (
+      <div className="unit-detail-modal" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        {chatOpen ? (
+          <UnitChat unit={unit} onClose={() => setChatOpen(false)} />
+        ) : (
+          <>
+            {/* 1 — Category */}
+            <div className="unit-view__category">
+              <span className="add-unit__type-icon add-unit__type-icon--active unit-view__type-icon">
+                <TypeIcon />
+              </span>
+              {categoryName && <span className="unit-view__category-name">{categoryName}</span>}
+            </div>
 
-  const handleTouchEnd = (e) => {
-    if (!swipeStart.current) return;
-    const dx = e.changedTouches[0].clientX - swipeStart.current.x;
-    const dy = Math.abs(e.changedTouches[0].clientY - swipeStart.current.y);
-    swipeStart.current = null;
-    if (dx > 80 && dx > dy * 1.5) { navigator.vibrate?.(10); onBack(); }
-  };
+            {/* 2 — Content */}
+            <div className="unit-view__body">
+              {isLocked ? (
+                <button
+                  type="button"
+                  className="unit-detail__locked-body"
+                  onClick={handleEncryptToggle}
+                  aria-label="Click to reveal content"
+                >
+                  <LockTypeIcon />
+                  <span>Click lock to reveal</span>
+                </button>
+              ) : unit.type === 'image' ? (
+                content && <img src={content} alt={fileName || 'image'} className="unit-view__image" />
+              ) : (
+                content.trim() && (
+                  <SimpleMarkdown text={content} className="snippet__markdown unit-view__text" />
+                )
+              )}
+            </div>
 
+            {/* 3 — Quote */}
+            {quote && <p className="unit-view__quote">{quote}</p>}
+
+            {/* 4 — Actions */}
+            <div className="unit-view__actions">
+              <button
+                type="button"
+                className="unit-view__edit-btn"
+                onClick={() => setIsEditing(true)}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className="unit-view__chat-btn"
+                onClick={() => setChatOpen(true)}
+              >
+                ✦ Chat
+              </button>
+            </div>
+
+            {/* 5 — Prev / Next */}
+            {navTotal > 1 && (
+              <div className="unit-view__nav">
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={onPrev}
+                  disabled={!hasPrev}
+                  aria-label="Previous"
+                >
+                  <ChevronLeftIcon />
+                </button>
+                <span className="unit-view__nav-count">{navIndex + 1} / {navTotal}</span>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={onNext}
+                  disabled={!hasNext}
+                  aria-label="Next"
+                >
+                  <ChevronRightIcon />
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // ── Edit mode (current UnitDetail UI) ─────────────────────────────────────────
   return (
     <div className="unit-detail-modal" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
 
@@ -211,7 +298,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
         </div>
       </div>
 
-      {/* Content — locked body when encrypted and not yet revealed */}
+      {/* Content */}
       <div className="add-unit__body">
         {isLocked ? (
           <button
@@ -263,7 +350,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
         }
       />
 
-      {/* Category selector — always visible, disabled when locked/no content */}
+      {/* Category selector */}
       <div className="sheet__categories">
         <CategorySelector
           groups={storedGroups}
@@ -279,7 +366,7 @@ export default function UnitDetail({ unit, onBack, onSaved, onDelete, storedGrou
         <button
           type="button"
           className={`add-unit__cancel-btn${!isDirty ? ' add-unit__cancel-btn--primary' : ''}`}
-          onClick={onBack}
+          onClick={() => setIsEditing(false)}
           disabled={saving}
         >
           Cancel
