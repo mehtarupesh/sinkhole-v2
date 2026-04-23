@@ -489,6 +489,7 @@
   object-fit: contain;
   background: var(--color-surface);
   border-radius: var(--radius-md);
+  cursor: zoom-in;
 }
 
 .unit-view__text {

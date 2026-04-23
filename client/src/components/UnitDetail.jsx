@@ -7,6 +7,7 @@ import NoteTray from './NoteTray';
 import CategorySelector from './CategorySelector';
 import SimpleMarkdown from './SimpleMarkdown';
 import UnitChat from './UnitChat';
+import ImageLightbox from './ImageLightbox';
 import { transcribeAndSuggest } from '../utils/transcribeAndSuggest';
 import { encryptContent, decryptContent, isEncryptedContent } from '../utils/crypto';
 
@@ -30,6 +31,8 @@ export default function UnitDetail({
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [lightboxKey, setLightboxKey] = useState(0);
   const swipeStart = useRef(null);
   const saving = saveState !== '';
   const initialCategoryId = useRef(unit.categoryId ?? '').current;
@@ -194,7 +197,26 @@ export default function UnitDetail({
                   <span>Click lock to reveal</span>
                 </button>
               ) : unit.type === 'image' ? (
-                content && <img src={content} alt={fileName || 'image'} className="unit-view__image" />
+                content && (
+                  <>
+                    <img
+                      src={content}
+                      alt={fileName || 'image'}
+                      className="unit-view__image"
+                      onClick={() => { setLightboxKey((k) => k + 1); setShowLightbox(true); }}
+                    />
+                    {showLightbox && (
+                      <ImageLightbox
+                        src={content}
+                        alt={fileName || 'image'}
+                        caption={quote}
+                        onClose={() => setShowLightbox(false)}
+                        replayKey={lightboxKey}
+                        closeAtBottom
+                      />
+                    )}
+                  </>
+                )
               ) : (
                 content.trim() && (
                   <SimpleMarkdown text={content} className="snippet__markdown unit-view__text" />
@@ -206,22 +228,22 @@ export default function UnitDetail({
             <div className="unit-view__bottom">
               {quote && <p className="unit-view__quote">{quote}</p>}
               <div className="unit-view__footer">
+                <button type="button" className="unit-view__edit-btn" onClick={() => setIsEditing(true)}>
+                  Edit
+                </button>
                 {navTotal > 1 && (
                   <button type="button" className="btn-icon" onClick={onPrev} disabled={!hasPrev} aria-label="Previous">
                     <ChevronLeftIcon />
                   </button>
                 )}
-                <button type="button" className="unit-view__edit-btn" onClick={() => setIsEditing(true)}>
-                  Edit
-                </button>
-                <button type="button" className="unit-view__chat-btn" onClick={() => setChatOpen(true)}>
-                  ✦ Chat
-                </button>
                 {navTotal > 1 && (
                   <button type="button" className="btn-icon" onClick={onNext} disabled={!hasNext} aria-label="Next">
                     <ChevronRightIcon />
                   </button>
                 )}
+                <button type="button" className="unit-view__chat-btn" onClick={() => setChatOpen(true)}>
+                  ✦ Chat
+                </button>
               </div>
             </div>
           </>

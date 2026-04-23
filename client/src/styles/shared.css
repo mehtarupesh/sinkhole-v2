@@ -117,6 +117,25 @@
   background: rgba(255, 255, 255, 0.15);
 }
 
+.lightbox__close--bottom {
+  top: auto;
+  right: auto;
+  bottom: max(28px, env(safe-area-inset-bottom, 28px));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 28px;
+  border-radius: 999px;
+  font-size: var(--text-sm);
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.lightbox__close--bottom::after {
+  content: 'Close';
+  margin-left: 6px;
+}
+
 .lightbox__content {
   display: flex;
   flex-direction: column;
