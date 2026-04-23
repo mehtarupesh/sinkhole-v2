@@ -67,7 +67,7 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
   }, [editingId]);
 
   const persistMessages = useCallback(async (msgs) => {
-    const count = units.length;
+    const count = msgs?.length ? units?.length : 0;
     await setChatCacheEntry(category.id, { messages: msgs, unitCount: count, updatedAt: Date.now() });
     onCacheSaved?.(count);
   }, [category.id, units.length, onCacheSaved]);

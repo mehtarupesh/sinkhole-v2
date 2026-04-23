@@ -19,10 +19,11 @@ export default function AddUnitModal({
   onSaved,
   storedGroups = [],
   accessOrder = [],
-  initialType     = 'image',
-  initialContent  = '',
-  initialFileName = '',
-  initialMimeType = '',
+  initialType       = 'image',
+  initialContent    = '',
+  initialFileName   = '',
+  initialMimeType   = '',
+  initialCategoryId = '',
 }) {
   // ── Content ──────────────────────────────────────────────────────────────
   const [type,     setType]     = useState(initialType);
@@ -34,7 +35,7 @@ export default function AddUnitModal({
   const [quote, setQuote] = useState('');
 
   // ── Category ─────────────────────────────────────────────────────────────
-  const [categoryId, setCategoryId] = useState('');
+  const [categoryId, setCategoryId] = useState(initialCategoryId);
 
   // ── Encryption ───────────────────────────────────────────────────────────
   const [encrypted, setEncrypted] = useState(false);

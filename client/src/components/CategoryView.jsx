@@ -19,6 +19,7 @@ import { groupByTime } from '../utils/timeGroups';
 import { updateUnit, getChatCache, setCategorization } from '../utils/db';
 import { TRASH_ID, addCategoryIfNew } from '../utils/carouselGroups';
 import CategoryChat from './CategoryChat';
+import AddUnitModal from './AddUnitModal';
 import UnitDetail from './UnitDetail';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import MoveToCategoryModal from './MoveToCategoryModal';
@@ -60,6 +61,7 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
   const { selected, isSelecting, toggle, enterWith, selectAll, clear } = useSelection();
   const [pendingDelete, setPendingDelete] = useState(null);
   const [moveCtx, setMoveCtx]             = useState(null);
+  const [showAddModal, setShowAddModal]   = useState(false);
 
   const swipeStartY   = useRef(null);
   const gridSwipeStart = useRef(null);
@@ -257,22 +259,29 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
               )}
             </div>
 
-            {/* Mode bar — tap or swipe up to enter chat */}
-            <div
-              className="category-view__mode-bar"
-            >
+            {/* Mode bar — add + chat */}
+            <div className="category-view__mode-bar">
               {newItemsSinceChat > 0 && (
                 <p className="category-view__new-hint">
                   ✦ {newItemsSinceChat} new item{newItemsSinceChat !== 1 ? 's' : ''} since last chat
                 </p>
               )}
-              <button
-                type="button"
-                className="category-view__chat-btn"
-                onClick={() => setView('chat')}
-              >
-                Chat ✦
-              </button>
+              <div className="category-view__mode-bar-row">
+                <button
+                  type="button"
+                  className="category-view__add-btn"
+                  onClick={() => setShowAddModal(true)}
+                >
+                  + Add
+                </button>
+                <button
+                  type="button"
+                  className="category-view__chat-btn"
+                  onClick={() => setView('chat')}
+                >
+                  Chat ✦
+                </button>
+              </div>
             </div>
           </div>
 
@@ -368,6 +377,19 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
             </div>
           </div>
         </div>
+      )}
+
+      {showAddModal && (
+        <AddUnitModal
+          onClose={() => setShowAddModal(false)}
+          onSaved={(newCategory) => {
+            onUnitSaved?.(undefined, newCategory);
+            setShowAddModal(false);
+          }}
+          storedGroups={storedGroups}
+          accessOrder={accessOrder}
+          initialCategoryId={category.id}
+        />
       )}
 
       {pendingDelete && (
