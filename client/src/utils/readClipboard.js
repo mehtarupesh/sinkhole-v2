@@ -1,14 +1,10 @@
+import { isIOS } from './device';
+
 /**
  * Reads clipboard content using the async Clipboard API (requires a user gesture).
  * Returns { type, content, fileName?, mimeType? } — same shape as useClipboardPaste
  * and useDrop — or null if the clipboard is empty or access is denied.
  */
-// iPad on iOS 13+ reports 'MacIntel' with touch points
-export function isIOS() {
-  return /iP(hone|ad|od)/i.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-}
-
 export async function readClipboard() {
   if (!isIOS()) return null;
 

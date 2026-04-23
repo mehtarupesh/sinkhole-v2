@@ -3,6 +3,7 @@ import { CloseIcon, TrashIcon } from './Icons';
 import { getSetting, setSetting, deleteSetting, getAllUnits, dumpDB, ucDump, clearDB, mergeUnits, mergeCategorization, mergeAccessOrder, mergeTombstones } from '../utils/db';
 import { loadDemoIfFresh } from '../utils/demo';
 import { synthesizeFromUnits, testPaidTier } from '../utils/forage';
+import { isIOS } from '../utils/device';
 
 const TYPE_LABELS = { snippet: 'text', image: 'img' };
 
@@ -50,10 +51,6 @@ function useInstallPrompt() {
   }, []);
 
   return { deferredPrompt, isInstalled };
-}
-
-function isIOS() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
 }
 
 export default function SettingsModal({ onClose }) {

@@ -1,5 +1,6 @@
 import { getAllUnits, getCategorization, setCategorization, mergeUnits } from './db';
-
+import { isAndroid, isIOS } from './device';
+import { addUnit } from './db';
 /**
  * Seeds demo data from /demo.json if the DB is completely empty.
  *
@@ -34,6 +35,32 @@ export async function loadDemoIfFresh() {
     const fresh = categories.filter((c) => c.id && !storedIds.has(c.id));
     if (fresh.length > 0) await setCategorization([...stored, ...fresh]);
   }
+
+  // if isAndroid - create new item with snippet type Install step "Settings > Install app"
+  if (isAndroid()) {
+    await addUnit({
+      content: 'Settings > Install app',
+      quote: 'Android users:Install the app on your device',
+      categoryId: '1burrow-setup',
+      type: 'snippet',
+    });
+  } else if (isIOS()) {
+    await addUnit({
+      content: 'Share > ..more > Add to Home Screen',
+      quote: 'IOS users: Add the app to your home screen',
+      categoryId: '1burrow-setup',
+      type: 'snippet',
+    });
+  } else {
+    await addUnit({
+      content: 'Use Safari / Chrome to access the app',
+      quote: 'MAC / PC users',
+      categoryId: '1burrow-setup',
+      type: 'snippet',
+    });
+  }
+
+  // if isIOS - create new item with Install step "Share > ..more > Add to Home Screen"
 
   // Seed units — mergeUnits preserves original uid + timestamps from the dump
   if (units.length > 0) await mergeUnits(units);
