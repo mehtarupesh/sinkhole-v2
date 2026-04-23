@@ -165,21 +165,24 @@ export default function UnitDetail({
   // ── View mode ─────────────────────────────────────────────────────────────────
   if (!isEditing) {
     return (
-      <div className="unit-detail-modal" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div className="unit-detail-modal unit-detail-modal--view" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {chatOpen ? (
           <UnitChat unit={unit} onClose={() => setChatOpen(false)} />
         ) : (
           <>
-            {/* 1 — Category */}
-            <div className="unit-view__category">
-              <span className="add-unit__type-icon add-unit__type-icon--active unit-view__type-icon">
+            {/* Header: category pill + counter */}
+            <div className="unit-view__header">
+              <span className="unit-view__cat-pill">
                 <TypeIcon />
+                {categoryName && <span className="unit-view__cat-name">{categoryName}</span>}
               </span>
-              {categoryName && <span className="unit-view__category-name">{categoryName}</span>}
+              {navTotal > 1 && (
+                <span className="unit-view__counter">{navIndex + 1} / {navTotal}</span>
+              )}
             </div>
 
-            {/* 2 — Content */}
-            <div className="unit-view__body">
+            {/* Scrollable body: content only */}
+            <div className="unit-view__scroll-body">
               {isLocked ? (
                 <button
                   type="button"
@@ -199,51 +202,28 @@ export default function UnitDetail({
               )}
             </div>
 
-            {/* 3 — Quote */}
-            {quote && <p className="unit-view__quote">{quote}</p>}
-
-            {/* 4 — Actions */}
-            <div className="unit-view__actions">
-              <button
-                type="button"
-                className="unit-view__edit-btn"
-                onClick={() => setIsEditing(true)}
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                className="unit-view__chat-btn"
-                onClick={() => setChatOpen(true)}
-              >
-                ✦ Chat
-              </button>
-            </div>
-
-            {/* 5 — Prev / Next */}
-            {navTotal > 1 && (
-              <div className="unit-view__nav">
-                <button
-                  type="button"
-                  className="btn-icon"
-                  onClick={onPrev}
-                  disabled={!hasPrev}
-                  aria-label="Previous"
-                >
-                  <ChevronLeftIcon />
+            {/* Bottom: quote + actions — both pinned together */}
+            <div className="unit-view__bottom">
+              {quote && <p className="unit-view__quote">{quote}</p>}
+              <div className="unit-view__footer">
+                {navTotal > 1 && (
+                  <button type="button" className="btn-icon" onClick={onPrev} disabled={!hasPrev} aria-label="Previous">
+                    <ChevronLeftIcon />
+                  </button>
+                )}
+                <button type="button" className="unit-view__edit-btn" onClick={() => setIsEditing(true)}>
+                  Edit
                 </button>
-                <span className="unit-view__nav-count">{navIndex + 1} / {navTotal}</span>
-                <button
-                  type="button"
-                  className="btn-icon"
-                  onClick={onNext}
-                  disabled={!hasNext}
-                  aria-label="Next"
-                >
-                  <ChevronRightIcon />
+                <button type="button" className="unit-view__chat-btn" onClick={() => setChatOpen(true)}>
+                  ✦ Chat
                 </button>
+                {navTotal > 1 && (
+                  <button type="button" className="btn-icon" onClick={onNext} disabled={!hasNext} aria-label="Next">
+                    <ChevronRightIcon />
+                  </button>
+                )}
               </div>
-            )}
+            </div>
           </>
         )}
       </div>

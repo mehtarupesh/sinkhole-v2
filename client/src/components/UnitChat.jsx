@@ -89,7 +89,7 @@ export default function UnitChat({ unit, onClose }) {
         <div ref={messagesEndRef} />
       </div>
       {error && <p className="unit-chat__error">{error}</p>}
-      <div className="unit-chat__input-row">
+      <div className="unit-chat__input-row" onClick={(e) => e.stopPropagation()}>
         <NoteTray
           className="unit-chat__note-tray"
           value={input}
