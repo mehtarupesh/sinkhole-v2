@@ -6,7 +6,7 @@ import { isIOS } from './device';
  * and useDrop — or null if the clipboard is empty or access is denied.
  */
 export async function readClipboard() {
-  if (!isIOS()) return null;
+  // if (!isIOS()) return null;
 
   try {
     // Full read: supports images + text (not available in all browsers)

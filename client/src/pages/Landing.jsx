@@ -3,7 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
-import { SearchIcon, ConnectIcon, GearIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon, BroomIcon } from '../components/Icons';
+import { readClipboard } from '../utils/readClipboard';
+import { isIOS } from '../utils/device';
+import { SearchIcon, ConnectIcon, GearIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon, BroomIcon, PasteIcon } from '../components/Icons';
 import { getAllUnits, updateUnit, deleteTrashUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder, getTombstones, setSetting, touchUnit, pruneAccessOrder, pruneTombstones } from '../utils/db';
 import { getCleanupCandidates } from '../utils/cleanupCandidates';
 import { runMigrations } from '../utils/migrations';
@@ -171,6 +173,12 @@ export default function Landing() {
 
   const openAddUnit = useCallback((initial = {}) => setAddUnitInitial(initial), []);
   const closeAddUnit = useCallback(() => setAddUnitInitial(null), []);
+
+  const handlePasteFromClipboard = useCallback(async () => {
+    const clip = await readClipboard();
+    if (!clip) return;
+    openAddUnit(clip);
+  }, [openAddUnit]);
   const handleAddUnitSaved = useCallback((newCategory) => {
     reloadUnits();
     if (newCategory && newCategory.id !== TRASH_ID) {
@@ -433,6 +441,17 @@ export default function Landing() {
           onCategoryLongPress={handleCategoryLongPress}
           accessOrder={accessOrder}
         />
+      )}
+
+      {/*isIOS() && */ !isAnyModalOpen && !isSelecting && (
+        <button
+          type="button"
+          className="sheet__paste-cta"
+          onClick={handlePasteFromClipboard}
+        >
+          <PasteIcon size={18} />
+          <span>Paste from clipboard</span>
+        </button>
       )}
 
       {cleanupCandidates.length > 0 && !isSelecting && (

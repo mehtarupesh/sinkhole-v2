@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, PasteIcon } from './Icons';
+import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon } from './Icons';
 import { addUnit, touchUnit } from '../utils/db';
 import { useSuggest } from '../hooks/useSuggest';
-import { readClipboard } from '../utils/readClipboard';
-import { isIOS } from '../utils/device';
 import ContentField from './ContentField';
 import NoteTray from './NoteTray';
 import CategorySelector from './CategorySelector';
@@ -60,7 +58,6 @@ export default function AddUnitModal({
   const hasNote     = !!quote.trim();
   // const canAutoSuggest =
   //   !saving && (hasContent || hasNote) && suggest.suggestState !== 'loading';
-  const showPasteCta = isIOS() && !hasContent && !saving;
 
   // ── Effects ──────────────────────────────────────────────────────────────
 
@@ -150,21 +147,6 @@ export default function AddUnitModal({
     else setCategoryId('');
     return result.transcript;
   }, [type, storedGroups, suggest]);
-
-  // ── Paste from clipboard (iOS) ────────────────────────────────────────────
-  const handlePasteFromClipboard = useCallback(async () => {
-    const clip = await readClipboard();
-    if (!clip) return;
-    if (clip.type === 'image') {
-      setType('image');
-      setContent(clip.content);
-      setFileName(clip.fileName ?? '');
-      setMimeType(clip.mimeType ?? '');
-    } else {
-      setType('snippet');
-      setContent(clip.content);
-    }
-  }, []);
 
   // ── Save ─────────────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -257,18 +239,6 @@ export default function AddUnitModal({
               </button>
             </div>
           </div>
-        )}
-
-        {/* iOS paste CTA — shown when sheet opens empty */}
-        {showPasteCta && (
-          <button
-            type="button"
-            className="sheet__paste-cta"
-            onClick={handlePasteFromClipboard}
-          >
-            <PasteIcon size={18} />
-            <span>Paste from clipboard</span>
-          </button>
         )}
 
         {/* Content — scrollable */}
