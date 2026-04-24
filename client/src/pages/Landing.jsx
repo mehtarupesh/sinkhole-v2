@@ -35,13 +35,18 @@ const ONBOARDING_STEPS = [
   },
   {
     gif: `${BASE}onboarding/2-share.gif`,
-    title: 'Stash it, get back to your day',
+    title: 'Whisper and get back to your day',
     desc: 'Share > Speak to provide context > AI sorts it into categories while you move on.',
   },
   {
     gif: `${BASE}onboarding/2.1-share.gif`,
-    title: 'Stash it, get back to your day',
+    title: 'Show it and get back to your day',
     desc: 'Share with annotation > Hit Sparkle > AI sorts it into categories while you move on.',
+  },
+  {
+    gif: `${BASE}onboarding/2.2-ios-copy.gif`,
+    title: 'iOS Users can paste from clipboard',
+    desc: 'IOS does not have share, never mind! Use paste from clipboard instead 🤷‍♂️',
   },
   {
     gif: `${BASE}onboarding/3-chat.gif`,
@@ -443,7 +448,7 @@ export default function Landing() {
         />
       )}
 
-      {/*isIOS() && */ !isOnboarding && !isAnyModalOpen && !isSelecting && (
+      {isIOS() && !isOnboarding && !isAnyModalOpen && !isSelecting && (
         <button
           type="button"
           className="sheet__paste-cta"
