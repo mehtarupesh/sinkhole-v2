@@ -443,7 +443,7 @@ export default function Landing() {
         />
       )}
 
-      {/*isIOS() && */ !isAnyModalOpen && !isSelecting && (
+      {/*isIOS() && */ !isOnboarding && !isAnyModalOpen && !isSelecting && (
         <button
           type="button"
           className="sheet__paste-cta"
