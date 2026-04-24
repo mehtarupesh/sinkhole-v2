@@ -292,6 +292,12 @@
 }
 
 /* ── Onboarding (empty state) ── */
+.landing--onboarding {
+  height: 100%;
+  min-height: unset;
+  overflow-y: auto;
+}
+
 .landing--onboarding .landing__center {
   min-height: auto;
   padding: 32px 0 20px;
