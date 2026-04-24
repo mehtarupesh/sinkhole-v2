@@ -226,7 +226,10 @@ export default function SettingsModal({ onClose }) {
   async function handleInstall() {
     if (deferredPrompt) {
       deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        window.close();
+      }
     }
   }
 
@@ -292,7 +295,7 @@ export default function SettingsModal({ onClose }) {
                 className="connect-btn add-unit__save-btn"
                 onClick={handleInstall}
               >
-                Install app
+                Install 1burrow
               </button>
             ) : null}
           </>
