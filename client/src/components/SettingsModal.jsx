@@ -364,7 +364,7 @@ export default function SettingsModal({ onClose }) {
               value={keyDraft}
               onChange={(e) => { setKeyDraft(e.target.value); setError(''); }}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-              autoFocus
+              // autoFocus
               style={{ marginBottom: 12 }}
             />
             <button
