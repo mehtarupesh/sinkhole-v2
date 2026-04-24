@@ -58,8 +58,8 @@ export default function AddUnitModal({
   const saving      = saveState !== '';
   const hasContent  = type === 'image' ? !!content : !!content.trim();
   const hasNote     = !!quote.trim();
-  const canAutoSuggest =
-    !saving && (hasContent || hasNote) && suggest.suggestState !== 'loading';
+  // const canAutoSuggest =
+  //   !saving && (hasContent || hasNote) && suggest.suggestState !== 'loading';
   const showPasteCta = isIOS() && !hasContent && !saving;
 
   // ── Effects ──────────────────────────────────────────────────────────────
@@ -118,6 +118,12 @@ export default function AddUnitModal({
   // ── AI suggest helpers ────────────────────────────────────────────────────
 
   const handleSuggest = async () => {
+    if (!content && !quote) 
+      {
+        setError('Add content / voice note to auto categorize');
+        setTimeout(() => setError(''), 1000);
+        return;
+      }
     const result = await suggest.runSuggest({
       content: !encrypted ? content : null,
       mimeType: !encrypted && type === 'image' ? mimeType : null,
@@ -164,6 +170,7 @@ export default function AddUnitModal({
   const handleSave = async () => {
     if (!hasContent && !quote.trim()) {
       setError('Add content or a note');
+      setTimeout(() => setError(''), 1000);
       return;
     }
     setSaveState('saving');
@@ -296,7 +303,7 @@ export default function AddUnitModal({
               type="button"
               className="note-tray__action-btn"
               onClick={handleSuggest}
-              disabled={!canAutoSuggest}
+              // disabled={!canAutoSuggest}
               aria-label="Suggest category"
             >
               {suggest.suggestState === 'loading' ? '…' : '✦'}

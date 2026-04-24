@@ -13,7 +13,7 @@
  *   onUnitSaved  fn(updated?, newCategory?)
  */
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon, AiChatIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon, AiChatIcon, PlusIcon, OneBIcon } from './Icons';
 import { CarouselCard } from './Carousel';
 import { groupByTime } from '../utils/timeGroups';
 import { updateUnit, deleteUnit, getChatCache, setCategorization } from '../utils/db';
@@ -260,31 +260,11 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
                   </div>
                 ))
               )}
-            </div>
-
-            {/* Mode bar — add + chat */}
-            <div className="category-view__mode-bar">
               {newItemsSinceChat > 0 && (
                 <p className="category-view__new-hint">
                   ✦ {newItemsSinceChat} new item{newItemsSinceChat !== 1 ? 's' : ''} since last chat
                 </p>
               )}
-              <div className="category-view__mode-bar-row">
-                <button
-                  type="button"
-                  className="category-view__add-btn"
-                  onClick={() => setShowAddModal(true)}
-                >
-                  + Add
-                </button>
-                <button
-                  type="button"
-                  className="category-view__chat-btn"
-                  onClick={() => setView('chat')}
-                >
-                  Chat ✦
-                </button>
-              </div>
             </div>
           </div>
 
@@ -319,6 +299,23 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
           </div>
 
         </div>
+
+        {/* Floating action panel — hidden while selecting or in chat */}
+        {!isChat && !isSelecting && (
+          <div className="landing__actions-wrap">
+            <div className="landing__actions">
+              <button type="button" className="btn-icon" onClick={() => setShowAddModal(true)} aria-label="Add">
+                <PlusIcon />
+              </button>
+              <button type="button" className="btn-icon" onClick={onClose} aria-label="Home">
+                <OneBIcon />
+              </button>
+              <button type="button" className="btn-icon unit-view__chat-action" onClick={() => setView('chat')} aria-label="Chat">
+                <AiChatIcon size={22} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Selection bar */}
         {isSelecting && (

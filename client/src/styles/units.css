@@ -529,12 +529,6 @@
   line-height: 1.65;
 }
 
-/* ── Bottom: quote + footer, pinned together ── */
-.unit-view__bottom {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-}
 
 .unit-view__quote {
   background: rgba(245, 166, 35, 0.025);
@@ -543,98 +537,51 @@
   font-size: 14px;
   font-style: italic;
   line-height: 1.55;
-  margin: 0;
+  margin: 0 0 16px;
   padding: 10px 20px 10px 22px;
   border-top: 1px solid var(--color-border);
 }
 
-/* ── Footer: Edit  ‹ ›  Chat ── */
-.unit-view__footer {
-  flex-shrink: 0;
+/* ── Header nav counter: ‹ 2/10 › ── */
+.unit-view__nav-counter {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 20px;
-  padding-bottom: max(20px, env(safe-area-inset-bottom, 20px));
-  border-top: 1px solid var(--color-border);
-  background: #0f0f0f;
+  gap: 2px;
 }
 
-.unit-view__edit-btn,
-.unit-view__chat-btn {
-  flex: 1;
-  max-width: 110px;
-  padding: 9px 18px;
-  text-align: center;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-family: inherit;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background var(--transition-speed), border-color var(--transition-speed);
-}
-
-.unit-view__edit-btn {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-hi);
-  color: var(--color-text);
-}
-
-.unit-view__edit-btn:active {
-  background: var(--color-surface-hi);
-}
-
-.unit-view__chat-btn {
-  background: var(--color-surface);
-  border: 1px solid rgba(245, 166, 35, 0.25);
-  color: rgba(245, 166, 35, 0.85);
-}
-
-.unit-view__chat-btn:active {
-  background: rgba(245, 166, 35, 0.06);
-}
-
-.unit-view__nav-pill {
-  display: flex;
-  align-items: stretch;
-  border: 1px solid var(--color-border-hi);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.unit-view__nav-pill button {
+.unit-view__nav-counter button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 62px;
-  height: 38px;
+  width: 28px;
+  height: 28px;
   padding: 0;
-  background: var(--color-surface);
+  background: none;
   border: none;
-  color: var(--color-text);
+  color: var(--color-faint);
   cursor: pointer;
-  transition: background var(--transition-speed);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-speed);
 }
 
-.unit-view__nav-pill button:first-child {
-  border-right: 1px solid var(--color-border-hi);
+.unit-view__nav-counter button:active:not(:disabled) {
+  color: var(--color-text);
 }
 
-.unit-view__nav-pill button:active:not(:disabled) {
-  background: var(--color-surface-hi);
-}
-
-.unit-view__nav-pill button svg {
-  width: 22px;
-  height: 22px;
-}
-
-.unit-view__nav-pill button:disabled {
-  opacity: 0.18;
+.unit-view__nav-counter button:disabled {
+  opacity: 0.2;
   cursor: default;
   pointer-events: none;
+}
+
+.unit-view__nav-counter button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Chat action button in floating panel ── */
+.unit-view__chat-action {
+  color: rgba(245, 166, 35, 0.85);
 }
 
 /* ── Unit Chat (ephemeral, fills view mode full screen) ── */

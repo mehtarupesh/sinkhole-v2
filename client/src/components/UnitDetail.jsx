@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { SnippetTypeIcon, LockTypeIcon, ImageTypeIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon, PencilIcon, AiChatIcon, OneBIcon } from './Icons';
 import { updateUnit, touchUnit } from '../utils/db';
 import { useSuggest } from '../hooks/useSuggest';
 import ContentField from './ContentField';
@@ -49,8 +49,8 @@ export default function UnitDetail({
   const hasContent = unit.type === 'image' ? !!content : !isLocked && !!content.trim();
   const hasNote    = !!quote.trim();
   const contentOrNoteChanged = content !== unit.content || quote !== (unit.quote || '');
-  const canAutoSuggest =
-    !saving && !isLocked && (hasContent || hasNote) && suggest.suggestState !== 'loading' && (contentOrNoteChanged || !categoryId);
+  // const canAutoSuggest =
+  //   !saving && !isLocked && (hasContent || hasNote) && suggest.suggestState !== 'loading' && (contentOrNoteChanged || !categoryId);
 
   const categoryName = storedGroups.find((g) => g.id === categoryId)?.title ?? '';
 
@@ -103,6 +103,11 @@ export default function UnitDetail({
 
   // ── AI suggest helpers ────────────────────────────────────────────────────────
   const handleSuggest = async () => {
+    if (!contentOrNoteChanged && categoryId) {
+      setError('No changes detected to auto categorize');
+      setTimeout(() => setError(''), 1000);
+      return;
+    }
     const result = await suggest.runSuggest({
       content: !isLocked ? content : null,
       mimeType: !isLocked && unit.type === 'image' ? mimeType : null,
@@ -173,19 +178,28 @@ export default function UnitDetail({
         <UnitChat unit={unit} onClose={() => setChatOpen(false)} />
       ) : (
         <>
-          {/* Header: category pill + counter */}
+          {/* Header: category pill + nav counter */}
           <div className="unit-view__header">
             <span className="unit-view__cat-pill">
               <TypeIcon />
               {categoryName && <span className="unit-view__cat-name">{categoryName}</span>}
             </span>
             {navTotal > 1 && (
-              <span className="unit-view__counter">{navIndex + 1} / {navTotal}</span>
+              <span className="unit-view__nav-counter">
+                <button type="button" onClick={onPrev} disabled={!hasPrev} aria-label="Previous">
+                  <ChevronLeftIcon />
+                </button>
+                <span className="unit-view__counter">{navIndex + 1} / {navTotal}</span>
+                <button type="button" onClick={onNext} disabled={!hasNext} aria-label="Next">
+                  <ChevronRightIcon />
+                </button>
+              </span>
             )}
           </div>
 
           {/* Scrollable body */}
           <div className="unit-view__scroll-body">
+            {quote && <p className="unit-view__quote">{quote}</p>}
             {isLocked ? (
               <button
                 type="button"
@@ -225,25 +239,17 @@ export default function UnitDetail({
             )}
           </div>
 
-          {/* Bottom: quote + footer — pinned together */}
-          <div className="unit-view__bottom">
-            {quote && <p className="unit-view__quote">{quote}</p>}
-            <div className="unit-view__footer">
-              <button type="button" className="unit-view__edit-btn" onClick={() => setIsEditing(true)}>
-                Edit
+          {/* Bottom: floating action panel */}
+          <div className="landing__actions-wrap">
+            <div className="landing__actions">
+              <button type="button" className="btn-icon" onClick={() => setIsEditing(true)} aria-label="Edit">
+                <PencilIcon size={22} />
               </button>
-              {navTotal > 1 && (
-                <div className="unit-view__nav-pill">
-                  <button type="button" onClick={onPrev} disabled={!hasPrev} aria-label="Previous">
-                    <ChevronLeftIcon />
-                  </button>
-                  <button type="button" onClick={onNext} disabled={!hasNext} aria-label="Next">
-                    <ChevronRightIcon />
-                  </button>
-                </div>
-              )}
-              <button type="button" className="unit-view__chat-btn" onClick={() => setChatOpen(true)}>
-                ✦ Chat
+              <button type="button" className="btn-icon" onClick={onBack} aria-label="Home">
+                <OneBIcon />
+              </button>
+              <button type="button" className="btn-icon unit-view__chat-action" onClick={() => setChatOpen(true)} aria-label="Chat">
+                <AiChatIcon size={22} />
               </button>
             </div>
           </div>
@@ -349,7 +355,7 @@ export default function UnitDetail({
                   type="button"
                   className="note-tray__action-btn"
                   onClick={handleSuggest}
-                  disabled={!canAutoSuggest}
+                  // disabled={!canAutoSuggest}
                   aria-label="Suggest category"
                 >
                   {suggest.suggestState === 'loading' ? '…' : '✦'}

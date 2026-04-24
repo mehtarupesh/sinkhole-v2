@@ -240,6 +240,17 @@ export default function SettingsModal({ onClose }) {
     }
   }
 
+  // close modal on esc
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   return (
     <div className="overlay" onClick={preview ? undefined : onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>

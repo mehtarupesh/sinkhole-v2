@@ -141,13 +141,13 @@ export function TrashIcon() {
 
 export function OneBIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden>
+    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden>
       <text
         x="12" y="12"
         textAnchor="middle"
         dominantBaseline="central"
         fontFamily="'Space Grotesk', system-ui, sans-serif"
-        fontSize="14"
+        fontSize="22"
         letterSpacing="0"
       >
         <tspan fontWeight="400" fill="rgba(255,255,255,0.35)">1</tspan><tspan fontWeight="700" fill="currentColor" dx="-0.5">b</tspan>
@@ -249,6 +249,16 @@ export function SignalStatusIcon({ connected }) {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M5 12a7 7 0 0 1 14 0" strokeOpacity={connected ? 1 : 0.45} />
       <circle cx="12" cy="16" r="3" fill={connected ? 'currentColor' : 'none'} stroke="currentColor" />
+    </svg>
+  );
+}
+
+
+export function PencilIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
     </svg>
   );
 }
