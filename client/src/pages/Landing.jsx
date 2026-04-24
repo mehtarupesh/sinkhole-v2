@@ -34,7 +34,12 @@ const ONBOARDING_STEPS = [
   {
     gif: `${BASE}onboarding/2-share.gif`,
     title: 'Stash it, get back to your day',
-    desc: 'Spot something worth keeping? Share from any app in seconds — AI sorts it into categories while you move on.',
+    desc: 'Share > Speak to provide context > AI sorts it into categories while you move on.',
+  },
+  {
+    gif: `${BASE}onboarding/2.1-share.gif`,
+    title: 'Stash it, get back to your day',
+    desc: 'Share with annotation > Hit Sparkle > AI sorts it into categories while you move on.',
   },
   {
     gif: `${BASE}onboarding/3-chat.gif`,
@@ -356,13 +361,13 @@ export default function Landing() {
           <span className="landing__title-one">1</span>
           <span className="landing__title-b">b</span>urrow
         </h1>
-        <p className="landing__sub">Stash now | Forage later</p>
+        {!isOnboarding && <p className="landing__sub">Stash now | Forage later</p>}
       </div>
 
       {isOnboarding && (
         <div className="onboarding">
           <p className="onboarding__tagline">
-            Got something worth keeping? Stash it in your burrow and get back to what you were doing. Come back when you're ready to dig in.
+            Found something interesting? Toss it into your private on-device burrow. Dig in when you're ready.
           </p>
           <div className="onboarding__cards" ref={onboardingCardsRef} onScroll={handleCardsScroll}>
             {ONBOARDING_STEPS.map((step, i) => (

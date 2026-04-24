@@ -1,7 +1,6 @@
 
 // iPad on iOS 13+ reports 'MacIntel' with touch points
 export function isIOS() {
-    return true;
     return /iP(hone|ad|od)/i.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   }
