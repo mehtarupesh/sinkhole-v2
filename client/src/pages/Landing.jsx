@@ -29,7 +29,7 @@ const ONBOARDING_STEPS = [
   {
     gif: `${BASE}onboarding/1-setup.gif`,
     title: 'Claim your burrow',
-    desc: 'Add your Gemini key, verify it works, then install the app — your burrow is ready to go.',
+    desc: 'Install from Settings > Open app > Add your Gemini key > Verify it works > Your burrow is ready to go.',
   },
   {
     gif: `${BASE}onboarding/2-share.gif`,
