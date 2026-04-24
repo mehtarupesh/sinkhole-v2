@@ -2,6 +2,8 @@
 
 This is a PWA (Progressive Web App) that allows you to quickly store snippets, passwords, files (screenshots, images, pdfs, etc.), and links with contextual notes.
 It can be accessed from any device with a web browser (mobile or desktop)
+It can be installed on mobile so it can be a share target
+
 ## Goals
 - Easily available on mobile and desktop.
 - Private, on-device
@@ -11,9 +13,10 @@ It can be accessed from any device with a web browser (mobile or desktop)
     - Data is arranged for fast access.
 - Using AI (Gemini key from users personal Google account)
   - Auto categorization of data based on content and context.
-  - Quick Summary per category
-  - Ability to deep dive into a category
-- 0 notifications. User should not be bothered unless they decide to check the app.
+  - Ability to chat further into a category
+- Limited data storage. We encourage users to delete data which has not been accessed for a long time.
+  - Goal is to keep users current mental load in the app trimmed down.
+- 0 notifications when app is closed. User should not be bothered unless they decide to check the app.
 
 ## How it works
 - The app is a valid share target, so data can be shared from other apps to the app. This is primary source of data for the app.

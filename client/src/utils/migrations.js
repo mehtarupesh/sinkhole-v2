@@ -21,7 +21,7 @@ export async function runMigrations() {
   console.log('runMigrations');
   const version = await getSetting('data_migration_version') ?? -1;
   if (version >= migrations.length - 1) return;
-  await loadDemoIfFresh();
+  // await loadDemoIfFresh();
   for (let i = version + 1; i < migrations.length; i++) {
     await migrations[i]();
     await setSetting('data_migration_version', i);

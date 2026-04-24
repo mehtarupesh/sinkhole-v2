@@ -23,6 +23,31 @@ import CleanupModal from '../components/CleanupModal';
 import CategoryView from '../components/CategoryView';
 import { useSelection } from '../hooks/useSelection';
 
+const BASE = import.meta.env.BASE_URL;
+
+const ONBOARDING_STEPS = [
+  {
+    gif: `${BASE}onboarding/1-setup.gif`,
+    title: 'Claim your burrow',
+    desc: 'Add your Gemini key, verify it works, then install the app — your burrow is ready to go.',
+  },
+  {
+    gif: `${BASE}onboarding/2-share.gif`,
+    title: 'Stash it, get back to your day',
+    desc: 'Spot something worth keeping? Share from any app in seconds — AI sorts it into categories while you move on.',
+  },
+  {
+    gif: `${BASE}onboarding/3-chat.gif`,
+    title: 'Come back and dig in',
+    desc: 'When you\'re ready, open a category and chat with what you\'ve stashed. Summarize, explore, or just find that thing you buried.',
+  },
+  {
+    gif: `${BASE}onboarding/4-cleanup.gif`,
+    title: 'Keep your burrow tidy',
+    desc: 'We flag what\'s been sitting untouched so you can clear out the clutter — only what matters lives here',
+  },
+];
+
 export default function Landing() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -47,6 +72,8 @@ export default function Landing() {
   const [cardForageCtx, setCardForageCtx] = useState(null); // { units: Unit[], category } | null
   const [showCleanupModal, setShowCleanupModal] = useState(false);
   const [categoryViewCtx, setCategoryViewCtx] = useState(null); // { category } | null
+  const [activeStep, setActiveStep] = useState(0);
+  const onboardingCardsRef = useRef(null);
 
   const isAnyModalOpen = addUnitInitial !== null || showUnitsOverlay || selectedCtx !== null || showForageModal || moveCtx !== null || cardForageCtx !== null || showCleanupModal || categoryViewCtx !== null;
 
@@ -296,8 +323,23 @@ export default function Landing() {
     setSelectedCtx(null);
   }, []);
 
+  const handleCardsScroll = useCallback((e) => {
+    const el = e.currentTarget;
+    if (!el.clientWidth) return;
+    setActiveStep(Math.round(el.scrollLeft / el.clientWidth));
+  }, []);
+
+  const scrollToStep = useCallback((index) => {
+    const el = onboardingCardsRef.current;
+    if (!el) return;
+    el.scrollTo({ left: index * el.clientWidth, behavior: 'smooth' });
+    setActiveStep(index);
+  }, []);
+
+  const isOnboarding = storedGroups !== undefined && !hasUnits;
+
   return (
-    <div className={`landing${isDragging ? ' landing--dragging' : ''}${hasUnits ? ' landing--has-units' : ''}`}>
+    <div className={`landing${isDragging ? ' landing--dragging' : ''}${hasUnits ? ' landing--has-units' : ''}${isOnboarding ? ' landing--onboarding' : ''}`}>
       {isDragging && <div className="drop-hint">Drop to add</div>}
 
       {toast && (
@@ -316,6 +358,53 @@ export default function Landing() {
         </h1>
         <p className="landing__sub">Stash now | Forage later</p>
       </div>
+
+      {isOnboarding && (
+        <div className="onboarding">
+          <p className="onboarding__tagline">
+            Got something worth keeping? Stash it in your burrow and get back to what you were doing. Come back when you're ready to dig in.
+          </p>
+          <div className="onboarding__cards" ref={onboardingCardsRef} onScroll={handleCardsScroll}>
+            {ONBOARDING_STEPS.map((step, i) => (
+              <div key={i} className="onboarding__slide">
+                <div className="onboarding__card">
+                  <div className="onboarding__gif-wrap">
+                    <img src={step.gif} alt={step.title} className="onboarding__gif" />
+                  </div>
+                  <div className="onboarding__card-body">
+                    <span className="onboarding__card-num">{i + 1}</span>
+                    <div>
+                      <p className="onboarding__card-title">{step.title}</p>
+                      <p className="onboarding__card-desc">{step.desc}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="onboarding__nav">
+            <button
+              type="button"
+              className="onboarding__arrow"
+              onClick={() => scrollToStep(activeStep - 1)}
+              disabled={activeStep === 0}
+              aria-label="Previous"
+            >‹</button>
+            <div className="onboarding__dots">
+              {ONBOARDING_STEPS.map((_, i) => (
+                <span key={i} className={`onboarding__dot${i === activeStep ? ' onboarding__dot--active' : ''}`} />
+              ))}
+            </div>
+            <button
+              type="button"
+              className="onboarding__arrow"
+              onClick={() => scrollToStep(activeStep + 1)}
+              disabled={activeStep === ONBOARDING_STEPS.length - 1}
+              aria-label="Next"
+            >›</button>
+          </div>
+        </div>
+      )}
 
       {recentCarousel && (
         <div className="landing__carousels">

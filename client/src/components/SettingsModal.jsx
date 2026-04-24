@@ -261,6 +261,44 @@ export default function SettingsModal({ onClose }) {
           </button>
         </div>
 
+
+        {/* ── Install ── */}
+
+        {!isInstalled && (
+          <>
+            {isIOS() ? (
+              <>
+                <div style={{ display: 'flex', gap: 8 }}>
+
+                <button
+                  type="button"
+                  className="connect-btn add-unit__save-btn"
+                  onClick={() => setShowIOSInstructions((v) => !v)}
+                >
+                  Add to Home Screen (iOS)
+                </button>
+                </div>
+                {showIOSInstructions && (
+                  <ol className="modal__hint" style={{ marginTop: 10, paddingLeft: 18, lineHeight: 1.8 }}>
+                    <li>Tap the <strong>Share</strong> button in Safari (box with arrow)</li>
+                    <li>Scroll down and tap <strong>Add to Home Screen</strong></li>
+                    <li>Tap <strong>Add</strong> to confirm</li>
+                  </ol>
+                )}
+              </>
+            ) : deferredPrompt ? (
+              <button
+                type="button"
+                className="connect-btn add-unit__save-btn"
+                onClick={handleInstall}
+              >
+                Install app
+              </button>
+            ) : null}
+          </>
+        )}
+        {(isIOS() || deferredPrompt) && <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} />}
+
         <p className="modal__hint" style={{ marginBottom: 12 }}>
           Gemini API key —{' '}
           <a
@@ -345,7 +383,7 @@ export default function SettingsModal({ onClose }) {
         <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} />
 
         {/* ── Export / Import ── */}
-        {preview ? (
+        {/* {preview ? (
           <div data-testid="import-preview">
             <p className="modal__hint" style={{ marginBottom: 8 }}>
               {preview.newUnits.length === 0
@@ -413,53 +451,21 @@ export default function SettingsModal({ onClose }) {
               </p>
             )}
           </div>
-        )}
+        )} */}
 
-        <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} />
+        {/* <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} /> */}
 
-        {/* ── Install ── */}
-        {!isInstalled && (
-          <>
-            {isIOS() ? (
-              <>
-                <button
-                  type="button"
-                  className="connect-btn add-unit__save-btn"
-                  onClick={() => setShowIOSInstructions((v) => !v)}
-                >
-                  Add to Home Screen
-                </button>
-                {showIOSInstructions && (
-                  <ol className="modal__hint" style={{ marginTop: 10, paddingLeft: 18, lineHeight: 1.8 }}>
-                    <li>Tap the <strong>Share</strong> button in Safari (box with arrow)</li>
-                    <li>Scroll down and tap <strong>Add to Home Screen</strong></li>
-                    <li>Tap <strong>Add</strong> to confirm</li>
-                  </ol>
-                )}
-              </>
-            ) : deferredPrompt ? (
-              <button
-                type="button"
-                className="connect-btn add-unit__save-btn"
-                onClick={handleInstall}
-              >
-                Install app
-              </button>
-            ) : null}
-            {/* <hr style={{ border: 'none', borderTop: '1px solid #262626', margin: '20px 0' }} /> */}
-          </>
-        )}
 
         {/* ── Dev tools ── */}
-        {/* <p className="modal__hint" style={{ marginBottom: 8 }}>Dev tools</p>
+        {/* <p className="modal__hint" style={{ marginBottom: 8 }}>Dev tools</p> */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
+          {/* <button
             type="button"
             className="connect-btn add-unit__save-btn"
             onClick={handleUcDump}
           >
             UC Dump
-          </button>
+          </button> */}
           <button
             type="button"
             className="connect-btn add-unit__save-btn"
@@ -467,7 +473,7 @@ export default function SettingsModal({ onClose }) {
           >
             Load Demo
           </button>
-        </div> */}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
           <button
             type="button"
@@ -479,7 +485,7 @@ export default function SettingsModal({ onClose }) {
             {confirmClear ? 'Confirm?' : <TrashIcon />}
           </button>
           <p className="modal__hint" style={{ margin: 0 }}>
-            {confirmClear ? 'This will wipe all data and reload.' : 'Reset to default'}
+            {confirmClear ? 'This will wipe all data and reload.' : 'Clean up all data'}
           </p>
         </div>
 
