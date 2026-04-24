@@ -31,17 +31,17 @@ const ONBOARDING_STEPS = [
   {
     gif: `${BASE}onboarding/1-setup.gif`,
     title: 'Claim your burrow',
-    desc: 'Install from Settings > Open app > Add your Gemini key > Verify it works > Your burrow is ready to go.',
+    desc: 'Settings • Install • Add your Gemini key • Verify your burrow is powered up !',
   },
   {
     gif: `${BASE}onboarding/2-share.gif`,
     title: 'Whisper and get back to your day',
-    desc: 'Share > Speak to provide context > AI sorts it into categories while you move on.',
+    desc: 'Quick Share • Speak to provide context • AI categorizes',
   },
   {
     gif: `${BASE}onboarding/2.1-share.gif`,
     title: 'Show it and get back to your day',
-    desc: 'Share with annotation > Hit Sparkle > AI sorts it into categories while you move on.',
+    desc: 'Share with annotation • Hit Sparkle • AI categorizes',
   },
   {
     gif: `${BASE}onboarding/2.2-ios-copy.gif`,
