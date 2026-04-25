@@ -225,17 +225,18 @@
   padding-bottom: max(0px, env(safe-area-inset-bottom, 0px));
 }
 
-.chat__note-tray.note-tray {
+/* specificity 0-3-0 — beats .units-panel .note-tray (0-2-0) regardless of bundle order */
+.chat .chat__note-tray.note-tray {
   border-top: none;
   margin-left: 0;
   margin-right: 0;
 }
 
-.chat__note-tray .note-tray--text-hero {
+.chat .chat__note-tray.note-tray--text-hero {
   border-top: none;
   animation: none;
 }
 
-.chat__note-tray .note-tray--mic-hero {
+.chat .chat__note-tray.note-tray--mic-hero {
   border-top: none;
 }
