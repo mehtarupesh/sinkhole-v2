@@ -110,7 +110,8 @@ export default function UnitsOverlay({ onClose, initialCategory = '' }) {
       return (
         u.quote?.toLowerCase().includes(q) ||
         u.fileName?.toLowerCase().includes(q) ||
-        searchableContent?.toLowerCase().includes(q)
+        searchableContent?.toLowerCase().includes(q) ||
+        allGroups.some((g) => g.title?.toLowerCase().includes(q))
       );
     });
   }, [units, q]);

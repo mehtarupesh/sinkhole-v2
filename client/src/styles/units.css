@@ -443,6 +443,7 @@
 }
 
 /* Cancel the .units-panel bleed-out overrides inside the edit sheet */
+.unit-edit-overlay .modal__header    { padding: 14px 20px 0; }
 .unit-edit-overlay .add-unit__body   { margin-left: 0; margin-right: 0; }
 .unit-edit-overlay .note-tray        { margin-left: 0; margin-right: 0; }
 .unit-edit-overlay .add-unit__actions {
@@ -794,13 +795,15 @@
 
 .unit-chat__note-tray.note-tray {
   border-top: none;
+  margin-left: 0;
+  margin-right: 0;
 }
 
-.unit-chat__note-tray .note-tray--text-hero {
+.unit-chat__note-tray.note-tray--text-hero {
   border-top: none;
   animation: none;
 }
 
-.unit-chat__note-tray .note-tray--mic-hero {
+.unit-chat__note-tray.note-tray--mic-hero {
   border-top: none;
 }
