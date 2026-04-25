@@ -322,12 +322,8 @@
 
 .onboarding__cards {
   display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  overflow-x: hidden;
   width: 100%;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
 }
 
 .onboarding__cards::-webkit-scrollbar {
@@ -354,6 +350,7 @@
 .onboarding__gif-wrap {
   width: 100%;
   aspect-ratio: 9 / 17;
+  max-height: 38vh;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.03);
   display: flex;

@@ -29,19 +29,14 @@ const BASE = import.meta.env.BASE_URL;
 
 const ONBOARDING_STEPS = [
   {
-    gif: `${BASE}onboarding/1-setup.gif`,
-    title: 'Claim your burrow',
-    desc: 'Settings • Install • Add your Gemini key • Verify your burrow is powered up !',
-  },
-  {
     gif: `${BASE}onboarding/2-share.gif`,
     title: 'Whisper and get back to your day',
-    desc: 'Quick Share • Speak to provide context • AI categorizes',
+    desc: 'Quick Share • Speak to provide context • AI categorizes (you can correct it if needed !)',
   },
   {
     gif: `${BASE}onboarding/2.1-share.gif`,
     title: 'Show it and get back to your day',
-    desc: 'Share with annotation • Hit Sparkle • AI categorizes',
+    desc: 'Share with annotation • Hit Sparkle • AI categorizes (it learns from your corrections !)',
   },
   {
     gif: `${BASE}onboarding/2.2-ios-copy.gif`,
@@ -58,6 +53,12 @@ const ONBOARDING_STEPS = [
     title: 'Keep your burrow tidy',
     desc: 'We flag what\'s been sitting untouched so you can clear out the clutter — only what matters lives here',
   },
+  {
+    gif: `${BASE}onboarding/1-setup.gif`,
+    title: 'Claim your burrow',
+    desc: 'Settings • Install • Add your Gemini key • Verify your burrow is powered up !',
+  },
+
 ];
 
 export default function Landing() {
