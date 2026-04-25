@@ -29,19 +29,36 @@ const BASE = import.meta.env.BASE_URL;
 
 const ONBOARDING_STEPS = [
   {
+    welcome: true,
+    mascot: `${BASE}onboarding/baby-scrat.jpg`,
+    title: 'Stash now. Forage later.',
+    desc: 'Links, images, screenshots & thoughts — all in one private on-device burrow.',
+    features: [
+      { icon: '⚡', label: 'Stash in seconds', sub: 'Share from any app. Don\'t break your flow.' },
+      { icon: '🐿️', label: 'Forage when hungry', sub: 'Come back when ready. Browse, chat, explore.' },
+    ],
+    note: 'AI features use your own Gemini key — data is processed by Google.',
+  },
+  {
     gif: `${BASE}onboarding/2-share.gif`,
     title: 'Whisper and get back to your day',
-    desc: 'Quick Share • Speak to provide context • AI categorizes (you can correct it if needed !)',
+    desc: 'Quick Share • Speak to provide context • Automatically categorizes (you can correct if needed !)',
   },
   {
     gif: `${BASE}onboarding/2.1-share.gif`,
     title: 'Show it and get back to your day',
-    desc: 'Share with annotation • Hit Sparkle • AI categorizes (it learns from your corrections !)',
+    desc: 'Share with annotation • Hit Sparkle • Automatically categorizes (it learns from your corrections !)',
   },
   {
     gif: `${BASE}onboarding/2.2-ios-copy.gif`,
-    title: 'iOS Users can paste from clipboard',
-    desc: 'IOS does not have share, never mind! Use paste from clipboard instead 🤷‍♂️',
+    title: 'IOS users can paste from clipboard',
+    desc: 'IOS does not have quick share, never mind! Use paste from clipboard instead 🤷‍♂️',
+  },
+  {
+    screenshot: `${BASE}onboarding/filled-burrow.png`,
+    title: 'A full burrow in the wild',
+    desc: 'Local-first — no server. Code and data live entirely on your device.',
+    note: 'What goes in doesn\'t have to come out — lock anything you want to keep from AI eyes.',
   },
   {
     gif: `${BASE}onboarding/3-chat.gif`,
@@ -54,9 +71,10 @@ const ONBOARDING_STEPS = [
     desc: 'We flag what\'s been sitting untouched so you can clear out the clutter — only what matters lives here',
   },
   {
-    gif: `${BASE}onboarding/1-setup.gif`,
-    title: 'Claim your burrow',
-    desc: 'Settings • Install • Add your Gemini key • Verify your burrow is powered up !',
+    cta: true,
+    mascot: `${BASE}onboarding/baby-scrat-cta.jpg`,
+    title: 'Ready to claim your burrow?',
+    steps: ['Install the app to your home screen', 'Add your Gemini API key', 'Share something — your burrow awaits'],
   },
 
 ];
@@ -380,24 +398,62 @@ export default function Landing() {
 
       {isOnboarding && (
         <div className="onboarding">
-          <p className="onboarding__tagline">
+          {/* <p className="onboarding__tagline">
             Found something interesting? Toss it into your private on-device burrow. Dig in when you're ready.
-          </p>
+          </p> */}
           <div className="onboarding__cards" ref={onboardingCardsRef} onScroll={handleCardsScroll}>
             {ONBOARDING_STEPS.map((step, i) => (
               <div key={i} className="onboarding__slide">
-                <div className="onboarding__card">
-                  <div className="onboarding__gif-wrap">
-                    <img src={step.gif} alt={step.title} className="onboarding__gif" />
+                {step.welcome ? (
+                  <div className="onboarding__card onboarding__card--welcome">
+                    <img src={step.mascot} alt="1burrow mascot" className="onboarding__mascot" />
+                    <p className="onboarding__welcome-title">{step.title}</p>
+                    <p className="onboarding__welcome-desc">{step.desc}</p>
+                    {step.features && (
+                      <div className="onboarding__features">
+                        {step.features.map((f) => (
+                          <div key={f.label} className="onboarding__feature">
+                            <span className="onboarding__feature-icon">{f.icon}</span>
+                            <div>
+                              <p className="onboarding__feature-label">{f.label}</p>
+                              <p className="onboarding__feature-sub">{f.sub}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {step.note && <p className="onboarding__welcome-note">{step.note}</p>}
                   </div>
-                  <div className="onboarding__card-body">
-                    <span className="onboarding__card-num">{i + 1}</span>
-                    <div>
-                      <p className="onboarding__card-title">{step.title}</p>
-                      <p className="onboarding__card-desc">{step.desc}</p>
+                ) : step.cta ? (
+                  <div className="onboarding__card onboarding__card--cta">
+                    {step.mascot && <img src={step.mascot} alt="" className="onboarding__mascot" />}
+                    <p className="onboarding__cta-title">{step.title}</p>
+                    <ol className="onboarding__cta-steps">
+                      {step.steps.map((s) => <li key={s}>{s}</li>)}
+                    </ol>
+                    <button
+                      type="button"
+                      className="onboarding__cta-btn"
+                      onClick={() => setShowSettingsModal(true)}
+                    >
+                      Open Settings →
+                    </button>
+                  </div>
+                ) : (
+                  <div className="onboarding__card">
+                    <div className="onboarding__gif-wrap">
+                      <img src={step.gif ?? step.screenshot} alt={step.title} className="onboarding__gif" />
+                    </div>
+                    <div className="onboarding__card-body">
+                      <span className="onboarding__card-num">{i}</span>
+                      <div>
+                        <p className="onboarding__card-title">{step.title}</p>
+                        <p className="onboarding__card-desc">{step.desc}</p>
+                        {step.note && <p className="onboarding__welcome-note">{step.note}</p>}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>
