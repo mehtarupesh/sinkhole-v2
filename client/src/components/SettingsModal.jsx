@@ -256,14 +256,25 @@ export default function SettingsModal({ onClose }) {
 
   return (
     <div className="overlay" onClick={preview ? undefined : onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal__header">
-          <span className="modal__title">Settings</span>
-          <button type="button" className="btn-close" onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 'min(78vw, 280px)', padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: '24px 24px 0' }}>
+          <div className="modal__header">
+            <span className="modal__title">Settings</span>
+            <button type="button" className="btn-close" onClick={onClose} aria-label="Close">
+              <CloseIcon />
+            </button>
+          </div>
         </div>
-
+        {!hasKey && (
+          <div style={{ width: '100%', aspectRatio: '9/17', maxHeight: '38vh', overflow: 'hidden', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img
+              src="/onboarding/1-setup.gif"
+              alt="How to set up 1burrow"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          </div>
+        )}
+        <div style={{ padding: 24 }}>
 
         {/* ── Install ── */}
 
@@ -492,6 +503,7 @@ export default function SettingsModal({ onClose }) {
           </p>
         </div>
 
+        </div>
       </div>
     </div>
   );
