@@ -178,28 +178,28 @@ export default function UnitDetail({
         <UnitChat unit={unit} onClose={() => setChatOpen(false)} />
       ) : (
         <>
-          {/* Header: category pill + nav counter */}
+          {/* Header: category pill + delete */}
           <div className="unit-view__header">
             <span className="unit-view__cat-pill">
               <TypeIcon />
               {categoryName && <span className="unit-view__cat-name">{categoryName}</span>}
             </span>
-            {navTotal > 1 && (
-              <span className="unit-view__nav-counter">
-                <button type="button" onClick={onPrev} disabled={!hasPrev} aria-label="Previous">
-                  <ChevronLeftIcon />
-                </button>
-                <span className="unit-view__counter">{navIndex + 1} / {navTotal}</span>
-                <button type="button" onClick={onNext} disabled={!hasNext} aria-label="Next">
-                  <ChevronRightIcon />
-                </button>
-              </span>
-            )}
+            <button
+              type="button"
+              className={`unit-detail__delete${confirmDelete ? ' unit-detail__delete--confirm' : ''}`}
+              onClick={handleDelete}
+              onBlur={() => setConfirmDelete(false)}
+              aria-label="Delete unit"
+            >
+              {confirmDelete ? 'Delete?' : <TrashIcon />}
+            </button>
           </div>
+
+          {/* Note — pinned below header, doesn't scroll */}
+          {quote && <p className="unit-view__quote">{quote}</p>}
 
           {/* Scrollable body */}
           <div className="unit-view__scroll-body">
-            {quote && <p className="unit-view__quote">{quote}</p>}
             {isLocked ? (
               <button
                 type="button"
@@ -238,6 +238,33 @@ export default function UnitDetail({
               )
             )}
           </div>
+
+          {/* Nav strip — prev / counter / next */}
+          {navTotal > 1 && (
+            <div className="unit-view__nav-strip">
+              <button
+                type="button"
+                className="unit-view__nav-strip-btn"
+                onClick={onPrev}
+                disabled={!hasPrev}
+                aria-label="Previous"
+              >
+                <ChevronLeftIcon />
+                <span>Prev</span>
+              </button>
+              <span className="unit-view__counter">{navIndex + 1} / {navTotal}</span>
+              <button
+                type="button"
+                className="unit-view__nav-strip-btn unit-view__nav-strip-btn--next"
+                onClick={onNext}
+                disabled={!hasNext}
+                aria-label="Next"
+              >
+                <span>Next</span>
+                <ChevronRightIcon />
+              </button>
+            </div>
+          )}
 
           {/* Bottom: floating action panel */}
           <div className="landing__actions-wrap">

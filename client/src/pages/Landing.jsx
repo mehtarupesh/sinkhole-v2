@@ -4,7 +4,7 @@ import { useClipboardPaste } from '../hooks/useClipboardPaste';
 import { useDrop } from '../hooks/useDrop';
 import { readPendingShare, clearPendingShare } from '../utils/pendingShare';
 import { readClipboard } from '../utils/readClipboard';
-import { isIOS } from '../utils/device';
+import { isIOS, isAndroid } from '../utils/device';
 import { SearchIcon, ConnectIcon, GearIcon, CloseIcon, PlusIcon, TrashIcon, MoveFolderIcon, RenameIcon, OneBIcon, BroomIcon, PasteIcon } from '../components/Icons';
 import { getAllUnits, updateUnit, deleteTrashUnit, getCategorization, setCategorization, ensureTrashCategory, getAccessOrder, getTombstones, setSetting, touchUnit, pruneAccessOrder, pruneTombstones } from '../utils/db';
 import { getCleanupCandidates } from '../utils/cleanupCandidates';
@@ -49,11 +49,11 @@ const ONBOARDING_STEPS = [
     title: 'Show it and get back to your day',
     desc: 'Share with annotation • Hit Sparkle • Automatically categorizes (it learns from your corrections !)',
   },
-  {
+  ...(isIOS() ? [{
     gif: `${BASE}onboarding/2.2-ios-copy.gif`,
     title: 'IOS users can paste from clipboard',
     desc: 'IOS does not have quick share, never mind! Use paste from clipboard instead 🤷‍♂️',
-  },
+  }] : []),
   {
     screenshot: `${BASE}onboarding/filled-burrow.png`,
     title: 'A full burrow in the wild',
@@ -74,7 +74,11 @@ const ONBOARDING_STEPS = [
     cta: true,
     mascot: `${BASE}onboarding/baby-scrat-cta.jpg`,
     title: 'Ready to claim your burrow?',
-    steps: ['Install the app to your home screen', 'Add your Gemini API key', 'Share something — your burrow awaits'],
+    steps: [
+      isIOS() || isAndroid() ? 'Install the app to your home screen' : 'Continue using your browser',
+      'Add your Gemini key linked to your Google account',
+      'Add a few things to get started',
+    ],
   },
 
 ];

@@ -13,9 +13,6 @@
 
 .category-view__title-wrap {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   min-width: 0;
 }
 
@@ -40,24 +37,6 @@
   flex-shrink: 0;
 }
 
-/* Stats subtitle */
-.category-view__stats {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0;
-}
-
-.category-view__stat {
-  font-size: var(--text-xs);
-  color: var(--color-muted);
-}
-
-.category-view__stat + .category-view__stat::before {
-  content: '·';
-  margin: 0 6px;
-  color: var(--color-faint);
-}
 
 /* Done button */
 .category-view__done-btn {

@@ -27,19 +27,6 @@ import SelectionBar from './SelectionBar';
 import { useSelection } from '../hooks/useSelection';
 import './CategoryView.css';
 
-// ── Stats ─────────────────────────────────────────────────────────────────────
-
-function computeStats(units) {
-  if (!units.length) return null;
-  const now = Date.now();
-  const latest  = Math.max(...units.map((u) => u.createdAt ?? 0));
-  const diffDays = Math.floor((now - latest) / 86_400_000);
-  const lastAdded = diffDays === 0 ? 'today' : diffDays === 1 ? 'yesterday' : `${diffDays}d ago`;
-  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
-  const thisMonth = units.filter((u) => (u.createdAt ?? 0) >= monthStart).length;
-  const monthStat = thisMonth > 0 ? `${thisMonth} item${thisMonth !== 1 ? 's' : ''} this month` : null;
-  return { lastAdded, monthStat };
-}
 
 export default function CategoryView({ category, allUnits, storedGroups, accessOrder = [], onClose, onUnitSaved }) {
   const units = useMemo(
@@ -191,7 +178,6 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
-  const stats     = useMemo(() => computeStats(units), [units]);
   const timeGroups = useMemo(() => groupByTime(units), [units]);
   const isChat    = view === 'chat';
 
@@ -206,22 +192,14 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
               <span className="category-view__title">{category.title}</span>
               <span className="category-view__count">{units.length}</span>
             </div>
-            {stats && (
-              <div className="category-view__stats">
-                <span className="category-view__stat">Last added {stats.lastAdded}</span>
-                {stats.monthStat && (
-                  <span className="category-view__stat">{stats.monthStat}</span>
-                )}
-              </div>
-            )}
           </div>
-          <button
+          {/* <button
             type="button"
             className="category-view__done-btn"
             onClick={onClose}
           >
             Done
-          </button>
+          </button> */}
         </div>
 
         {/* Animated stage */}

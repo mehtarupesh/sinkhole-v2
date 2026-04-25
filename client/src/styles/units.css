@@ -425,6 +425,18 @@
   background: #0f0f0f;
 }
 
+/* Pull the shared fixed action bar into flow inside view mode */
+.unit-detail-modal--view .landing__actions-wrap {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 28px;
+}
+
 /* Edit sheet overlay — sits above the view */
 .unit-edit-overlay {
   z-index: 102;
@@ -498,10 +510,11 @@
 .unit-view__scroll-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 20px 16px;
+  padding: 12px 20px 16px;
   scrollbar-width: none;
   min-height: 0;
 }
+
 
 .unit-view__scroll-body::-webkit-scrollbar { display: none; }
 
@@ -531,52 +544,63 @@
 
 
 .unit-view__quote {
+  flex-shrink: 0;
   background: rgba(245, 166, 35, 0.025);
   border-left: 2px solid rgba(245, 166, 35, 0.22);
   color: var(--color-dim);
   font-size: 14px;
   font-style: italic;
   line-height: 1.55;
-  margin: 0 0 16px;
+  margin: 12px 0 0;
   padding: 10px 20px 10px 22px;
   border-top: 1px solid var(--color-border);
 }
 
-/* ── Header nav counter: ‹ 2/10 › ── */
-.unit-view__nav-counter {
+/* ── Bottom nav strip: ‹ Prev  3/10  Next › ── */
+.unit-view__nav-strip {
   display: flex;
   align-items: center;
-  gap: 2px;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 0 4px;
+  height: 44px;
+  background: rgba(15, 15, 15, 0.9);
+  border-top: 1px solid var(--color-border);
 }
 
-.unit-view__nav-counter button {
+.unit-view__nav-strip-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
+  gap: 5px;
+  padding: 8px 16px;
   background: none;
   border: none;
-  color: var(--color-faint);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
   cursor: pointer;
   border-radius: var(--radius-sm);
-  transition: color var(--transition-speed);
+  min-width: 88px;
+  transition: color var(--transition-speed), background var(--transition-speed);
 }
 
-.unit-view__nav-counter button:active:not(:disabled) {
-  color: var(--color-text);
+.unit-view__nav-strip-btn--next {
+  justify-content: flex-end;
 }
 
-.unit-view__nav-counter button:disabled {
+.unit-view__nav-strip-btn:active:not(:disabled) {
+  background: var(--color-surface);
+}
+
+.unit-view__nav-strip-btn:disabled {
   opacity: 0.2;
   cursor: default;
   pointer-events: none;
 }
 
-.unit-view__nav-counter button svg {
-  width: 16px;
-  height: 16px;
+.unit-view__nav-strip-btn svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* ── Chat action button in floating panel ── */
