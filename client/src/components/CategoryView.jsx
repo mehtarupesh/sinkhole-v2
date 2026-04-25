@@ -13,12 +13,12 @@
  *   onUnitSaved  fn(updated?, newCategory?)
  */
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, TrashIcon, MoveFolderIcon, AiChatIcon, PlusIcon, OneBIcon } from './Icons';
+import { TrashIcon, MoveFolderIcon, AiChatIcon, PlusIcon, OneBIcon } from './Icons';
 import { CarouselCard } from './Carousel';
 import { groupByTime } from '../utils/timeGroups';
-import { updateUnit, deleteUnit, getChatCache, setCategorization } from '../utils/db';
+import { updateUnit, deleteUnit, getChatCache, setChatCacheEntry, setCategorization } from '../utils/db';
 import { TRASH_ID, addCategoryIfNew } from '../utils/carouselGroups';
-import CategoryChat from './CategoryChat';
+import Chat from './Chat';
 import AddUnitModal from './AddUnitModal';
 import UnitDetail from './UnitDetail';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
@@ -252,26 +252,22 @@ export default function CategoryView({ category, allUnits, storedGroups, accessO
             onTouchStart={handleChatTouchStart}
             onTouchEnd={handleChatTouchEnd}
           >
-            <div className="category-view__chat-back">
-              <button
-                type="button"
-                className="category-view__chat-back-btn"
-                onClick={() => { setView('grid'); setChatUnits(null); }}
-              >
-                <ChevronLeftIcon /> Grid
-              </button>
-              {chatUnits ? (
-                <span className="category-view__chat-ctx">{chatUnits.length} selected</span>
-              ) : (
-                <span className="category-view__chat-ctx">{category.title}</span>
-              )}
-            </div>
             {isChat && (
-              <CategoryChat
-                category={category}
+              <Chat
                 units={chatUnits ?? units}
+                loadMessages={async () => { const c = await getChatCache(); return c[category.id]?.messages ?? []; }}
+                saveMessages={async (msgs) => {
+                  const count = msgs.length ? units.length : 0;
+                  await setChatCacheEntry(category.id, { messages: msgs, unitCount: count, updatedAt: Date.now() });
+                  setChatCacheUnitCount(count);
+                }}
+                categoryId={category.id === 'misc' ? null : category.id}
                 onSaveUnit={onUnitSaved}
-                onCacheSaved={(count) => setChatCacheUnitCount(count)}
+                onBack={() => { setView('grid'); setChatUnits(null); }}
+                backLabel="Grid"
+                subtitle={chatUnits ? `${chatUnits.length} selected` : category.title}
+                defaultInput="Summarize Action Items and Key Points"
+                emptyText="No conversation yet. Ask something above."
               />
             )}
           </div>

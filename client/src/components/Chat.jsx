@@ -1,51 +1,50 @@
-/**
- * CategoryChat — inline persistent chat about a category's units.
- *
- * Props:
- *   category     { id, title, uids }
- *   units        Unit[]           units in context (all or filtered subset)
- *   onSaveUnit   fn()             called after an AI message is saved as a unit
- *   onCacheSaved fn(unitCount)    called after chat history is persisted
- */
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { CheckIcon, TrashIcon, CopyIcon, RerunIcon } from './Icons';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { chatWithUnits } from '../utils/forage';
-import { getSetting, addUnit, getChatCache, setChatCacheEntry } from '../utils/db';
+import { getSetting, addUnit } from '../utils/db';
+import { CheckIcon, TrashIcon, CopyIcon, RerunIcon, ChevronLeftIcon } from './Icons';
 import NoteTray from './NoteTray';
 import SimpleMarkdown from './SimpleMarkdown';
-import './CategoryChat.css';
+import './Chat.css';
 
-export const DEFAULT_CHAT_PROMPT = 'Summarize Action Items and Key Points';
-
-export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved }) {
+export default function Chat({
+  units,
+  loadMessages,
+  saveMessages,
+  categoryId,
+  onSaveUnit,
+  onBack,
+  backLabel = 'Back',
+  subtitle,
+  defaultInput = '',
+  emptyText = 'Ask something…',
+}) {
   const [messages, setMessages] = useState([]);
-  const [input, setInput]       = useState(DEFAULT_CHAT_PROMPT);
+  const [input, setInput]       = useState(defaultInput);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
 
-  const [editingId, setEditingId]           = useState(null);
-  const [editText, setEditText]             = useState('');
+  const [editingId, setEditingId]             = useState(null);
+  const [editText, setEditText]               = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
-  const [copiedId, setCopiedId]             = useState(null);
+  const [copiedId, setCopiedId]               = useState(null);
 
   const messagesEndRef  = useRef(null);
   const editTextareaRef = useRef(null);
   const copyTimerRef    = useRef(null);
   const messageCountRef = useRef(0);
+  const loadMessagesRef = useRef(loadMessages);
+  const saveMessagesRef = useRef(saveMessages);
 
-  // Load persisted chat on mount
+  useEffect(() => { saveMessagesRef.current = saveMessages; }, [saveMessages]);
+
+  // Load persisted messages once on mount
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      const cache = await getChatCache();
-      const entry = cache[category.id];
-      if (!cancelled && entry?.messages?.length) {
-        setMessages(entry.messages);
-      }
-    }
-    load();
+    loadMessagesRef.current().then((msgs) => {
+      if (!cancelled && msgs?.length) setMessages(msgs);
+    });
     return () => { cancelled = true; };
-  }, [category.id]);
+  }, []);
 
   // Scroll to bottom only when message count grows
   useEffect(() => {
@@ -66,21 +65,18 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
     }
   }, [editingId]);
 
-  const persistMessages = useCallback(async (msgs) => {
-    const count = msgs?.length ? units?.length : 0;
-    await setChatCacheEntry(category.id, { messages: msgs, unitCount: count, updatedAt: Date.now() });
-    onCacheSaved?.(count);
-  }, [category.id, units.length, onCacheSaved]);
+  const persist = useCallback(async (msgs) => {
+    await saveMessagesRef.current(msgs);
+  }, []);
 
-  // Core send — prevMessages overrides the current state (used by rerun)
   const doSend = useCallback(async (text, prevMessages) => {
     const history = prevMessages ?? messages;
     if (!text || loading) return;
 
-    const userMsg     = { id: crypto.randomUUID(), role: 'user', text };
-    const assistantId = crypto.randomUUID();
+    const userMsg      = { id: crypto.randomUUID(), role: 'user', text };
+    const assistantId  = crypto.randomUUID();
     const assistantMsg = { id: assistantId, role: 'assistant', text: '', savedAsUnit: false };
-    const optimistic  = [...history, userMsg, assistantMsg];
+    const optimistic   = [...history, userMsg, assistantMsg];
 
     setMessages(optimistic);
     setInput('');
@@ -99,51 +95,49 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
         setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, text: snap } : m)));
       }
       const final = optimistic.map((m) => (m.id === assistantId ? { ...m, text: accumulated } : m));
-      await persistMessages(final);
+      await persist(final);
     } catch (e) {
       setMessages([...history, userMsg]);
       setError(e.message ?? 'Something went wrong.');
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, units, persistMessages]);
+  }, [loading, messages, units, persist]);
 
   const handleSend = useCallback(() => {
     const text = input.trim();
     if (text) doSend(text);
   }, [doSend, input]);
 
-  // Regenerate: keep history before the assistant message, re-send the preceding user turn
   const handleRerun = useCallback((assistantMsgId) => {
     const idx = messages.findIndex((m) => m.id === assistantMsgId);
     if (idx < 1) return;
-    const priorMessages  = messages.slice(0, idx);
-    const lastUser       = [...priorMessages].reverse().find((m) => m.role === 'user');
+    const priorMessages = messages.slice(0, idx);
+    const lastUser      = [...priorMessages].reverse().find((m) => m.role === 'user');
     if (!lastUser) return;
-    const lastUserIdx    = priorMessages.map((m) => m.id).lastIndexOf(lastUser.id);
-    const historyBefore  = priorMessages.slice(0, lastUserIdx);
-    doSend(lastUser.text, historyBefore);
+    const lastUserIdx   = priorMessages.map((m) => m.id).lastIndexOf(lastUser.id);
+    doSend(lastUser.text, priorMessages.slice(0, lastUserIdx));
   }, [messages, doSend]);
 
   const handleSaveMessage = useCallback(async (msg) => {
     if (msg.savedAsUnit || !msg.text) return;
-    const msgIdx  = messages.findIndex((m) => m.id === msg.id);
+    const msgIdx   = messages.findIndex((m) => m.id === msg.id);
     const prevUser = messages.slice(0, msgIdx).reverse().find((m) => m.role === 'user');
     try {
       await addUnit({
         type: 'snippet',
         content: msg.text,
         quote: prevUser?.text ?? '',
-        categoryId: category.id === 'misc' ? null : category.id,
+        categoryId,
       });
       const updated = messages.map((m) => (m.id === msg.id ? { ...m, savedAsUnit: true } : m));
       setMessages(updated);
-      await persistMessages(updated);
+      await persist(updated);
       onSaveUnit?.();
     } catch {
       setError('Save failed.');
     }
-  }, [messages, category, persistMessages, onSaveUnit]);
+  }, [messages, categoryId, persist, onSaveUnit]);
 
   const startEdit = useCallback((id, text) => {
     setEditingId(id);
@@ -160,8 +154,8 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
     setMessages(updated);
     setEditingId(null);
     setEditText('');
-    if (text) await persistMessages(updated);
-  }, [editingId, editText, messages, persistMessages]);
+    if (text) await persist(updated);
+  }, [editingId, editText, messages, persist]);
 
   const cancelEdit = useCallback(() => { setEditingId(null); setEditText(''); }, []);
 
@@ -185,32 +179,36 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
       const updated = messages.filter((m) => m.id !== id);
       setMessages(updated);
       setDeleteConfirmId(null);
-      await persistMessages(updated);
+      await persist(updated);
     } else {
       setDeleteConfirmId(id);
       setEditingId(null);
     }
-  }, [deleteConfirmId, messages, persistMessages]);
-
-  const canSend = input.trim().length > 0 && !loading;
+  }, [deleteConfirmId, messages, persist]);
 
   return (
-    <div className="category-chat">
-      <div className="category-chat__messages">
+    <div className="chat">
+      <div className="chat__header">
+        <button type="button" className="chat__back-btn" onClick={onBack} aria-label="Go back">
+          <ChevronLeftIcon /> {backLabel}
+        </button>
+        {subtitle && <span className="chat__subtitle">{subtitle}</span>}
+      </div>
+
+      <div className="chat__messages">
         {messages.length === 0 && (
-          <p className="category-chat__empty">No conversation yet. Ask something above.</p>
+          <p className="chat__empty">{emptyText}</p>
         )}
 
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`category-chat__msg category-chat__msg--${msg.role}${editingId === msg.id && msg.role === 'user' ? ' category-chat__msg--editing' : ''}`}
+            className={`chat__msg chat__msg--${msg.role}${editingId === msg.id ? ' chat__msg--editing' : ''}`}
           >
-            {/* Body: edit mode or view mode */}
             {editingId === msg.id ? (
               <textarea
                 ref={editTextareaRef}
-                className="category-chat__edit-textarea"
+                className="chat__edit-textarea"
                 value={editText}
                 onChange={handleEditChange}
                 onBlur={commitEdit}
@@ -226,7 +224,7 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
                 aria-label="Tap to edit"
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') startEdit(msg.id, msg.text); }}
               >
-                <p className="category-chat__msg-text">{msg.text}</p>
+                <p className="chat__msg-text">{msg.text}</p>
               </div>
             ) : msg.text ? (
               <div
@@ -246,17 +244,15 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
               </div>
             )}
 
-            {/* Streaming cursor */}
             {loading && msg.role === 'assistant' && !editingId && msg.text && (
               <span className="forage__cursor" aria-hidden="true">▋</span>
             )}
 
-            {/* Action row */}
             {!(loading && msg.role === 'assistant' && !msg.text) && msg.text && editingId !== msg.id && (
-              <div className="category-chat__actions">
+              <div className="chat__actions">
                 <button
                   type="button"
-                  className="category-chat__action-btn"
+                  className="chat__action-btn"
                   onClick={() => handleCopy(msg.id, msg.text)}
                   aria-label="Copy"
                 >
@@ -265,7 +261,7 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
 
                 <button
                   type="button"
-                  className={`category-chat__action-btn${deleteConfirmId === msg.id ? ' category-chat__action-btn--confirm' : ''}`}
+                  className={`chat__action-btn${deleteConfirmId === msg.id ? ' chat__action-btn--confirm' : ''}`}
                   onClick={() => handleDelete(msg.id)}
                   onBlur={() => setDeleteConfirmId(null)}
                   aria-label="Delete"
@@ -277,7 +273,7 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
                   <>
                     <button
                       type="button"
-                      className="category-chat__action-btn"
+                      className="chat__action-btn"
                       onClick={() => handleRerun(msg.id)}
                       disabled={loading}
                       aria-label="Regenerate"
@@ -287,7 +283,7 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
 
                     <button
                       type="button"
-                      className={`forage__save-btn category-chat__save-btn${msg.savedAsUnit ? ' forage__save-btn--done' : ''}`}
+                      className={`forage__save-btn chat__save-btn${msg.savedAsUnit ? ' forage__save-btn--done' : ''}`}
                       onClick={() => handleSaveMessage(msg)}
                       disabled={msg.savedAsUnit}
                     >
@@ -300,13 +296,13 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
           </div>
         ))}
 
-        {error && <p className="category-chat__error">{error}</p>}
+        {error && <p className="chat__error">{error}</p>}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="category-chat__input-row">
+      <div className="chat__input-row" onClick={(e) => e.stopPropagation()}>
         <NoteTray
-          className="category-chat__note-tray"
+          className="chat__note-tray"
           value={input}
           onChange={setInput}
           onSubmit={handleSend}
@@ -319,7 +315,7 @@ export default function CategoryChat({ category, units, onSaveUnit, onCacheSaved
               type="button"
               className="note-tray__action-btn"
               onClick={handleSend}
-              disabled={!canSend}
+              disabled={!input.trim() || loading}
               aria-label="Send"
             >
               {loading ? '…' : '✦'}

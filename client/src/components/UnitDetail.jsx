@@ -6,7 +6,8 @@ import ContentField from './ContentField';
 import NoteTray from './NoteTray';
 import CategorySelector from './CategorySelector';
 import SimpleMarkdown from './SimpleMarkdown';
-import UnitChat from './UnitChat';
+import Chat from './Chat';
+import { getUnitChatCache, setUnitChatCacheEntry } from '../utils/db';
 import ImageLightbox from './ImageLightbox';
 import { transcribeAndSuggest } from '../utils/transcribeAndSuggest';
 import { encryptContent, decryptContent, isEncryptedContent } from '../utils/crypto';
@@ -175,7 +176,15 @@ export default function UnitDetail({
 
       {/* ── View mode ── */}
       {chatOpen ? (
-        <UnitChat unit={unit} onClose={() => setChatOpen(false)} />
+        <Chat
+          units={[unit]}
+          loadMessages={async () => { const c = await getUnitChatCache(); return c[unit.uid || String(unit.id)]?.messages ?? []; }}
+          saveMessages={async (msgs) => setUnitChatCacheEntry(unit.uid || String(unit.id), { messages: msgs, updatedAt: Date.now() })}
+          categoryId={unit.categoryId ?? null}
+          onBack={() => setChatOpen(false)}
+          backLabel="Back"
+          emptyText="Ask anything about this item."
+        />
       ) : (
         <>
           {/* Header: category pill + delete */}

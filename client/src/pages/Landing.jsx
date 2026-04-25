@@ -59,13 +59,13 @@ const ONBOARDING_STEPS = [
   {
     screenshot: `${BASE}onboarding/filled-burrow.png`,
     title: 'A full burrow in the wild',
-    desc: 'Local-first — no server. Code and data live entirely on your device.',
-    note: 'What goes in doesn\'t have to come out — lock anything you want to keep from AI eyes.',
+    desc: 'Local-first — no server. Code and data live entirely on your device. Powered by your browser',
+    note: 'Lock anything you want to keep from AI eyes.',
   },
   {
     gif: `${BASE}onboarding/3-chat.gif`,
     title: 'Come back and dig in',
-    desc: 'When you\'re ready, open a category and chat with what you\'ve stashed. Summarize, explore, or just find that thing you buried.',
+    desc: 'When you\'re ready, open a category and chat to summarize, explore, or just find that thing you buried.',
   },
   {
     gif: `${BASE}onboarding/4-cleanup.gif`,
