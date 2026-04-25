@@ -34,20 +34,22 @@ const ONBOARDING_STEPS = [
     title: 'Stash now. Forage later.',
     desc: 'Links, images, screenshots & thoughts — all in one private on-device burrow.',
     features: [
-      { icon: '⚡', label: 'Stash in seconds', sub: 'Share from any app. Don\'t break your flow.' },
+      { icon: '⚡', label: 'Stash in seconds', sub: 'Toss it in and forget about it.' },
       { icon: '🐿️', label: 'Forage when hungry', sub: 'Come back when ready. Browse, chat, explore.' },
     ],
     note: 'AI features use your own Gemini key — data is processed by Google.',
   },
   {
     gif: `${BASE}onboarding/2-share.gif`,
-    title: 'Whisper and get back to your day',
-    desc: 'Quick Share • Speak to provide context • Automatically categorizes (you can correct if needed !)',
+    title: 'Capture it without losing your trail.',
+    steps: ['Quick Share', 'Speak context', 'AI categorizes'],
+    note: 'Correct when needed — the more you do, the better AI gets.',
   },
   {
     gif: `${BASE}onboarding/2.1-share.gif`,
-    title: 'Show it and get back to your day',
-    desc: 'Share with annotation • Hit Sparkle • Automatically categorizes (it learns from your corrections !)',
+    title: 'Annotate it without losing your trail.',
+    steps: ['Annotate', 'Hit Sparkle', 'AI categorizes'],
+    note: 'Correct when needed — the more you do, the better AI gets.',
   },
   ...(isIOS() ? [{
     gif: `${BASE}onboarding/2.2-ios-copy.gif`,
@@ -452,7 +454,13 @@ export default function Landing() {
                       <span className="onboarding__card-num">{i}</span>
                       <div>
                         <p className="onboarding__card-title">{step.title}</p>
-                        <p className="onboarding__card-desc">{step.desc}</p>
+                        {step.steps ? (
+                          <p className="onboarding__card-desc">
+                            {step.steps.join(' → ')}
+                          </p>
+                        ) : (
+                          <p className="onboarding__card-desc">{step.desc}</p>
+                        )}
                         {step.note && <p className="onboarding__welcome-note">{step.note}</p>}
                       </div>
                     </div>
